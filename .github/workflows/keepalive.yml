@@ -2,7 +2,7 @@ name: Keep the database awake
 
 # Weekly, not every 10 minutes: on Render's free tier a ping that keeps the API awake
 # around the clock uses up the workspace's 750 instance hours. Once a week is enough
-# to stop the free Supabase project from being paused for inactivity (/api/health runs
+# to check the API and its Neon database answer (/api/health runs
 # `select 1`). The first visit after a quiet spell still takes about a minute.
 on:
   schedule:

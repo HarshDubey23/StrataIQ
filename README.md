@@ -128,7 +128,7 @@ production build, and a Playwright judge journey that captures the screenshots a
 
 Frontend and API both run on Render's free tier: `frontend/` as a Node web service (`npm start`, with `API_URL`
 pointing at the API) and `backend/` as a Docker web service from `backend/Dockerfile`, which runs the Alembic
-migrations on start. Postgres + PostGIS is a Supabase project. Free instances sleep after 15 idle minutes, so the
+migrations on start. Postgres + PostGIS is a Neon project (Singapore). Free instances sleep after 15 idle minutes, so the
 first visit after a quiet spell takes about a minute. Vercel still works too (`backend/` as a Python function with
 `SERVERLESS=1`, `AUTO_MIGRATE=1`). Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS` and optionally `CONTACT_EMAIL`,
 `ORS_API_KEY`, `SPEKO_API_KEY` (voice) and an LLM key (see `.env.example`).
