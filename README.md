@@ -8,7 +8,7 @@ An AI-powered geospatial market simulator: describe any local business, pick any
 10,000 synthetic customers — each with a 615-parameter genome grounded in official data — choose between you,
 your real competitors, and not buying at all.
 
-[**Live demo**](https://strataiq-rho.vercel.app) · [Methodology](docs/MODEL.md) · [Data sources](docs/DATA_SOURCES.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO.md)
+[**Live demo**](https://strataiq-vbuo.onrender.com) · [Methodology](docs/MODEL.md) · [Data sources](docs/DATA_SOURCES.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO.md)
 
 ![StrataIQ landing page](docs/screenshots/landing.jpg)
 
@@ -126,9 +126,11 @@ production build, and a Playwright judge journey that captures the screenshots a
 
 ## Deployment
 
-Frontend and API are both on Vercel (`frontend/` as Next.js, `backend/` as a Python function with `SERVERLESS=1`,
-`AUTO_MIGRATE=1`), backed by Postgres + PostGIS. `render.yaml` and the Dockerfiles are included for a long-running
-container deploy instead. Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS` and optionally `CONTACT_EMAIL`,
+Frontend and API both run on Render's free tier: `frontend/` as a Node web service (`npm start`, with `API_URL`
+pointing at the API) and `backend/` as a Docker web service from `backend/Dockerfile`, which runs the Alembic
+migrations on start. Postgres + PostGIS is a Supabase project. Free instances sleep after 15 idle minutes, so the
+first visit after a quiet spell takes about a minute. Vercel still works too (`backend/` as a Python function with
+`SERVERLESS=1`, `AUTO_MIGRATE=1`). Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS` and optionally `CONTACT_EMAIL`,
 `ORS_API_KEY`, `SPEKO_API_KEY` (voice) and an LLM key (see `.env.example`).
 
 ## Data and licences

@@ -1,5 +1,5 @@
 # Render Blueprint for the FastAPI backend. The database is external (e.g. Neon with PostGIS enabled)
-# so set DATABASE_URL in the Render dashboard. The frontend is deployed on Vercel (root: frontend/).
+# so set DATABASE_URL in the Render dashboard. The frontend is a separate Render Node service (root: frontend/).
 services:
   - type: web
     name: strataiq-api

@@ -2,7 +2,7 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
 
-const BASE = process.env.BASE_URL || "https://strataiq-rho.vercel.app";
+const BASE = process.env.BASE_URL || "https://strataiq-vbuo.onrender.com";
 const OUT = "out-live";
 fs.mkdirSync(OUT, { recursive: true });
 const log = [];

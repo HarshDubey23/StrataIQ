@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: write
     env:
-      BASE_URL: https://strataiq-rho.vercel.app
+      BASE_URL: https://strataiq-vbuo.onrender.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,7 +27,7 @@ jobs:
       - name: Wait for the new deployment
         run: |
           sleep 480
-          for i in $(seq 1 30); do curl -sf https://strataiq-api.vercel.app/api/health && break; sleep 10; done
+          for i in $(seq 1 30); do curl -sf https://strataiq-api-c2dc.onrender.com/api/health && break; sleep 10; done
       - name: Journey on live URL
         working-directory: e2e
         run: |

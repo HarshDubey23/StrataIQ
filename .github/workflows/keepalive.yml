@@ -1,10 +1,12 @@
-name: Keep demo warm
+name: Keep the database awake
 
-# Serverless functions go cold when idle. This pings the public URLs so a judge
-# never waits for a cold start, and pre-warms the cached live OpenStreetMap preview.
+# Weekly, not every 10 minutes: on Render's free tier a ping that keeps the API awake
+# around the clock uses up the workspace's 750 instance hours. Once a week is enough
+# to stop the free Supabase project from being paused for inactivity (/api/health runs
+# `select 1`). The first visit after a quiet spell still takes about a minute.
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "17 6 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -12,11 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ping API and web
+      - name: Ping API health
         run: |
-          for u in "https://strataiq-api.vercel.app/api/health" \
-                   "https://strataiq-rho.vercel.app/" \
-                   "https://strataiq-api.vercel.app/api/v1/market/preview?spot=cp-delhi&category=cafe"; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 "$u" || true)
-            echo "$u -> $code"
-          done
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 180 "https://strataiq-api-c2dc.onrender.com/api/health" || true)
+          echo "api health -> $code"

@@ -1,5 +1,5 @@
 // Dense-market check: a café in Koramangala (hundreds of rivals) end to end through the public API.
-const API = process.env.API_URL || "https://strataiq-api.vercel.app/api/v1";
+const API = process.env.API_URL || "https://strataiq-api-c2dc.onrender.com/api/v1";
 let cookie = "";
 async function call(path, method = "GET", body) {
   const t = Date.now();
