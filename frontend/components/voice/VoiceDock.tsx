@@ -12,6 +12,7 @@
  *
  * Neither engine invents numbers: every figure comes from /assistant/facts or a real simulation run.
  */
+import { isEcho, isStopWord, recentTurns, settleHistory } from "@/lib/voiceTurn";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { AudioLines, Keyboard, Mic, MicOff, Send, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -460,6 +461,13 @@ function VoiceDockInner() {
   const watchdog = useRef<ReturnType<typeof setInterval> | null>(null);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechChain = useRef<Promise<void>>(Promise.resolve());
+  // every new message starts a new turn: anything still running from an older turn sees the number changed and stops
+  const turnGen = useRef(0);
+  const aborter = useRef<AbortController | null>(null);
+  const stopAudio = useRef<(() => void) | null>(null);
+  const lastSpoken = useRef({ text: "", until: 0 });
+  const heardBuf = useRef("");
+  const heardTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Most natural Indian voice the browser has: Edge's neural en-IN / hi-IN, then Chrome's Google Hindi. */
   useEffect(() => {
@@ -476,7 +484,7 @@ function VoiceDockInner() {
   }, []);
 
   const startRec = useCallback(() => {
-    if (!recRef.current || recRunning.current || speakingRef.current || !wantRec.current) return;
+    if (!recRef.current || recRunning.current || !wantRec.current) return;
     try {
       recRef.current.start();
     } catch {
@@ -489,7 +497,7 @@ function VoiceDockInner() {
   /** Natural Hinglish voice from Speko (Cartesia Hindi). Throws so the caller can fall back to the browser voice. */
   const playSpeko = useCallback(async (text: string) => {
     const r = await fetch("/api/v1/assistant/tts", {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text.slice(0, 1500) }),
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text.slice(0, 1500) }), signal: aborter.current?.signal,
     });
     if (!r.ok) throw new Error(`tts ${r.status}`);
     const url = URL.createObjectURL(await r.blob());
@@ -498,6 +506,11 @@ function VoiceDockInner() {
       audioRef.current = a;
       await new Promise<void>((resolve, reject) => {
         const t = setTimeout(resolve, 90_000);
+        stopAudio.current = () => {
+          a.pause();
+          clearTimeout(t);
+          resolve();
+        };
         a.onended = () => {
           clearTimeout(t);
           resolve();
@@ -513,6 +526,7 @@ function VoiceDockInner() {
       });
     } finally {
       audioRef.current = null;
+      stopAudio.current = null;
       URL.revokeObjectURL(url);
     }
   }, []);
@@ -520,14 +534,21 @@ function VoiceDockInner() {
   const speakNow = useCallback(
     async (text: string) => {
       if (typeof window === "undefined" || !text.trim()) return;
+      const gen = turnGen.current;
       speakingRef.current = true;
       setPhase("speaking");
-      try {
-        recRef.current?.abort(); // don't transcribe our own voice
-      } catch {
-        /* not running */
-      }
       const spoken = text.replace(/₹\s?([\d,.]+(?:\s?(?:lakh|crore))?)/g, "$1 rupaye").replace(/₹/g, "");
+      // the mic stays open so the person can cut in; this is what tells their voice from ours
+      lastSpoken.current = { text: spoken, until: Number.POSITIVE_INFINITY };
+      const finish = () => {
+        if (gen !== turnGen.current) return;
+        speakingRef.current = false;
+        lastSpoken.current.until = Date.now() + 1200; // the last words can still be arriving from the room
+        if (wantRec.current) {
+          setPhase("listening");
+          setTimeout(startRec, 150);
+        } else setPhase((p) => (p === "speaking" ? "idle" : p));
+      };
       let done = false;
       if (ttsFailures.current < 2) {
         try {
@@ -535,17 +556,12 @@ function VoiceDockInner() {
           done = true;
           ttsFailures.current = 0;
         } catch {
+          if (gen !== turnGen.current) return;
           ttsFailures.current++;
         }
       }
-      if (done || !("speechSynthesis" in window)) {
-        speakingRef.current = false;
-        if (wantRec.current) {
-          setPhase("listening");
-          setTimeout(startRec, 150);
-        }
-        return;
-      }
+      if (gen !== turnGen.current) return;
+      if (done || !("speechSynthesis" in window)) return finish();
       // short sentences: Chrome silently stops utterances longer than ~15 s and never fires onend
       const chunks = spoken.match(/[^.!?।]+[.!?।]*/g) || [text];
       for (const c of chunks.map((x) => x.trim()).filter(Boolean)) {
@@ -563,20 +579,17 @@ function VoiceDockInner() {
           };
           window.speechSynthesis.speak(u);
         });
-        if (!wantRec.current && !speakingRef.current) break;
+        if (gen !== turnGen.current) return;
       }
-      speakingRef.current = false;
-      if (wantRec.current) {
-        setPhase("listening");
-        setTimeout(startRec, 150);
-      }
+      finish();
     },
     [playSpeko, startRec],
   );
-  /** Lines are spoken in order and never cut each other off. */
+  /** Lines in one turn play in order. A new turn drops whatever has not been said yet. */
   const speak = useCallback(
     (text: string) => {
-      const p = speechChain.current.then(() => speakNow(text));
+      const gen = turnGen.current;
+      const p = speechChain.current.then(() => (gen === turnGen.current ? speakNow(text) : undefined));
       speechChain.current = p.catch(() => undefined);
       return p;
     },
@@ -588,11 +601,13 @@ function VoiceDockInner() {
       if (!pushed) push("you", q);
       setPhase("thinking");
       const pid = pidRef.current;
+      const gen = turnGen.current;
       try {
         const out = await jfetch<{ answer: string; result?: unknown; suggested?: { label: string; changes: Record<string, number> }; actions?: { type: string; to?: string; scenario_id?: string; text?: string; action?: { label: string; changes: Record<string, number> } }[] }>(pid ? `/api/v1/projects/${pid}/assistant/ask` : `/api/v1/assistant/ask`, {
           method: "POST",
-          json: { question: q, page: path, screen: readScreen(), suggested: lastSuggested.current },
+          json: { question: q, page: path, screen: readScreen(), suggested: lastSuggested.current }, signal: aborter.current?.signal,
         });
+        if (gen !== turnGen.current) return;
         push("strata", out.answer);
         if (out.suggested) lastSuggested.current = out.suggested;
         const onLive = path.endsWith("/live");
@@ -621,6 +636,7 @@ function VoiceDockInner() {
         }
         await speak(out.answer);
       } catch (e) {
+        if (gen !== turnGen.current) return;
         const msg = e instanceof Error ? e.message : "I couldn't reach the server.";
         push("strata", msg);
         await speak(msg);
@@ -631,23 +647,32 @@ function VoiceDockInner() {
 
   const history = useRef<AgentMsg[]>([]);
   const toolRan = useRef(false);
+
+  /** Stop talking and thinking right now, and keep what was said so the next answer has the context. */
+  const interrupt = useCallback(() => {
+    turnGen.current++;
+    aborter.current?.abort();
+    aborter.current = null;
+    stopAudio.current?.();
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    speechChain.current = Promise.resolve();
+    speakingRef.current = false;
+    settleHistory(history.current);
+    if (wantRec.current) setPhase("listening");
+  }, []);
+
   /** One user turn through the Speko brain: it may call several tools (run here, in the browser) before answering. */
   const agentTurn = useCallback(
     async (q: string): Promise<string> => {
+      const gen = turnGen.current;
+      const stale = () => gen !== turnGen.current;
       const h = history.current;
       h.push({ role: "user", content: q });
       for (let hop = 0; hop < 6; hop++) {
-        // send the recent tail, starting at a user turn so no tool result loses its call
-        let from = h.length - 1;
-        for (let i = Math.max(0, h.length - 30); i < h.length; i++) {
-          if (h[i].role === "user") {
-            from = i;
-            break;
-          }
-        }
         const res = await jfetch<{ text: string; tool_calls: AgentCall[] }>("/api/v1/assistant/agent", {
-          method: "POST", json: { messages: h.slice(from), page: pathRef.current, project_open: !!pidRef.current },
+          method: "POST", json: { messages: recentTurns(h), page: pathRef.current, project_open: !!pidRef.current }, signal: aborter.current?.signal,
         });
+        if (stale()) return "";
         if (!res.tool_calls?.length) {
           h.push({ role: "assistant", content: res.text });
           return res.text;
@@ -668,6 +693,8 @@ function VoiceDockInner() {
             out = e instanceof Error ? e.message : "tool failed";
             isError = true;
           }
+          // a tool from an older turn must not write into the newer turn's history
+          if (stale()) return "";
           h.push({ role: "tool", content: String(out).slice(0, 6000), toolCallId: tc.id, ...(isError ? { isError: true } : {}) });
         }
       }
@@ -679,19 +706,24 @@ function VoiceDockInner() {
   /** Speko brain first; if it can't be reached, the local Hinglish router (same tools), then the backend fact router. */
   const runLocal = useCallback(
     async (q: string) => {
+      interrupt();
+      const gen = turnGen.current;
+      aborter.current = new AbortController();
       push("you", q);
       setPhase("thinking");
       toolRan.current = false;
       try {
         const ans = await agentTurn(q);
+        if (gen !== turnGen.current) return;
         if (ans) {
           push("strata", ans);
           await speak(ans);
           return;
         }
       } catch (e) {
+        if (gen !== turnGen.current) return;
         console.warn("voice brain unavailable, using the built-in router", e);
-        history.current = []; // a half-finished tool exchange must not be replayed
+        settleHistory(history.current); // a half-finished tool exchange must not be replayed, but the conversation stays
         if (toolRan.current) {
           // the action already happened; running the fallback router would do it twice
           const msg = US_MARKET ? "That's done, it's on your screen. I had trouble reading the answer aloud, so ask me again if you need more." : "Kaam kar diya hai, screen pe dekh lo. Bas jawab bolne me dikkat aayi — kuch aur poochna ho to bolo.";
@@ -707,6 +739,7 @@ function VoiceDockInner() {
         };
         // shortcut: the built-in fallback router only understands Hinglish, so US visitors skip it; add English rules if Speko downtime hurts.
         const ans = US_MARKET ? null : await route(q, tools as unknown as Tools, { projectOpen: !!pidRef.current, say });
+        if (gen !== turnGen.current) return;
         if (ans) {
           push("strata", ans);
           await speak(ans);
@@ -720,15 +753,10 @@ function VoiceDockInner() {
       }
       await askBackend(q, true);
     },
-    [agentTurn, askBackend, push, speak, tools],
+    [agentTurn, askBackend, interrupt, push, speak, tools],
   );
-  const turnChain = useRef<Promise<void>>(Promise.resolve());
-  const queued = useCallback((q: string) => {
-    turnChain.current = turnChain.current.then(() => runLocal(q)).catch(() => undefined);
-    return turnChain.current;
-  }, [runLocal]);
-  const runLocalRef = useRef(queued);
-  runLocalRef.current = queued;
+  const runLocalRef = useRef(runLocal);
+  runLocalRef.current = runLocal;
 
   const startBrowser = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -753,11 +781,26 @@ function VoiceDockInner() {
         if (r.isFinal) fin += r[0].transcript;
         else tmp += r[0].transcript;
       }
-      setInterim(tmp);
-      if (fin.trim() && !speakingRef.current) {
+      const heard = `${fin} ${tmp}`.trim();
+      const ours = speakingRef.current || Date.now() < lastSpoken.current.until;
+      if (ours && isEcho(heard, lastSpoken.current.text)) {
         setInterim("");
-        void runLocalRef.current(fin.trim());
+        return;
       }
+      setInterim(tmp);
+      // a real voice over ours: go quiet at once, before they have even finished the sentence
+      if (speakingRef.current && heard.split(/\s+/).length >= 2) interrupt();
+      if (heardTimer.current) clearTimeout(heardTimer.current);
+      if (fin.trim()) heardBuf.current = `${heardBuf.current} ${fin}`.trim();
+      if (!heardBuf.current) return;
+      // a short pause is not the end of the thought: wait a moment so one sentence stays one message
+      heardTimer.current = setTimeout(() => {
+        const q = heardBuf.current;
+        heardBuf.current = "";
+        setInterim("");
+        if (isStopWord(q)) interrupt();
+        else void runLocalRef.current(q);
+      }, tmp ? 1400 : 600);
     };
     rec.onstart = () => {
       recRunning.current = true;
@@ -765,7 +808,7 @@ function VoiceDockInner() {
     // Chrome ends recognition after silences, errors and ~60 s; restart every time while the panel is listening
     rec.onend = () => {
       recRunning.current = false;
-      if (wantRec.current && !speakingRef.current) setTimeout(startRec, 200);
+      if (wantRec.current) setTimeout(startRec, 200);
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onerror = (e: any) => {
@@ -784,15 +827,17 @@ function VoiceDockInner() {
     wantRec.current = true;
     if (watchdog.current) clearInterval(watchdog.current);
     watchdog.current = setInterval(() => {
-      if (wantRec.current && !speakingRef.current && !recRunning.current) startRec();
+      if (wantRec.current && !recRunning.current) startRec();
     }, 2000);
     startRec();
     setPhase("listening");
-  }, [startRec]);
+  }, [interrupt, startRec]);
 
   const stopBrowser = useCallback(() => {
     wantRec.current = false;
-    speakingRef.current = false;
+    interrupt();
+    if (heardTimer.current) clearTimeout(heardTimer.current);
+    heardBuf.current = "";
     if (watchdog.current) clearInterval(watchdog.current);
     watchdog.current = null;
     try {
@@ -801,9 +846,7 @@ function VoiceDockInner() {
       /* ignore */
     }
     recRef.current = null;
-    audioRef.current?.pause();
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-  }, []);
+  }, [interrupt]);
 
   // ---------------------------------------------------------------- mic level meter (both engines)
   const meter = useRef<{ ctx: AudioContext; stream: MediaStream; raf: number } | null>(null);

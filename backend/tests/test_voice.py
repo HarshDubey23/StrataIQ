@@ -31,6 +31,8 @@ def test_parse_sse_error_only_raises():
 
 def test_us_voice_speaks_english_and_dollars():
     p = system_prompt("US", "/app", True)
+    # a what-if must not overwrite the saved plan
+    assert "Never update_plan for these" in p
     assert "American English" in p and "dollars" in p and "Project open: yes" in p
     for word in ("rupaye", "lakh", "crore", "Hinglish"):
         assert word not in p

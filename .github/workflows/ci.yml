@@ -17,7 +17,7 @@ jobs:
         run: |
           docker run -d --name web -p 3000:3000 -e API_URL=http://127.0.0.1:9 web
           for i in $(seq 1 30); do curl -sf -o page.html localhost:3000/ && break; sleep 2; done
-          grep -q 'See if your location wins before you sign.' page.html
+          grep -q 'Know your numbers before you sign the lease.' page.html
           css=$(grep -o '/_next/static/css/[^"]*' page.html | head -1)
           test -n "$css" && curl -sf -o /dev/null "localhost:3000$css"
 
@@ -123,6 +123,8 @@ jobs:
         run: npm run lint
       - name: Lease math
         run: npm run test:lease
+      - name: Voice turns
+        run: npm run test:voice
       - name: Build
         run: |
           set -o pipefail
