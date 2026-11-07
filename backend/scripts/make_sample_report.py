@@ -36,20 +36,20 @@ async def main() -> None:
         user = User(email=EMAIL, name="Sample report", password_hash=hash_password(secrets.token_urlsafe(24)), preferences={"internal": True})
         db.add(user)
         db.flush()
-        k = LIVE_KINDS["cafe"]
-        p = Project(owner_id=user.id, name="Specialty café, Downtown Austin", objective="start_new", decision_goal="profit", category=from_taxonomy_key(k["key"], k["key"]).as_dict(),
+        k = LIVE_KINDS["gym"]
+        p = Project(owner_id=user.id, name="Neighborhood gym, South Austin", objective="start_new", decision_goal="profit", category=from_taxonomy_key(k["key"], k["key"]).as_dict(),
                     profile={"description": "A sample report. Market data is live; the business inputs are examples.", "positioning": k["positioning"], "operating_hours": k["hours"]},
                     status="created", is_demo=False)
         db.add(p)
         db.flush()
-        lat, lng = 30.2672, -97.7431
-        loc = CandidateLocation(project_id=p.id, label="Downtown Austin", address="Downtown Austin, Texas", lat=lat, lng=lng, geog=point_wkt(lat, lng),
+        lat, lng = 30.2290, -97.7700
+        loc = CandidateLocation(project_id=p.id, label="South Austin", address="South Lamar, Austin, Texas", lat=lat, lng=lng, geog=point_wkt(lat, lng),
                                 catchment={"mode": "radius", "radius_km": k["radius_km"], "minutes": None, "profile": "foot-walking"})
         db.add(loc)
         db.flush()
-        db.add(Scenario(project_id=p.id, location_id=loc.id, name="Plan: $9 average order", is_baseline=True, inputs=dict(k["base"])))
-        db.add(Scenario(project_id=p.id, location_id=loc.id, name="Lower price: $7", inputs=k["base"] | {"price": 7}))
-        db.add(Scenario(project_id=p.id, location_id=loc.id, name="Higher price: $11", inputs=k["base"] | {"price": 11}))
+        db.add(Scenario(project_id=p.id, location_id=loc.id, name="Plan: $49 a month", is_baseline=True, inputs=dict(k["base"])))
+        db.add(Scenario(project_id=p.id, location_id=loc.id, name="Lower price: $39", inputs=k["base"] | {"price": 39}))
+        db.add(Scenario(project_id=p.id, location_id=loc.id, name="Higher price: $59", inputs=k["base"] | {"price": 59}))
         db.commit()
         db.refresh(p)
         await refresh_snapshot(db, p, loc)

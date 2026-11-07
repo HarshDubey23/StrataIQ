@@ -23,8 +23,8 @@ export function PriceCurve({ data, current, unit }: { data: NonNullable<SimResul
         <Tooltip {...TT} formatter={(v, n) => (String(n) === "units" ? [num(Number(v)), unit] : [money(Number(v)), "Operating profit"])} labelFormatter={(l) => `Price ₹${num(Number(l))}`} />
         <ReferenceLine yAxisId="p" y={0} stroke="#75716A" strokeDasharray="3 3" />
         <ReferenceLine yAxisId="p" x={current} stroke="#D93A1E" strokeDasharray="4 3" label={{ value: "current", fill: "#D93A1E", fontSize: 10, position: "top" }} />
-        <Line yAxisId="p" type="monotone" dataKey="profit" stroke="#0F766E" strokeWidth={2} dot={false} />
-        <Line yAxisId="u" type="monotone" dataKey="units" stroke="#A9A59B" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+        <Line isAnimationActive={false} yAxisId="p" type="monotone" dataKey="profit" stroke="#0F766E" strokeWidth={2} dot={false} />
+        <Line isAnimationActive={false} yAxisId="u" type="monotone" dataKey="units" stroke="#A9A59B" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
       </ComposedChart>
     </ResponsiveContainer>
   );
@@ -40,7 +40,7 @@ export function MarketingCurve({ data, current }: { data: NonNullable<SimResult[
         <Tooltip {...TT} formatter={(v) => [money(Number(v)), "Operating profit"]} labelFormatter={(l) => `Marketing ${money(Number(l))}/mo`} />
         <ReferenceLine y={0} stroke="#75716A" strokeDasharray="3 3" />
         <ReferenceLine x={current} stroke="#D93A1E" strokeDasharray="4 3" />
-        <Line type="monotone" dataKey="profit" stroke="#0F766E" strokeWidth={2} dot={{ r: 2 }} />
+        <Line isAnimationActive={false} type="monotone" dataKey="profit" stroke="#0F766E" strokeWidth={2} dot={{ r: 2 }} />
       </ComposedChart>
     </ResponsiveContainer>
   );
@@ -66,7 +66,7 @@ export function Tornado({ data, base }: { data: NonNullable<SimResult["sensitivi
           }}
         />
         <ReferenceLine x={0} stroke="#A9A59B" />
-        <Bar dataKey="range" fill="#D93A1E" radius={2}>
+        <Bar isAnimationActive={false} dataKey="range" fill="#D93A1E" radius={2}>
           {rows.map((r, i) => <Cell key={i} fill={r.raw.status === "user" ? "#7C3AED" : "#9AA8FF"} />)}
         </Bar>
       </BarChart>
@@ -99,7 +99,7 @@ export function ProfitHistogram({ mc }: { mc: NonNullable<SimResult["monte_carlo
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 4 }} barCategoryGap={1}>
         <XAxis dataKey="x" tickFormatter={compactMoney} {...AX} interval="preserveStartEnd" minTickGap={30} />
         <Tooltip {...TT} formatter={(v) => [`${v} draws`, "Count"]} labelFormatter={(l) => `Profit ≈ ${money(Number(l))}`} />
-        <Bar dataKey="c">
+        <Bar isAnimationActive={false} dataKey="c">
           {data.map((d, i) => <Cell key={i} fill={d.x < 0 ? "#E5484D" : "#0F766E"} fillOpacity={0.8} />)}
         </Bar>
       </BarChart>

@@ -19,7 +19,7 @@ export default function SampleReport() {
           <button onClick={() => window.print()} className="min-h-11 bg-accent px-5 text-[16px] font-medium text-white">Download PDF</button>
         </div>
         <p className="mt-3 bg-night p-4 text-[17px] leading-snug text-white">
-          This is a sample report. The market data is real and was loaded live for Downtown Austin; the prices and costs are example inputs, not a real business.{" "}
+          This is a sample report. The market data is real and was loaded live for South Austin; the prices and costs are example inputs, not a real business.{" "}
           <Link href="/" className="whitespace-nowrap font-medium underline underline-offset-4">Test your own location</Link>
         </p>
       </div>

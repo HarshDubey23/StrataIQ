@@ -468,6 +468,10 @@ html.lenis body {
   border-bottom-color: #fff !important;
 }
 
+.print-only {
+  display: none;
+}
+
 @page {
   size: letter;
   margin: 16mm 14mm;
@@ -494,6 +498,9 @@ html.lenis body {
   h2,
   h3 {
     break-after: avoid;
+  }
+  .print-only {
+    display: block;
   }
   .no-print {
     display: none !important;

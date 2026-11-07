@@ -207,24 +207,25 @@ export default function Landing() {
   const named = comps.map((c) => c.name).filter((n) => n && n !== "Unnamed");
   const catLabel = CATS.find((c) => c.key === cat)?.label.toLowerCase() || "businesses";
   const area = spot.label.split(",")[0];
-  const action = "inline-flex min-h-14 items-center justify-center gap-2 bg-accent px-7 text-[18px] font-medium text-white transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 motion-reduce:transform-none";
+  const action = "inline-flex min-h-14 w-full items-center justify-center gap-2 whitespace-nowrap bg-accent px-7 text-[18px] font-medium text-white transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 motion-reduce:transform-none";
 
   return (
-    <div className="lp2 bg-paper text-night lg:grid lg:grid-cols-[minmax(0,46fr)_minmax(0,54fr)]">
+    <div className="lp2 relative text-night">
       {/* The fixed half: the real street, changing with the story beside it */}
-      <div className="sticky top-0 z-0 order-2 h-[30svh] overflow-hidden bg-night lg:h-svh">
+      <div className="fixed inset-0 z-0 overflow-hidden bg-night bg-cover bg-center" style={{ backgroundImage: "url(/product/city.jpg)" }}>
         <HeroMap spot={spot} comps={comps} scene={scene} progress={progress} />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-night/35" />
         <ScrollBar />
         <AnimatePresence mode="wait">
           <motion.p key={scene} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}
-            className="pointer-events-none absolute bottom-8 left-5 bg-night px-4 py-2 font-display text-[clamp(1.125rem,0.9rem+1vw,1.75rem)] font-medium tracking-[-0.02em] text-white md:left-8">
+            className="pointer-events-none absolute bottom-6 right-5 bg-night px-4 py-2 font-display md:right-10 text-[clamp(1.125rem,0.9rem+1vw,1.75rem)] font-medium tracking-[-0.02em] text-white md:left-8">
             {SCENES[scene] ?? SCENES[0]}
           </motion.p>
         </AnimatePresence>
       </div>
 
-      <main className="relative z-10 order-1 bg-paper px-5 md:px-10 lg:px-14">
-        <header className="flex items-center justify-between py-6">
+      <main className="relative z-10">
+        <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between bg-night px-5 text-white md:px-10">
           <Link href="/" className="font-display text-2xl font-medium tracking-tight">StrataIQ</Link>
           <nav className="flex items-center gap-5 text-[16px]">
             <RollLink href="#pricing" className="hidden sm:inline-block">Pricing</RollLink>
@@ -233,44 +234,46 @@ export default function Landing() {
           </nav>
         </header>
 
-        <section data-scene className="max-w-[46ch] pb-20 pt-[3svh] lg:min-h-[calc(100svh-5rem)] lg:pt-[7svh]">
-          <WordsIn as="h1" text="See if your location wins before you sign." className="font-display text-[clamp(2.5rem,1.4rem+3vw,4.25rem)] font-medium leading-[0.98] tracking-[-0.035em]" />
+        <section data-scene className="flex min-h-svh flex-col justify-end px-5 pb-8 pt-24 text-white md:px-10 md:pb-10">
+          <WordsIn as="h1" text="See if your location wins before you sign." className="max-w-[15ch] font-display text-[clamp(3.25rem,1.6rem+6.4vw,8.5rem)] font-medium leading-[0.92] tracking-[-0.045em]" />
           <Reveal delay={0.25}>
-            <p className="mt-6 text-[20px] leading-[1.4]">
+            <p className="mt-6 max-w-[58ch] text-[clamp(1.125rem,1rem+0.4vw,1.375rem)] leading-[1.35]">
               StrataIQ puts 10,000 simulated customers on the real streets around your address, then shows your rivals, your break-even and your profit range in minutes.
             </p>
           </Reveal>
           <Reveal delay={0.35}>
-            <form className="mt-7" onSubmit={(e) => { e.preventDefault(); void simulate(idea); }}>
-              <label htmlFor="idea" className="mb-2 block text-[16px] font-medium">Your business idea</label>
-              <input id="idea" aria-label="Your business idea" value={idea} onChange={(e) => setIdea(e.target.value)} placeholder={placeholder}
-                className="min-h-14 w-full bg-white px-4 text-[17px] text-night outline-offset-2 transition-shadow placeholder:text-night/55 focus:outline-2 focus:outline-accent" />
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <form className="mt-7 max-w-3xl" onSubmit={(e) => { e.preventDefault(); void simulate(idea); }}>
+              <label htmlFor="idea" className="sr-only">Your business idea</label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input id="idea" aria-label="Your business idea" value={idea} onChange={(e) => setIdea(e.target.value)} placeholder={placeholder}
+                  className="min-h-14 min-w-0 flex-1 bg-white px-4 text-[18px] text-night outline-offset-2 placeholder:text-night/60 focus:outline-2 focus:outline-white" />
                 <Magnetic>
                   <button type="submit" disabled={busy !== null || idea.trim().length < 3} className={action}>
                     {busy === "idea" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Test my location free
                   </button>
                 </Magnetic>
-                <button type="button" onClick={() => void liveDemo()} disabled={busy !== null} className="min-h-12 text-[17px] underline underline-offset-4 disabled:opacity-60">
-                  {busy === "live" ? "Opening…" : `See ${area}`}
-                </button>
               </div>
-              {goErr && <p role="alert" className="mt-3 text-[16px] text-danger">{goErr}</p>}
+              {goErr && <p role="alert" className="mt-3 bg-white p-2 text-[16px] text-danger">{goErr}</p>}
             </form>
           </Reveal>
           <Reveal delay={0.45}>
-            <dl className="mt-10 grid grid-cols-3 gap-4">
-              {STATS.map(([n, label]) => (
-                <div key={label}>
-                  <dd className="font-display text-[clamp(1.5rem,1rem+1.4vw,2.5rem)] font-medium leading-none tracking-[-0.03em]"><CountUp to={n} /></dd>
-                  <dt className="mt-2 text-[14px] leading-snug">{label}</dt>
-                </div>
-              ))}
-            </dl>
+            <div className="mt-7 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+              <dl className="flex flex-wrap gap-x-10 gap-y-3">
+                {STATS.map(([n, label]) => (
+                  <div key={label}>
+                    <dd className="font-display text-[clamp(1.75rem,1.2rem+1.6vw,3rem)] font-medium leading-none tracking-[-0.03em]"><CountUp to={n} /></dd>
+                    <dt className="mt-1 text-[15px]">{label}</dt>
+                  </div>
+                ))}
+              </dl>
+              <button type="button" onClick={() => void liveDemo()} disabled={busy !== null} className="min-h-12 text-[18px] underline underline-offset-4 disabled:opacity-60">
+                {busy === "live" ? "Opening…" : `See ${area} now`}
+              </button>
+            </div>
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
+        <section data-scene className="relative mx-5 my-[42svh] max-w-xl bg-paper p-7 md:mx-10 md:p-10">
           <WordsIn text="Your competition, mapped live." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">Pick a neighborhood and a business type. Your rivals load from OpenStreetMap right now, on a real 3D map of the block.</p>
@@ -292,7 +295,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
+        <section data-scene className="relative mx-5 my-[42svh] max-w-xl bg-paper p-7 md:mx-10 md:p-10">
           <WordsIn text="Know your customers, block by block." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">
@@ -301,7 +304,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
+        <section data-scene className="relative mx-5 my-[42svh] max-w-xl bg-paper p-7 md:mx-10 md:p-10">
           <WordsIn text="Watch 10,000 customers decide." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">
@@ -310,7 +313,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
+        <section data-scene className="relative mx-5 my-[42svh] max-w-xl bg-paper p-7 md:mx-10 md:p-10">
           <WordsIn text="Change the plan before it costs you." className={HEAD} />
           <Reveal delay={0.15}>
             <ul className="mt-6 space-y-3 text-[18px] leading-[1.45]">
@@ -323,7 +326,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section className="-mx-5 overflow-hidden bg-white px-5 py-24 md:-mx-10 md:px-10 lg:-mx-14 lg:px-14">
+        <section className="relative overflow-hidden bg-white px-5 py-24 md:px-10 lg:px-14">
           <WordsIn text="A report built for the decision." className={HEAD} />
           <Reveal delay={0.15}><p className="mt-5 max-w-[46ch] text-[18px] leading-[1.5]">A clean PDF with your verdict, profit range, charts, risks and next steps.</p></Reveal>
           <div className="mt-10">
@@ -339,12 +342,12 @@ export default function Landing() {
           <RollLink href="/sample-report" className="mt-7 text-[18px] font-medium underline underline-offset-4">Read the sample report</RollLink>
         </section>
 
-        <section className="-mx-5 overflow-hidden bg-paper py-14 md:-mx-10 lg:-mx-14">
+        <section className="relative overflow-hidden bg-paper py-14">
           <p className="mb-6 px-5 text-[18px] font-medium md:px-10 lg:px-14">Built on public data</p>
           <Marquee items={["U.S. Census ACS", "Census LODES jobs", "County Business Patterns", "OpenStreetMap", "Foursquare Places", "WorldPop"]} />
         </section>
 
-        <section id="pricing" className="-mx-5 bg-night px-5 py-24 text-white md:-mx-10 md:px-10 lg:-mx-14 lg:px-14">
+        <section id="pricing" className="relative bg-night px-5 py-24 text-white md:px-10 lg:px-14">
           <WordsIn text="$29 now, or years on the wrong lease." className={HEAD} />
           <div className="mt-10 grid gap-10 sm:grid-cols-2">
             <Reveal>
@@ -359,17 +362,17 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="max-w-[46ch] py-24">
+        <section className="relative bg-paper px-5 py-24 md:px-10 lg:px-14">
           <WordsIn text="Questions founders ask" className={HEAD} />
           {FAQ.map(([q, a]) => (
-            <Reveal key={q} className="mt-9">
+            <Reveal key={q} className="mt-9 max-w-[62ch]">
               <h3 className="text-[20px] font-medium leading-snug">{q}</h3>
               <p className="mt-2 text-[17px] leading-[1.5]">{a}</p>
             </Reveal>
           ))}
         </section>
 
-        <section className="-mx-5 bg-accent px-5 py-20 text-white md:-mx-10 md:px-10 lg:-mx-14 lg:px-14">
+        <section className="relative bg-accent px-5 py-20 text-white md:px-10 lg:px-14">
           <WordsIn text="Which street are you betting on?" className={HEAD} />
           <Reveal delay={0.15}>
             <button onClick={() => { document.getElementById("idea")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -377,7 +380,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <SiteFooter />
+        <div className="relative bg-paper px-5 md:px-10 lg:px-14"><SiteFooter /></div>
       </main>
     </div>
   );
