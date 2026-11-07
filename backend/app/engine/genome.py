@@ -153,6 +153,9 @@ _CAT_ROLE = {
 MODE_BASE_SHARES = np.array([0.283, 0.426] + [0.291 * w / 40 for w in (8, 10, 12, 5, 5)])
 MODES = [("walk", 4.5, 0.55), ("two_wheeler", 18.0, 1.25), ("car", 16.0, 1.4), ("auto", 14.0, 1.1), ("bus", 11.0, 0.95), ("metro", 25.0, 1.2), ("cycle", 10.0, 0.8)]
 
+# km/h. US urban speeds are assumptions, walk to bicycle in MODES order; Indian speeds are the MODES values.
+MODE_SPEEDS = np.array([4.5, 40.0, 40.0, 35.0, 20.0, 35.0, 15.0]) if get_settings().market == "US" else np.array([m[1] for m in MODES])
+
 # ---------------------------------------------------------------- parameter registry
 @dataclass(frozen=True)
 class Param:
@@ -734,7 +737,7 @@ class Genome:
 def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, seg_keys: list[str], seg: np.ndarray, zone_pop: np.ndarray,
              zone_act: np.ndarray, lat: np.ndarray, lng: np.ndarray, zi: np.ndarray, blat: np.ndarray, blng: np.ndarray, circuity: float,
              max_km: float, seg_dt: np.ndarray, hh_size: float = 4.2, income_z: np.ndarray | None = None,
-             dist_km: np.ndarray | None = None, walk_min: np.ndarray | None = None) -> Genome:
+             dist_km: np.ndarray | None = None, walk_min: np.ndarray | None = None, mode_share: np.ndarray | None = None) -> Genome:
     from .geo import haversine_km
 
     N = age.size
@@ -768,10 +771,13 @@ def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, s
     # ---- travel mode from access x preference (multinomial logit)
     acc = np.stack([G[:, KI[f"mb_access_{m[0]}"]] for m in MODES], 1)
     prf = np.stack([G[:, KI[f"mb_pref_{m[0]}"]] for m in MODES], 1)
-    base = np.log(MODE_BASE_SHARES)
-    util = base + 3.0 * (acc - 0.5) + 2.0 * (prf - 0.5) + rng.gumbel(0, 1, (N, len(MODES)))
-    mode = np.argmax(util, 1)
-    speed = np.array([m[1] for m in MODES])[mode]
+    if mode_share is not None:  # real local shares, reproduced exactly: personal preference would pull away from the data
+        mode = np.argmax(np.log(mode_share + 1e-9) + rng.gumbel(0, 1, (N, len(MODES))), 1)
+    else:
+        base = np.log(MODE_BASE_SHARES)
+        util = base + 3.0 * (acc - 0.5) + 2.0 * (prf - 0.5) + rng.gumbel(0, 1, (N, len(MODES)))
+        mode = np.argmax(util, 1)
+    speed = MODE_SPEEDS[mode]
     mtol = np.array([m[2] for m in MODES])[mode]
 
     # ---- real geometry: distances to every business

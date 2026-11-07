@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from app.categories.archetypes import ARCHETYPES
+from app.engine import lives
 from app.engine import model as em
 from app.engine.abm import run_abm
 from app.engine.economics import behaviour as eb
@@ -15,7 +16,12 @@ from app.engine.simulate import simulate
 POOR = [300, 200, 150, 120, 100, 80, 70, 60, 50, 40, 30, 15, 8, 4, 2, 1]
 RICH = [5, 5, 5, 5, 10, 10, 15, 15, 20, 40, 80, 180, 220, 200, 240, 300]
 NATION = [60, 40, 40, 40, 40, 40, 40, 40, 40, 70, 100, 130, 100, 70, 80, 90]
+# Tract 0 is young and walks; tract 1 is old and drives.
+YOUNG = [0, 0, 0, 100, 900, 900, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+OLD = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 400, 400, 200, 100]
 DATA = {"lat": np.array([30.0, 30.1]), "lng": np.array([-97.0, -97.0]), "counts": np.array([POOR, RICH]), "hh_size": np.array([3.0, 2.2]),
+        "age_sex": np.array([YOUNG + [2 * x for x in YOUNG], OLD + OLD]), "modes": np.array([[800, 0, 100, 0, 100, 0, 0], [0, 0, 1000, 0, 0, 0, 0]]),
+        "employed": np.array([5000, 100]), "college": np.array([3000, 0]),
         "nation_counts": np.array(NATION), "nation_hh_size": np.float32(2.5), "year": np.int32(2023)}
 
 spec = importlib.util.spec_from_file_location("build_us_tracts", Path(__file__).parents[1] / "scripts" / "build_us_tracts.py")
@@ -60,6 +66,44 @@ def test_rich_and_poor_neighbourhoods_get_different_segments_and_wtp():
     assert "India" not in " ".join(c["label"] for c in rich.summary["classes"])
     assert rich.summary["histogram"][-1]["hi"] is None and sum(h["share"] for h in rich.summary["histogram"]) == pytest.approx(1.0, abs=0.01)
     assert rich.summary["elasticity"]["status"] == "assumption"
+
+
+def test_agents_inherit_their_own_tracts_age_sex_jobs_and_commute():
+    ctx = iu.build_context([30.0, 30.1], [-97.0, -97.0], state="Texas", data=DATA)
+    zi = np.repeat([0, 1], 20000)
+    band, female = iu.draw_age_sex(np.random.default_rng(1), zi, ctx.people["age_sex"])
+    assert set(np.unique(band[zi == 0])) == {3, 4, 5, 6} and set(np.unique(band[zi == 1])) == {11, 12, 13, 14, 15, 16}
+    assert female[zi == 0].mean() == pytest.approx(2 / 3, abs=0.02)  # tract 0 has twice as many women in this fixture
+    assert female[zi == 1].mean() == pytest.approx(0.5, abs=0.02)
+    assert ctx.people["college_rate"][0] > 0.5 and ctx.people["college_rate"][1] == 0
+    assert ctx.people["employed_rate"][1] < ctx.people["employed_rate"][0]
+    age = np.where(zi == 0, 22.0, 45.0)
+    occupation = lives.assign_occupations(np.random.default_rng(2), age, ctx.people["employed_rate"][zi], ctx.people["college_rate"][zi])
+    assert (occupation[zi == 0] == lives.STUDENT).mean() > 0.5 and (occupation[zi == 1] == lives.STUDENT).sum() == 0
+    assert (occupation[zi == 1] == lives.HOME).mean() == pytest.approx(1 - ctx.people["employed_rate"][1], abs=0.02)
+
+
+def test_real_commute_shares_are_reproduced_by_agents():
+    arch = ARCHETYPES["membership"]
+    zones = [em.Zone(30.0, -97.0, 5000.0), em.Zone(30.1, -97.0, 5000.0)]
+    biz = em.BusinessInputs(30.05, -97.0, price=49.0, rent=1, payroll=1, capacity={"max_members": 700})
+    ctx = iu.build_context([30.0, 30.1], [-97.0, -97.0], state="Texas", data=DATA)
+    beh = eb.build(arch, "gym", ctx, 2)
+    arch2 = eb.apply(arch, beh)
+    out = run_abm(arch2, zones, [], biz, em.ResolvedParams.from_archetype(arch2, {}, beh.params), 49.0, n_agents=8000, days=7, seed=4, income=ctx, behaviour=beh)
+    c = out["agents"]["columns"]
+    rows = out["agents"]["rows"]
+    mode, zone = (np.array([r[c.index(k)] for r in rows]) for k in ("mode", "zone"))
+    assert (mode[zone == 0] == 0).mean() == pytest.approx(0.8, abs=0.03)  # walkers
+    assert (mode[zone == 1] == 2).mean() > 0.97  # drivers
+    assert out["age_source"] == "us_census_tract" and "commute mode" in out["life"]["data_based"]
+
+
+def test_people_tables_group_and_join_correctly():
+    assert build.group_age_sex(list(range(46)))[:5] == [0, 1, 2, 3 + 4, 5 + 6 + 7]
+    assert build.group_age_sex(list(range(46)))[16] == 21 + 22 and build.group_age_sex(list(range(46)))[17] == 23
+    assert len(build.group_age_sex([1] * 46)) == 34 and sum(build.group_age_sex([1] * 46)) == 46
+    assert build.combine_modes(dict.fromkeys([c for g in build.MODE_COLUMNS for c in g], 2.0)) == [2, 2, 2, 2, 2, 6, 2]
 
 
 def test_places_outside_the_data_get_no_income_layer():
@@ -108,6 +152,8 @@ def test_real_extract_matches_published_national_median_and_known_places():
     assert median_household == pytest.approx(78_538, rel=0.02)  # ACS 2019-2023 published national median
     median = lambda la, ln: iu.build_context([la], [ln], state=None).zone_curve[0].median  # noqa: E731
     assert median(37.4613, -122.1975) > 4 * median(40.8176, -73.9182)  # Atherton CA vs South Bronx NY
+    transit = lambda la, ln: (lambda m: m[4:6].sum() / m.sum())(iu.build_context([la], [ln], state=None).people["modes"][0])  # noqa: E731
+    assert transit(40.8176, -73.9182) > 0.3 > transit(33.45, -90.65)  # South Bronx rides transit, the Mississippi Delta does not
     assert iu.build_context([28.6315], [77.2167], state=None) is None  # New Delhi
 
 

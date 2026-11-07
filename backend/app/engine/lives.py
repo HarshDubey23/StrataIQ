@@ -1,6 +1,6 @@
 """What makes a synthetic agent live like a person: a job and weekly routine, a household, friends, and memories of visits.
 
-Every value here is a behavioural assumption, not a measurement. Routines average to 1 for each person and experiences
+Job and college status come from Census rates when a tract is available; everything else here is a behavioural assumption. Routines average to 1 for each person and experiences
 average to 0, so this layer changes who buys and when, without moving total demand by itself.
 """
 from __future__ import annotations
@@ -36,11 +36,16 @@ class Lives:
     friends: np.ndarray  # [N, FRIENDS] agent indices
 
 
-def assign_occupations(rng: np.random.Generator, age: np.ndarray) -> np.ndarray:
+def assign_occupations(rng: np.random.Generator, age: np.ndarray, employed_rate: np.ndarray | None = None, college_rate: np.ndarray | None = None) -> np.ndarray:
+    """With local rates, job and college status follow the agent's tract; only the 20% shift-work split stays assumed."""
     r = rng.random(age.size)
-    return np.select(
-        [age < 18, (age < 25) & (r < 0.55), age >= 70, (age >= 62) & (r < 0.6), r < 0.14, r < 0.34],
-        [STUDENT, STUDENT, RETIRED, RETIRED, HOME, SHIFT], OFFICE)
+    if employed_rate is None or college_rate is None:
+        return np.select(
+            [age < 18, (age < 25) & (r < 0.55), age >= 70, (age >= 62) & (r < 0.6), r < 0.14, r < 0.34],
+            [STUDENT, STUDENT, RETIRED, RETIRED, HOME, SHIFT], OFFICE)
+    studying = (age < 25) & (r < college_rate)
+    working = rng.random(age.size) < employed_rate
+    return np.select([age < 18, studying, age >= 65, ~working, rng.random(age.size) < 0.2], [STUDENT, STUDENT, RETIRED, HOME, SHIFT], OFFICE)
 
 
 def build_routines(rng: np.random.Generator, occupation: np.ndarray, arch_key: str) -> np.ndarray:
@@ -89,8 +94,9 @@ def build_friends(rng: np.random.Generator, zi: np.ndarray, household: np.ndarra
     return np.stack([*home, *near, rng.integers(0, n, n)], 1)
 
 
-def build(rng: np.random.Generator, zi: np.ndarray, age: np.ndarray, household_size: np.ndarray, arch_key: str) -> Lives:
-    occupation = assign_occupations(rng, age)
+def build(rng: np.random.Generator, zi: np.ndarray, age: np.ndarray, household_size: np.ndarray, arch_key: str,
+          employed_rate: np.ndarray | None = None, college_rate: np.ndarray | None = None) -> Lives:
+    occupation = assign_occupations(rng, age, employed_rate, college_rate)
     household = build_households(rng, zi, household_size)
     return Lives(occupation, build_routines(rng, occupation, arch_key), household, build_friends(rng, zi, household))
 

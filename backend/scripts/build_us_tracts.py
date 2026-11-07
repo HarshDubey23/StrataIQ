@@ -16,6 +16,10 @@ ACS = f"https://www2.census.gov/programs-surveys/acs/summary_file/{YEAR}/table-b
 GAZETTEER = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{YEAR}_Gazetteer/{YEAR}_Gaz_tracts_national.zip"
 TRACT, NATION = "1400000US", "0100000US"
 MIN_HOUSEHOLDS = 30  # estimates for near-empty tracts are too noisy to describe a neighbourhood
+# B01001 age bands, grouped into the app's 17 five-year bands (the last is 80+).
+AGE_GROUPS = [[0], [1], [2], [3, 4], [5, 6, 7], [8], [9], [10], [11], [12], [13], [14, 15], [16, 17], [18], [19], [20], [21, 22]]
+# B08301 commute modes in the order of genome.MODES: walk, motorcycle, car, taxi, bus, rail, bicycle.
+MODE_COLUMNS = [["B08301_E019"], ["B08301_E017"], ["B08301_E002"], ["B08301_E016"], ["B08301_E011"], ["B08301_E012", "B08301_E013", "B08301_E014"], ["B08301_E018"]]
 
 
 def fetch(url: str) -> bytes:
@@ -54,30 +58,58 @@ def parse_gazetteer(text: str) -> dict[str, tuple[float, float]]:
     return out
 
 
-def assemble(income: dict, size: dict, places: dict) -> dict:
+def group_age_sex(row: list[float]) -> list[float]:
+    """46 B01001 values (23 male, then 23 female) to 17 male then 17 female five-year bands."""
+    return [sum(row[offset + i] for i in g) for offset in (0, 23) for g in AGE_GROUPS]
+
+
+def assemble(income: dict, size: dict, places: dict, people: dict | None = None) -> dict:
+    """``people`` adds real demographics: age_sex, commute, employment and school tables by GEO_ID."""
     ids, lat, lng, counts, hh = [], [], [], [], []
+    age_sex, modes, employed, college = [], [], [], []
     for geo, row in income.items():
         if not geo.startswith(TRACT) or geo not in size or sum(row) < MIN_HOUSEHOLDS or size[geo][0] <= 0:
             continue
         place = places.get(geo.removeprefix(TRACT))
+        if people is not None and any(geo not in people[k] for k in ("age_sex", "modes", "employment", "school")):
+            continue
         if place:
             ids.append(geo.removeprefix(TRACT))
             lat.append(place[0])
             lng.append(place[1])
             counts.append(row)
             hh.append(size[geo][0])
+            if people is not None:
+                age_sex.append(group_age_sex(people["age_sex"][geo]))
+                modes.append(people["modes"][geo])
+                employed.append(people["employment"][geo][0])
+                college.append(sum(people["school"][geo]))
     assert income.get(NATION) and size.get(NATION), "national row missing"
-    return {"id": np.array(ids), "lat": np.array(lat, np.float32), "lng": np.array(lng, np.float32),
+    extra = {} if people is None else {"age_sex": np.array(age_sex, np.int32), "modes": np.array(modes, np.int32),
+                                       "employed": np.array(employed, np.int32), "college": np.array(college, np.int32)}
+    return {**extra, "id": np.array(ids), "lat": np.array(lat, np.float32), "lng": np.array(lng, np.float32),
             "counts": np.array(counts, np.int32), "hh_size": np.array(hh, np.float32),
             "nation_counts": np.array(income[NATION], np.int64), "nation_hh_size": np.float32(size[NATION][0]), "year": np.int32(YEAR)}
 
 
+def combine_modes(row: dict[str, float]) -> list[float]:
+    return [sum(row[c] for c in group) for group in MODE_COLUMNS]
+
+
 def main(path: str) -> None:
-    income = parse_acs(fetch(ACS.format("b19001")).decode(), [f"B19001_E{i:03d}" for i in range(2, 18)])
-    size = parse_acs(fetch(ACS.format("b25010")).decode(), ["B25010_E001"])
+    table = lambda name, cols: parse_acs(fetch(ACS.format(name)).decode(), cols)  # noqa: E731
+    income = table("b19001", [f"B19001_E{i:03d}" for i in range(2, 18)])
+    size = table("b25010", ["B25010_E001"])
+    flat = [c for group in MODE_COLUMNS for c in group]
+    people = {
+        "age_sex": table("b01001", [f"B01001_E{i:03d}" for i in [*range(3, 26), *range(27, 50)]]),
+        "modes": {g: combine_modes(dict(zip(flat, v))) for g, v in table("b08301", flat).items()},
+        "employment": table("b23025", ["B23025_E004"]),
+        "school": table("b14001", ["B14001_E008", "B14001_E009"]),
+    }
     archive = zipfile.ZipFile(io.BytesIO(fetch(GAZETTEER)))
     places = parse_gazetteer(archive.read(archive.namelist()[0]).decode("latin-1"))
-    data = assemble(income, size, places)
+    data = assemble(income, size, places, people)
     assert len(data["id"]) > 70_000, f"only {len(data['id'])} tracts: the source format may have changed"
     np.savez_compressed(path, **data)
     print(f"{len(data['id'])} tracts written to {path}")

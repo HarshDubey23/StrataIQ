@@ -8,7 +8,7 @@ import { CHANNEL_LABEL, MECH_LABEL, ORIGIN_LABEL, fmtParam, getRegistry, pctColo
 import { money, CUR, LOCALE, US_MARKET } from "@/lib/format";
 import type { AgentXray as Xray, GenomeRegistry } from "@/lib/types";
 
-const MODE_LABEL: Record<string, string> = { walk: "walks", two_wheeler: "two-wheeler", car: "car", auto: "auto", bus: "bus", metro: "metro", cycle: "cycle" };
+const MODE_LABEL: Record<string, string> = US_MARKET ? { walk: "walks", two_wheeler: "motorcycle", car: "car", auto: "taxi", bus: "bus", metro: "rail", cycle: "bicycle" } : { walk: "walks", two_wheeler: "two-wheeler", car: "car", auto: "auto", bus: "bus", metro: "metro", cycle: "cycle" };
 
 function cellBg(v: number) {
   const a = Math.min(1, Math.abs(v) / 2);

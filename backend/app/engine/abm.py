@@ -41,6 +41,7 @@ from ..categories.archetypes import Archetype
 from . import genome as gm
 from . import lives
 from .economics.behaviour import TASTE_SIGMA
+from .economics.income_us import draw_age_sex
 from .economics.income import CLASS_EDGES as INCOME_CLASS_EDGES
 from .model import BusinessInputs, Competitor, ResolvedParams, Zone
 
@@ -162,10 +163,15 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
     jit = spacing_km / 2.2
     lat = zlat[zi] + rng.uniform(-1, 1, N) * jit / 110.574
     lng = zlng[zi] + rng.uniform(-1, 1, N) * jit / (111.32 * math.cos(math.radians(float(np.mean(zlat)))))
-    band_p, fem_p, age_src = _age_dist(age_sex)
-    band = rng.choice(len(AGE_BANDS), size=N, p=band_p)
+    people = getattr(income, "people", None)
+    if people is not None:
+        band, female = draw_age_sex(rng, zi, people["age_sex"])
+        age_src = "us_census_tract"
+    else:
+        band_p, fem_p, age_src = _age_dist(age_sex)
+        band = rng.choice(len(AGE_BANDS), size=N, p=band_p)
+        female = rng.random(N) < fem_p[band]
     age = np.clip(AGE_MID[band] + rng.uniform(-2, 2, N), 0, 95)
-    female = rng.random(N) < fem_p[band]
     mpce = income_z = None
     if income is not None:
         # real-data income: consumption rank on the HCES 2023-24 curve (see economics/income.py)
@@ -194,7 +200,8 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
                 walk_agent = np.maximum(walk_z[zi] + off / 4.5 * 60, 0.5)
     gen = gm.generate(np.random.default_rng(seed + 7), age=age, female=female, seg_keys=[s.key for s in arch.segments], seg=seg,
                       zone_pop=pop, zone_act=act, lat=lat, lng=lng, zi=zi, blat=blat, blng=blng, circuity=P["circuity"],
-                      max_km=P["max_km"], seg_dt=seg_dt, income_z=income_z, dist_km=dist_agent, walk_min=walk_agent)
+                      max_km=P["max_km"], seg_dt=seg_dt, income_z=income_z, dist_km=dist_agent, walk_min=walk_agent,
+                      hh_size=4.2 if people is None else people["hh_size"][zi], mode_share=None if people is None else people["modes"][zi])
     if behaviour is not None and mpce is not None:
         # WTP = reference price x (MPCE / x_ref)^elasticity x taste. The taste factor keeps each agent's generated
         # deviation from its genome (standardised, log-sd = the assumed taste spread); the income part is real data.
@@ -474,7 +481,9 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
 
     habit = np.zeros((N, J))
     cong = np.zeros(N)
-    life = lives.build(np.random.default_rng(seed + 401), zi, age, gget("ev_household_size"), arch.key)
+    people = getattr(income, "people", None)
+    life = lives.build(np.random.default_rng(seed + 401), zi, age, gget("ev_household_size"), arch.key,
+                       None if people is None else people["employed_rate"][zi], None if people is None else people["college_rate"][zi])
     opinion = np.zeros((N, J))  # what each person has come to think of each business, from visits and friends
     spent = np.zeros(N)  # this month's spending in the category
     budget = ref_price * gget("ec_spend_monthly_cat") * np.maximum(pop.freq, 1.0)  # capacity is per usual visit, so frequent visitors budget for it
@@ -751,7 +760,9 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
         "occupation_shares": {name: float((life.occupation == k).mean()) for k, name in enumerate(lives.OCCUPATIONS)},
         "promoters_share": round(float((opinion[tried, 0] >= lives.OPINION_THRESHOLD).mean()) if tried.any() else 0.0, 4),
         "detractors_share": round(float((opinion[tried, 0] <= -lives.OPINION_THRESHOLD).mean()) if tried.any() else 0.0, 4),
-        "note": "Jobs, routines, households, friendships and reactions to visits are behavioural assumptions, not data about real people.",
+        "data_based": ["age", "sex", "income", "household size", "job status", "college enrolment", "commute mode"] if people is not None else [],
+        "assumed": ["weekly routines", "friendships", "reactions to visits", "shift-work share", "taste differences"],
+        "note": "Each agent is synthetic: its traits are drawn from neighbourhood statistics, not copied from any real person.",
     }
     return {
         "life": life_summary,

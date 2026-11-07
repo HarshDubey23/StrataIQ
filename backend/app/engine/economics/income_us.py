@@ -45,6 +45,7 @@ class BracketCurve:
 @dataclass
 class UsIncomeContext(IncomeContext):
     nat: BracketCurve | None = None
+    people: dict | None = None  # [Z] real demographics of each zone's tract, see zone_people()
 
     def draw(self, rng: np.random.Generator, zi: np.ndarray, loading: float | None = None) -> tuple[np.ndarray, np.ndarray]:
         """Monthly income per person and national rank for people living in zones ``zi``."""
@@ -76,6 +77,29 @@ def nearest_tract(zone_lats: np.ndarray, zone_lngs: np.ndarray, tract_lats: np.n
     return near[best], np.sqrt(d[np.arange(zone_lats.size), best])
 
 
+def zone_people(data: dict, idx: np.ndarray) -> dict:
+    """Each zone's tract, as the shares agents are drawn from. All figures are ACS 5-year estimates."""
+    age_sex = data["age_sex"][idx].astype(float)
+    modes = data["modes"][idx].astype(float)
+    bands = age_sex[:, :17] + age_sex[:, 17:]
+    adults = 0.4 * bands[:, 3] + bands[:, 4:13].sum(1)  # about 18 to 64; two fifths of the 15-19 band are 18 or 19
+    young = np.maximum(0.4 * bands[:, 3] + bands[:, 4], 1.0)  # about 18 to 24
+    return {"age_sex": age_sex, "modes": modes, "hh_size": data["hh_size"][idx].astype(float),
+            "employed_rate": np.clip(data["employed"][idx] / np.maximum(adults, 1.0), 0.0, 0.98),
+            "college_rate": np.clip(data["college"][idx] / young, 0.0, 0.95)}
+
+
+def draw_age_sex(rng: np.random.Generator, zi: np.ndarray, age_sex: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Age band and sex for people in zones ``zi``, from each zone's own 17 male + 17 female band counts."""
+    band, female = np.empty(zi.size, int), np.empty(zi.size, bool)
+    for z in np.unique(zi):
+        at = np.flatnonzero(zi == z)
+        p = age_sex[z] + 1e-9
+        pick = rng.choice(34, size=at.size, p=p / p.sum())
+        band[at], female[at] = pick % 17, pick >= 17
+    return band, female
+
+
 def build_context(zone_lats, zone_lngs, *, state: str | None, data: dict | None = None) -> UsIncomeContext | None:
     """The income layer for a catchment, or None when the extract is missing or the zones are outside it."""
     data = data if data is not None else load_tracts()
@@ -89,6 +113,7 @@ def build_context(zone_lats, zone_lngs, *, state: str | None, data: dict | None 
     year = int(data["year"])
     prov = [{"source": "us_census", "name": f"US Census ACS {year} 5-year, household income by tract (B19001, B25010)", "kind": "official_aggregate_estimate",
              "url": "https://www.census.gov/programs-surveys/acs", "license": "US government public data", "source_updated_at": f"ACS {year} 5-year",
-             "detail": f"{len(curves)} tracts cover this catchment. Each zone uses its nearest tract; income per person = household income / average household size / 12"}]
+             "detail": f"{len(curves)} tracts cover this catchment. Each zone uses its nearest tract for income, age, sex, household size, job status, college enrolment and commute mode; "
+                       "income per person = household income / average household size / 12"}]
     return UsIncomeContext("us_tract", np.full(lats.shape, np.nan), state, "urban", 0.0, prov, f"ACS {year}, {len(curves)} tracts", 0.0,
-                           [curves[i] for i in idx.tolist()], BracketCurve(data["nation_counts"], data["nation_hh_size"]))
+                           [curves[i] for i in idx.tolist()], BracketCurve(data["nation_counts"], data["nation_hh_size"]), zone_people(data, idx))
