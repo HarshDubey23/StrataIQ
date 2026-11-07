@@ -7,30 +7,22 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-/** A section part rising into place once. Content stays visible without script or with reduced motion. */
+/** A section part rising into place once. CSS does the moving, so nothing runs per frame. Stays visible without script. */
 export function Reveal({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string }) {
-  const still = useReducedMotion();
-  if (still) return <div className={className}>{children}</div>;
-  return (
-    <motion.div className={className} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-8% 0px" }}
-      transition={{ duration: 0.7, delay, ease: EASE }}>
-      {children}
-    </motion.div>
-  );
+  const ref = useRef<HTMLDivElement>(null);
+  const seen = useInView(ref, { once: true, margin: "-8% 0px" });
+  return <div ref={ref} data-reveal className={`${seen ? "is-in " : ""}${className ?? ""}`} style={{ transitionDelay: `${delay}s` }}>{children}</div>;
 }
 
-/** Word-by-word headline, the Aceternity "text generate" pattern. Screen readers get the sentence once. */
+/** Word-by-word headline with one observer for the line and CSS for the words. Screen readers get the sentence once. */
 export function WordsIn({ text, className, as: Tag = "h2", delay = 0 }: { text: string; className?: string; as?: "h1" | "h2"; delay?: number }) {
-  const still = useReducedMotion();
-  if (still) return <Tag className={className}>{text}</Tag>;
+  const ref = useRef<HTMLHeadingElement>(null);
+  const seen = useInView(ref, { once: true });
   return (
-    <Tag className={className} aria-label={text}>
+    <Tag ref={ref} className={className} aria-label={text}>
       {text.split(" ").map((w, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden pb-[0.08em] align-top">
-          <motion.span className="inline-block" initial={{ y: "105%" }} whileInView={{ y: 0 }} viewport={{ once: true }}
-            transition={{ duration: 0.85, delay: delay + i * 0.055, ease: EASE }}>
-            {w}&nbsp;
-          </motion.span>
+          <span className={`word ${seen ? "is-in" : ""}`} style={{ transitionDelay: `${delay + i * 0.055}s` }}>{w}&nbsp;</span>
         </span>
       ))}
     </Tag>
@@ -96,7 +88,8 @@ export function CountUp({ to }: { to: number }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     if (!seen) return;
-    if (still) return setShown(to);
+    // ticking digits force layout every frame, which a phone cannot spare
+    if (still || window.matchMedia("(pointer: coarse)").matches) return setShown(to);
     return animate(0, to, { duration: 1.4, ease: EASE, onUpdate: (v) => setShown(Math.round(v)) }).stop;
   }, [seen, still, to]);
   return <span ref={ref} className="tabular-nums">{seen ? shown.toLocaleString("en-US") : to.toLocaleString("en-US")}</span>;
@@ -115,8 +108,8 @@ export function Chip({ group, on, tone, onClick, children }: { group: string; on
 /** Reading progress along the top of the fixed map. */
 export function ScrollBar() {
   const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
-  return <motion.div aria-hidden style={{ scaleX }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-white" />;
+  // tied straight to the scroll: the browser can run this off the main thread, a spring cannot
+  return <motion.div aria-hidden style={{ scaleX: scrollYProgress }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-white" />;
 }
 
 /** A card that tilts toward the pointer in 3D, the Aceternity "3D card" pattern. */
@@ -165,9 +158,9 @@ export function Marquee({ items }: { items: string[] }) {
   if (still) return <ul className="flex flex-wrap gap-x-10 gap-y-2 px-5 text-[20px]">{items.map((t) => <li key={t}>{t}</li>)}</ul>;
   return (
     <div className="flex overflow-hidden">
-      <motion.div className="flex" animate={{ x: ["0%", "-50%"] }} transition={{ duration: 34, ease: "linear", repeat: Infinity }}>
+      <div className="ticker">
         {row(false)}{row(true)}
-      </motion.div>
+      </div>
     </div>
   );
 }

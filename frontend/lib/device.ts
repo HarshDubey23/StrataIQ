@@ -14,7 +14,8 @@ export function deviceTier(): Tier {
   }
   if (!gl || save || mem <= 2 || cores <= 2) return "atlas";
   const phone = window.matchMedia("(pointer: coarse)").matches;
-  // a phone's cores say little about its GPU, and 3D buildings cost the most: phones start without them
+  // a phone's core count says little, and Safari hides memory: Android under 6 GB gets the canvas plan, the rest a flat map
+  if (phone && n.deviceMemory !== undefined && mem < 6) return "atlas";
   if (phone || mem <= 4 || cores <= 4 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "lite";
   return "full";
 }

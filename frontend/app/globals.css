@@ -213,6 +213,21 @@ code {
 .rise-3 { animation-delay: 180ms; }
 .rise-4 { animation-delay: 240ms; }
 
+/* one word of a headline rising into place */
+.word {
+  display: inline-block;
+  transform: translateY(105%);
+  transition: transform 0.85s var(--ease-out-expo);
+}
+.word.is-in {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .word {
+    transform: none;
+  }
+}
+
 /* a lot being drawn on the sheet */
 @keyframes lot-in {
   from { transform: scale(0); opacity: 0; }

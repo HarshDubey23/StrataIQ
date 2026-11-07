@@ -4,7 +4,7 @@ import { ArrowDown, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { AnimatePresence, animate, motion, useInView, useReducedMotion } from "motion/react";
 import { CountUp, FactItem, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Stamp, Tilt3D, WipeSection, WordsIn, type Fact } from "@/components/motion";
 import { AtlasKey, BlockPlan, Logo, LogoMark } from "@/components/brand";
@@ -31,6 +31,8 @@ const CATS = [
 
 const HEAD = "font-display text-[clamp(2.5rem,1.6rem+2.8vw,4.25rem)] leading-[1.02]";
 const BIG = "text-[clamp(3rem,1.5rem+6vw,7rem)]";
+const NONE_T: Tract[] = [];
+const NONE_C: PreviewComp[] = [];
 const SHEETS = ["Your address", "Your rivals", "Your neighborhood", "Your customers", "Your numbers"];
 
 const FAQ: [string, string][] = [
@@ -171,29 +173,45 @@ export function useStoryProgress() {
   const [scene, setScene] = useState(0);
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>("[data-scene]"));
-    const on = () => {
-      const mid = window.innerHeight / 2;
-      let p = els.length - 1;
-      for (let i = 0; i < els.length; i++) {
-        const r = els[i].getBoundingClientRect();
-        if (r.top > mid) {
+    let boxes: { top: number; h: number }[] = [];
+    let queued = false;
+    const read = () => {
+      queued = false;
+      const mid = window.scrollY + window.innerHeight / 2;
+      let p = boxes.length - 1;
+      for (let i = 0; i < boxes.length; i++) {
+        const b = boxes[i];
+        if (b.top > mid) {
           p = i - 0.5;
           break;
         }
-        if (r.bottom > mid) {
-          p = i + (mid - r.top) / r.height - 0.5;
+        if (b.top + b.h > mid) {
+          p = i + (mid - b.top) / b.h - 0.5;
           break;
         }
       }
-      progress.current = Math.max(0, Math.min(els.length - 1, p));
+      progress.current = Math.max(0, Math.min(boxes.length - 1, p));
       setScene(Math.round(progress.current));
     };
-    on();
+    const on = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(read);
+    };
+    const measure = () => {
+      boxes = els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top + window.scrollY, h: r.height };
+      });
+      on();
+    };
+    measure();
     window.addEventListener("scroll", on, { passive: true });
-    window.addEventListener("resize", on);
+    const resized = new ResizeObserver(measure);
+    resized.observe(document.body);
     return () => {
       window.removeEventListener("scroll", on);
-      window.removeEventListener("resize", on);
+      resized.disconnect();
     };
   }, []);
   return { progress, scene };
@@ -242,14 +260,15 @@ interface Preview {
 }
 
 /** Lines of type printed on the map as labels: the city stays visible and every word stays readable. */
-function Strips({ lines, as: Tag = "h2", className, tone = "bg-paper text-night", delay = 0, label }: { lines: ReactNode[]; as?: "h1" | "h2" | "p"; className?: string; tone?: string; delay?: number; label?: string }) {
-  const still = useReducedMotion();
+function Strips({ lines, as: Tag = "h2", className, tone = "bg-paper text-night", delay = 0, label, ready = false }: { lines: ReactNode[]; as?: "h1" | "h2" | "p"; className?: string; tone?: string; delay?: number; label?: string; ready?: boolean }) {
+  const reducedMotion = useReducedMotion();
+  const still = reducedMotion || ready;
   return (
     <Tag className={`font-display leading-[1.12] ${className ?? ""}`} aria-label={label}>
       {lines.map((l, i) => (
         // each line rises out of its own mask: transform only, smooth even on a weak GPU
         <span key={i} className="-mt-px block w-fit overflow-hidden">
-          <motion.span className={`strip block border border-night px-[0.2em] pb-[0.06em] will-change-transform ${tone}`}
+          <motion.span className={`strip block border border-night px-[0.2em] pb-[0.06em] ${tone}`}
             initial={still ? false : { y: "102%" }} animate={{ y: 0 }} exit={still ? undefined : { y: "-102%", transition: { duration: 0.2, ease: [0.76, 0, 0.24, 1] } }}
             transition={{ duration: 0.5, delay: delay + i * 0.05, ease: [0.16, 1, 0.3, 1] }}>
             {l}
@@ -282,17 +301,99 @@ function Note({ children, delay = 0.4 }: { children: ReactNode; delay?: number }
 function DayCounter({ progress }: { progress: MutableRefObject<number> }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    let raf = 0;
+    let shown = 0;
+    // on scroll only, and only a new number: rewriting the text every frame forces layout
     const tick = () => {
       const day = 1 + Math.round(Math.max(0, Math.min(1, progress.current - 2.6)) * 83);
-      if (ref.current) ref.current.textContent = String(day);
-      raf = requestAnimationFrame(tick);
+      if (day !== shown && ref.current) ref.current.textContent = String((shown = day));
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    tick();
+    window.addEventListener("scroll", tick, { passive: true });
+    return () => window.removeEventListener("scroll", tick);
   }, [progress]);
   return <span ref={ref} className="num">1</span>;
 }
+
+const scrollToAddress = () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.getElementById("address")?.focus();
+};
+
+/** Everything under the story. It has no state, so a scene change never re-renders it. */
+const Below = memo(function Below() {
+  return (
+    <>
+        <WipeSection className="relative overflow-hidden border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center">
+            <div>
+              <WordsIn text="A report built for the decision." className={HEAD} />
+              <Reveal delay={0.15}><p className="mt-5 text-[18px] leading-[1.5]">A clean PDF with your verdict, profit range, charts and next steps.</p></Reveal>
+              <ul className="mt-6 space-y-2">{PLAN.map((x) => <FactItem key={x.label} fact={x} />)}</ul>
+              <RollLink href="/sample-report" className="mt-6 border-b border-current text-[18px] font-medium">Read the sample report</RollLink>
+            </div>
+            <ScrollOut>
+              <Tilt3D>
+                <Link href="/sample-report" aria-label="Open the sample report">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/product/report.png" alt="The first page of a StrataIQ report for a gym in South Austin, with the verdict, key numbers and charts" width={1440} height={1100} loading="lazy" className="w-full border border-night bg-paper" />
+                </Link>
+              </Tilt3D>
+            </ScrollOut>
+          </div>
+        </WipeSection>
+
+        <section className="relative overflow-hidden border-t border-night bg-paper py-14">
+          <p className="mb-6 px-5 text-[18px] font-semibold md:px-10 lg:px-14">Built on public data</p>
+          <Marquee items={["U.S. Census ACS", "Census LODES jobs", "County Business Patterns", "OpenStreetMap", "Foursquare Places", "WorldPop"]} />
+        </section>
+
+        <section id="pricing" className="relative border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
+          <div className="mx-auto max-w-6xl">
+            <WordsIn text="$29 now, or years on the wrong lease." className={HEAD} />
+            <div className="mt-10 grid gap-10 sm:grid-cols-2">
+              <Reveal>
+                <p className="font-display text-[5rem] leading-none">Free</p>
+                <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">Your first look: the live map, your rivals and your break-even point.</p>
+                <button onClick={scrollToAddress} className="mt-4 border-b border-current text-[18px] font-medium">Start with an address</button>
+              </Reveal>
+              <Reveal delay={0.1}>
+                <Stamp className="font-display text-[5rem] leading-none">$29</Stamp>
+                <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">The full report for one location: profit range, price tests, your walk-away rent, a counteroffer letter and your checklist. One payment, no subscription.</p>
+                <RollLink href="/sample-report" className="mt-4 border-b border-current text-[18px] font-medium">See a sample report</RollLink>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        <section className="relative border-t border-night bg-paper px-5 py-24 md:px-10 lg:px-14">
+          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_1.5fr]">
+            <WordsIn text="Questions founders ask" className={HEAD} />
+            <div>
+              {FAQ.map(([q, ans]) => (
+                <Reveal key={q} className="border-t border-night py-6">
+                  <h3 className="text-[20px] font-semibold leading-snug">{q}</h3>
+                  <p className="mt-2 max-w-[62ch] text-[17px] leading-[1.5]">{ans}</p>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <WipeSection className="relative overflow-hidden border-t border-night bg-you px-5 py-28 text-night md:px-10 lg:px-14">
+          <DrawnBlock />
+          <div className="relative md:max-w-[46%]">
+            <WordsIn text="Which street are you betting on?" className={HEAD} />
+            <Reveal delay={0.15}>
+              <button onClick={scrollToAddress}
+                className="mt-7 inline-flex min-h-14 items-center bg-night px-7 text-[18px] font-semibold text-white transition-colors hover:bg-atlas active:translate-y-px">Test it free</button>
+            </Reveal>
+          </div>
+        </WipeSection>
+
+        <div className="relative border-t border-night bg-paper px-5 md:px-10 lg:px-14"><div className="mx-auto max-w-6xl"><SiteFooter /></div></div>
+    </>
+  );
+});
 
 export default function Landing() {
   const [first] = useState(() => {
@@ -302,7 +403,6 @@ export default function Landing() {
       return false;
     }
   });
-  const lift = first ? 1.15 : 0;
   const router = useRouter();
   const [spot, setSpot] = useState<Spot>(SPOTS[0]);
   const [cat, setCat] = useState("gym");
@@ -354,13 +454,10 @@ export default function Landing() {
   }, [load]);
 
   useEffect(() => {
-    const on = () => {
-      const b = storyEnd.current?.getBoundingClientRect().bottom ?? 1;
-      setInStory(b > window.innerHeight * 0.55);
-    };
-    on();
-    window.addEventListener("scroll", on, { passive: true });
-    return () => window.removeEventListener("scroll", on);
+    if (!storyEnd.current) return;
+    const seen = new IntersectionObserver(([e]) => setInStory(e.isIntersecting), { rootMargin: "0px 0px -45% 0px" });
+    seen.observe(storyEnd.current);
+    return () => seen.disconnect();
   }, []);
 
   const goTo = (i: number) => document.querySelectorAll("[data-scene]")[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -409,7 +506,7 @@ export default function Landing() {
   }
 
   const c = CATS.find((x) => x.key === cat)!;
-  const comps = preview?.spot && Math.abs(preview.spot.lat - spot.lat) < 1e-6 ? preview.competitors : [];
+  const comps = preview?.spot && Math.abs(preview.spot.lat - spot.lat) < 1e-6 ? preview.competitors : NONE_C;
   const named = comps.map((x) => x.name).filter((n) => n && n !== "Unnamed");
   const firstPart = spot.label.split(",")[0];
   const area = /^\d/.test(firstPart) || firstPart.length > 22 ? "this address" : firstPart;
@@ -426,8 +523,8 @@ export default function Landing() {
       <Opening first={first} />
       {/* The one continuous shot: the real street stays under the whole story */}
       <div className="fixed inset-0 z-0 overflow-hidden bg-atlas">
-        {tier === "atlas" && <AtlasLite spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} active={inStory} />}
-        {(tier === "full" || tier === "lite") && <HeroMap spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} crosshair={tier === "full"} quality={tier} active={inStory} pillar={t ? rentNow / t.rent / 1.2 : 1} onStruggling={() => setTier("atlas")} />}
+        {tier === "atlas" && <AtlasLite spot={spot} comps={comps} tracts={a?.tracts ?? NONE_T} scene={scene} progress={progress} active={inStory} />}
+        {(tier === "full" || tier === "lite") && <HeroMap spot={spot} comps={comps} tracts={a?.tracts ?? NONE_T} scene={scene} progress={progress} crosshair={tier === "full"} quality={tier} active={inStory} pillar={t ? rentNow / t.rent / 1.2 : 1} onStruggling={() => setTier("atlas")} />}
         <div className="absolute inset-x-0 top-16 z-10"><ScrollBar /></div>
       </div>
 
@@ -451,8 +548,8 @@ export default function Landing() {
               <AnimatePresence>
                 {scene === 0 && (
                   <motion.div key="s0" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="pointer-events-auto absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
-                    <Strips as="h1" delay={lift} label="Know your numbers before you sign the lease." lines={["Know your", "numbers before", "you sign the lease."]} className={BIG} />
-                    <motion.form initial={reduced() ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: lift + 0.5, ease: [0.16, 1, 0.3, 1] }} onSubmit={find}
+                    <Strips as="h1" ready label="Know your numbers before you sign the lease." lines={["Know your", "numbers before", "you sign the lease."]} className={BIG} />
+                    <form onSubmit={find}
                       className="sheet mt-4 flex max-w-[52rem] flex-col gap-2 p-3 md:flex-row md:items-center">
                       <div className="flex items-center gap-2 font-display text-[22px]">
                         <label htmlFor="category" className="whitespace-nowrap">I&apos;m opening a</label>
@@ -467,12 +564,12 @@ export default function Landing() {
                           {finding && <Loader2 className="h-4 w-4 animate-spin" />} See this street
                         </button>
                       </Magnetic>
-                    </motion.form>
+                    </form>
                     {findErr && <p role="alert" className="sheet mt-1 w-fit px-3 py-1.5 text-[15px] text-danger">{findErr}</p>}
-                    <motion.button initial={reduced() ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: lift + 0.8 }} onClick={() => goTo(1)}
+                    <button onClick={() => goTo(1)}
                       className="sheet mt-2 inline-flex min-h-10 items-center gap-2 px-3 text-[15px] font-medium hover:bg-white">
                       <ArrowDown className="h-4 w-4" /> Or scroll, and see {area} first
-                    </motion.button>
+                    </button>
                   </motion.div>
                 )}
                 {scene === 1 && (
@@ -499,7 +596,7 @@ export default function Landing() {
                           <Strips as="p" delay={0.25} lines={[<span key="i" className="num">{money(a.median_household_income, { compact: true })}</span>, <span key="il" className="block font-sans text-[15px] font-medium leading-[1.5]">median household income</span>]} className="text-[clamp(2rem,1.2rem+2.4vw,3.5rem)]" />
                           <Strips as="p" delay={0.35} lines={[<span key="j" className="num">{num(a.jobs)}</span>, <span key="jl" className="block font-sans text-[15px] font-medium leading-[1.5]">jobs located here</span>]} className="text-[clamp(2rem,1.2rem+2.4vw,3.5rem)]" />
                         </div>
-                        <Note delay={0.55}>Each pink column is a real Census tract, as tall as its population. {a.source}.</Note>
+                        <Note delay={0.55}>Each pink mark is a real Census tract, sized by its population. {a.source}.</Note>
                       </>
                     ) : <Strips lines={["Reading the", "Census…"]} className={BIG} />}
                   </motion.div>
@@ -560,74 +657,7 @@ export default function Landing() {
           {SHEETS.slice(1).map((l) => <section key={l} data-scene className="h-[135svh]" aria-hidden />)}
         </div>
 
-        <WipeSection className="relative overflow-hidden border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center">
-            <div>
-              <WordsIn text="A report built for the decision." className={HEAD} />
-              <Reveal delay={0.15}><p className="mt-5 text-[18px] leading-[1.5]">A clean PDF with your verdict, profit range, charts and next steps.</p></Reveal>
-              <ul className="mt-6 space-y-2">{PLAN.map((x) => <FactItem key={x.label} fact={x} />)}</ul>
-              <RollLink href="/sample-report" className="mt-6 border-b border-current text-[18px] font-medium">Read the sample report</RollLink>
-            </div>
-            <ScrollOut>
-              <Tilt3D>
-                <Link href="/sample-report" aria-label="Open the sample report">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/product/report.png" alt="The first page of a StrataIQ report for a gym in South Austin, with the verdict, key numbers and charts" width={1440} height={1100} loading="lazy" className="w-full border border-night bg-paper" />
-                </Link>
-              </Tilt3D>
-            </ScrollOut>
-          </div>
-        </WipeSection>
-
-        <section className="relative overflow-hidden border-t border-night bg-paper py-14">
-          <p className="mb-6 px-5 text-[18px] font-semibold md:px-10 lg:px-14">Built on public data</p>
-          <Marquee items={["U.S. Census ACS", "Census LODES jobs", "County Business Patterns", "OpenStreetMap", "Foursquare Places", "WorldPop"]} />
-        </section>
-
-        <section id="pricing" className="relative border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
-          <div className="mx-auto max-w-6xl">
-            <WordsIn text="$29 now, or years on the wrong lease." className={HEAD} />
-            <div className="mt-10 grid gap-10 sm:grid-cols-2">
-              <Reveal>
-                <p className="font-display text-[5rem] leading-none">Free</p>
-                <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">Your first look: the live map, your rivals and your break-even point.</p>
-                <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); document.getElementById("address")?.focus(); }} className="mt-4 border-b border-current text-[18px] font-medium">Start with an address</button>
-              </Reveal>
-              <Reveal delay={0.1}>
-                <Stamp className="font-display text-[5rem] leading-none">$29</Stamp>
-                <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">The full report for one location: profit range, price tests, your walk-away rent, a counteroffer letter and your checklist. One payment, no subscription.</p>
-                <RollLink href="/sample-report" className="mt-4 border-b border-current text-[18px] font-medium">See a sample report</RollLink>
-              </Reveal>
-            </div>
-          </div>
-        </section>
-
-        <section className="relative border-t border-night bg-paper px-5 py-24 md:px-10 lg:px-14">
-          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_1.5fr]">
-            <WordsIn text="Questions founders ask" className={HEAD} />
-            <div>
-              {FAQ.map(([q, ans]) => (
-                <Reveal key={q} className="border-t border-night py-6">
-                  <h3 className="text-[20px] font-semibold leading-snug">{q}</h3>
-                  <p className="mt-2 max-w-[62ch] text-[17px] leading-[1.5]">{ans}</p>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <WipeSection className="relative overflow-hidden border-t border-night bg-you px-5 py-28 text-night md:px-10 lg:px-14">
-          <DrawnBlock />
-          <div className="relative md:max-w-[46%]">
-            <WordsIn text="Which street are you betting on?" className={HEAD} />
-            <Reveal delay={0.15}>
-              <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); document.getElementById("address")?.focus(); }}
-                className="mt-7 inline-flex min-h-14 items-center bg-night px-7 text-[18px] font-semibold text-white transition-colors hover:bg-atlas active:translate-y-px">Test it free</button>
-            </Reveal>
-          </div>
-        </WipeSection>
-
-        <div className="relative border-t border-night bg-paper px-5 md:px-10 lg:px-14"><div className="mx-auto max-w-6xl"><SiteFooter /></div></div>
+        <Below />
       </main>
     </div>
   );

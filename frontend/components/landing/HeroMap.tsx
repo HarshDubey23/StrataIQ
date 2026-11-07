@@ -218,16 +218,16 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
             const H = 90;
             (m.getSource("rivals") as GeoJSONSource).setData(FC(S.comps.slice(0, S.low ? 120 : 300).map((q) => {
               const km = Math.hypot((q.lat - S.spot.lat) * 111.32, (q.lng - S.spot.lng) * kmLng);
-              return cube(q.lng, q.lat, 16, H * easeOut(clamp01((riseAge - 200 - km * 600) / 500)));
+              return cube(q.lng, q.lat, 16, S.low ? H : H * easeOut(clamp01((riseAge - 200 - km * 600) / 500)));
             })));
             S.lastData = now;
-            if (riseAge > 2400) S.riseDone = true;
+            if (S.low || riseAge > 2400) S.riseDone = true;
           }
 
           // census cubes grow in scene 2 and leave after it
           const tractTarget = sc === 2 ? 1 : 0;
           if (Math.abs(S.tractK - tractTarget) > 0.004 && dataDue) {
-            S.tractK += (tractTarget - S.tractK) * (1 - Math.exp(-dt / 160)) * 2;
+            S.tractK = S.low ? tractTarget : S.tractK + (tractTarget - S.tractK) * (1 - Math.exp(-dt / 160)) * 2;
             S.tractK = clamp01(S.tractK);
             if (Math.abs(S.tractK - tractTarget) <= 0.01) S.tractK = tractTarget;
             const most = S.tracts.reduce((a, t) => Math.max(a, t.people), 1);
@@ -236,9 +236,9 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
           }
 
           // your site: its height follows the rent you drag
-          const pTarget = sc === 4 ? 200 + 240 * S.pillar : 300;
+          const pTarget = sc === 4 ? 150 + 200 * S.pillar : S.low ? 170 : 300;
           if (Math.abs(S.pillarH - pTarget) > 1 && dataDue) {
-            S.pillarH += (pTarget - S.pillarH) * (1 - Math.exp(-dt / 120));
+            S.pillarH = S.low ? pTarget : S.pillarH + (pTarget - S.pillarH) * (1 - Math.exp(-dt / 120));
             (m.getSource("site") as GeoJSONSource).setData(FC([cube(S.spot.lng, S.spot.lat, 26, S.pillarH)]));
             S.lastData = now;
           }
