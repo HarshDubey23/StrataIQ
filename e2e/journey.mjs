@@ -14,6 +14,9 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 // The first-visit product tour is a modal; the journey tests the app behind it, so mark it seen.
 await ctx.addInitScript(() => { try { localStorage.setItem("siq-tour-seen", "1"); } catch { /* ignore */ } });
 const page = await ctx.newPage();
+// Attached from the start so a frozen page can still be paused, to show the code it is stuck in.
+const cdp = await ctx.newCDPSession(page);
+await cdp.send("Debugger.enable");
 // Requests still open, logged when a step fails: a browser allows six per host, so stuck ones can block navigation.
 const open = new Map();
 page.on("request", (r) => open.set(r, Date.now()));
@@ -50,6 +53,10 @@ async function diagnose() {
   await timed("server proxy", async () => (await fetch(`${BASE}/api/health`)).status);
   await timed("browser script", () => page.evaluate(() => document.readyState));
   L(`  diagnose open requests: ${JSON.stringify(openRequests())}`);
+  const stack = new Promise((ok) => cdp.once("Debugger.paused", (e) => ok(e.callFrames.slice(0, 14).map((f) => `${f.functionName || "(anon)"} ${f.url.replace(/^.*\/_next\/static\/chunks\//, "")}:${f.location.lineNumber}:${f.location.columnNumber}`))));
+  await cdp.send("Debugger.pause").catch((e) => L(`  diagnose pause failed: ${e}`));
+  await timed("frozen at", () => stack.then((frames) => JSON.stringify(frames)));
+  await cdp.send("Debugger.resume").catch(() => {});
 }
 async function step(name, fn) {
   try { await fn(); L(`OK   ${name}`); }
