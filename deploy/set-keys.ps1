@@ -1,6 +1,6 @@
 # Put optional provider keys on the server. You type them here, so they never enter chat, files or git.
 #   powershell -ExecutionPolicy Bypass -File deploy\set-keys.ps1
-$az = "C:Program FilesMicrosoft SDKsAzureCLI2python.exe"
+$az = "C:\Program Files\Microsoft SDKs\Azure\CLI2\python.exe"
 
 function Read-Key($label) {
     $secure = Read-Host "$label (leave empty to skip)" -AsSecureString
