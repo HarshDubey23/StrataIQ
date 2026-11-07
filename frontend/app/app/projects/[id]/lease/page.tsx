@@ -8,9 +8,8 @@ import { Button, ButtonLink, cn, EmptyState, ErrorState, Evidence, Field, Number
 import { api, ApiError } from "@/lib/api";
 import { money, num, pct } from "@/lib/format";
 import { analyze, counterLetter, guaranteeExposure, monthRent, occupancyCeiling, openingCounter, totalCost, type Asks, type Guarantee, type LeaseTerms } from "@/lib/lease";
-import type { SimResult } from "@/lib/types";
+import type { Run, SimResult } from "@/lib/types";
 
-type Run = { result?: SimResult } & Partial<SimResult>;
 const SPRING = { type: "spring", stiffness: 260, damping: 30 } as const;
 const sf = (x: number) => `$${Number.isInteger(x) ? x.toLocaleString("en-US") : x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -99,6 +98,7 @@ export default function LeaseCounter() {
   const sc = p.scenarios?.find((s) => s.is_baseline) ?? p.scenarios?.[0];
   const runId = sc?.latest_run?.id;
   const [res, setRes] = useState<SimResult | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const KEY = `siq-lease-${p.id}`;
 
@@ -113,7 +113,12 @@ export default function LeaseCounter() {
 
   useEffect(() => {
     if (!runId) return;
-    api<Run>(`/simulation-runs/${runId}/results`).then((r) => setRes((r.result ?? r) as SimResult)).catch((e) => setError(e instanceof ApiError ? e.message : "Could not load your simulation"));
+    api<Run>(`/simulation-runs/${runId}/results`)
+      .then((r) => {
+        setRes(r.results || null);
+        setLoaded(true);
+      })
+      .catch((e) => setError(e instanceof ApiError ? e.message : "Could not load your simulation"));
   }, [runId]);
 
   const biz = useMemo(() => {
@@ -155,7 +160,8 @@ export default function LeaseCounter() {
     }
   }, [offer, counter, asks, tenant, edited, KEY]);
 
-  if (!sc || !runId)
+  // no run yet, or one that is still running or failed: there is nothing to work from
+  if (!sc || !runId || (loaded && !res?.finance))
     return <div className="p-6"><EmptyState title="Run your market first" body="The Lease Counter uses your costs and forecast, so it needs one simulation." action={<ButtonLink href={`/app/projects/${p.id}/live`} variant="next">Run the live market</ButtonLink>} /></div>;
   if (error) return <div className="p-6"><ErrorState message={error} /></div>;
   if (!biz || !offer || !counter) return <div className="space-y-3 p-6"><Skeleton className="h-40" /><Skeleton className="h-96" /></div>;
