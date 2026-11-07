@@ -39,9 +39,21 @@ async function shot(name) {
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: false });
   L(`shot ${name} @ ${page.url().replace(BASE, "")}`);
 }
+// When a step fails, tell apart a stuck server from a stuck browser page.
+async function diagnose() {
+  const timed = async (label, work) => {
+    const t = Date.now();
+    const r = await Promise.race([work().catch((e) => `error ${e}`), new Promise((ok) => setTimeout(() => ok("no answer in 10s"), 10000))]);
+    L(`  diagnose ${label}: ${r} after ${Date.now() - t}ms`);
+  };
+  await timed("server page", async () => (await fetch(`${BASE}/methodology`)).status);
+  await timed("server proxy", async () => (await fetch(`${BASE}/api/health`)).status);
+  await timed("browser script", () => page.evaluate(() => document.readyState));
+  L(`  diagnose open requests: ${JSON.stringify(openRequests())}`);
+}
 async function step(name, fn) {
   try { await fn(); L(`OK   ${name}`); }
-  catch (e) { failures++; L(`FAIL ${name}: ${String(e).slice(0, 400)}`); await page.screenshot({ path: `${OUT}/FAIL-${name.replace(/\W+/g, "_")}.png` }).catch(() => {}); }
+  catch (e) { failures++; L(`FAIL ${name}: ${String(e).slice(0, 400)}`); await diagnose(); await page.screenshot({ path: `${OUT}/FAIL-${name.replace(/\W+/g, "_")}.png` }).catch(() => {}); }
 }
 const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
   const r = await fetch(`/api/v1${p}`, { method: m, headers: b ? { "Content-Type": "application/json" } : {}, body: b ? JSON.stringify(b) : undefined, credentials: "include" });
