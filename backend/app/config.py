@@ -51,7 +51,7 @@ class Settings:
     # Speko voice gateway: LLM brain + Hinglish TTS for the voice analyst
     speko_api_key: str = field(default_factory=lambda: os.getenv("SPEKO_API_KEY", ""))
     speko_url: str = field(default_factory=lambda: os.getenv("SPEKO_URL", "https://api.speko.dev"))
-    speko_voice: str = field(default_factory=lambda: os.getenv("SPEKO_VOICE", "cb9c954d-bcaa-43ed-82bf-aeb5e88a3cb5"))  # Cartesia Hindi male
+    speko_voice: str = field(default_factory=lambda: os.getenv("SPEKO_VOICE", "" if os.getenv("MARKET", "US").upper() == "US" else "cb9c954d-bcaa-43ed-82bf-aeb5e88a3cb5"))  # empty: the provider's default voice
     http_timeout_s: float = field(default_factory=lambda: float(os.getenv("HTTP_TIMEOUT_S", "40")))
     persons_per_building: float = field(default_factory=lambda: float(os.getenv("PERSONS_PER_BUILDING", "12")))
     abm_agents: int = field(default_factory=lambda: int(os.getenv("ABM_AGENTS", "10000")))

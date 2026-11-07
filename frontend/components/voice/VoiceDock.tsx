@@ -18,6 +18,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { cn } from "@/components/ui";
 import { readPage, readScreen, sendStrategy } from "@/lib/screen";
+import { US_MARKET } from "@/lib/format";
 import { route, type Tools } from "./route";
 import { GLOSSARY } from "@/components/Journey";
 import { quickCreate } from "@/components/QuickStart";
@@ -82,7 +83,10 @@ async function jfetch<T>(url: string, init?: RequestInit & { json?: unknown }): 
   return body as T;
 }
 
-const SUGGESTIONS = {
+const SUGGESTIONS = US_MARKET ? {
+  project: ["What's on this screen?", "Where's the best location?", "Set rent to 8,000", "How can profit grow?"],
+  general: ["I want to open a cafe in Austin", "Show me a live demo", "Open my projects", "What does StrataIQ do?"],
+} : {
   project: ["Screen pe kya dikh raha hai?", "Best location kahan hai?", "Rent 80 hazaar kar do", "Field researcher bhejo", "Profit kaise badhega?", "Report bana do"],
   general: ["Mujhe Indiranagar me café kholna hai", "Live demo dikhao", "Mere projects kholo", "StrataIQ kya karta hai?"],
 };
@@ -453,7 +457,7 @@ function VoiceDockInner() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const pick = () => {
       const score = (v: SpeechSynthesisVoice) =>
-        (v.lang === "en-IN" ? 12 : v.lang === "hi-IN" ? 11 : v.lang.startsWith("en") ? 2 : 0) +
+        (US_MARKET ? (v.lang === "en-US" ? 12 : v.lang.startsWith("en") ? 4 : 0) : v.lang === "en-IN" ? 12 : v.lang === "hi-IN" ? 11 : v.lang.startsWith("en") ? 2 : 0) +
         (/natural|neural|online/i.test(v.name) ? 8 : 0) + (/google/i.test(v.name) ? 3 : 0) + (/neerja|swara|prabhat|madhur/i.test(v.name) ? 2 : 0);
       voiceRef.current = [...window.speechSynthesis.getVoices()].sort((x, y) => score(y) - score(x))[0] || null;
     };
@@ -681,7 +685,7 @@ function VoiceDockInner() {
         history.current = []; // a half-finished tool exchange must not be replayed
         if (toolRan.current) {
           // the action already happened; running the fallback router would do it twice
-          const msg = "Kaam kar diya hai, screen pe dekh lo. Bas jawab bolne me dikkat aayi — kuch aur poochna ho to bolo.";
+          const msg = US_MARKET ? "That's done, it's on your screen. I had trouble reading the answer aloud, so ask me again if you need more." : "Kaam kar diya hai, screen pe dekh lo. Bas jawab bolne me dikkat aayi — kuch aur poochna ho to bolo.";
           push("strata", msg);
           await speak(msg);
           return;
@@ -692,7 +696,8 @@ function VoiceDockInner() {
           push("strata", line);
           void speak(line);
         };
-        const ans = await route(q, tools as unknown as Tools, { projectOpen: !!pidRef.current, say });
+        // shortcut: the built-in fallback router only understands Hinglish, so US visitors skip it; add English rules if Speko downtime hurts.
+        const ans = US_MARKET ? null : await route(q, tools as unknown as Tools, { projectOpen: !!pidRef.current, say });
         if (ans) {
           push("strata", ans);
           await speak(ans);
@@ -729,7 +734,7 @@ function VoiceDockInner() {
     const rec = new SR();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = "en-IN"; // keeps Hinglish in Latin script, which the backend intent router understands
+    rec.lang = US_MARKET ? "en-US" : "en-IN"; // en-IN keeps Hinglish in Latin script, which the backend intent router understands
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (ev: any) => {
       let fin = "";
@@ -973,7 +978,7 @@ function VoiceDockInner() {
           <div className="mt-4 max-h-64 space-y-2.5 overflow-y-auto px-5 pb-1 text-[13.5px] leading-relaxed">
             {turns.length === 0 && !interim && (
               <p className="text-ink-400">
-                Bas bolo — Hinglish, Hindi ya English. Strata khud project banata hai, data load karta hai, plan badalta hai, researcher bhejta hai aur report banata hai. Har number simulation se aata hai, guess se nahi.
+                {US_MARKET ? "Just talk. Strata creates the project, loads the data, changes your plan and runs the numbers for you." : "Bas bolo — Hinglish, Hindi ya English."} {!US_MARKET && `Strata khud project banata hai, data load karta hai, plan badalta hai, researcher bhejta hai aur report banata hai. Har number simulation se aata hai, guess se nahi.`}
               </p>
             )}
             {turns.map((t) => (
@@ -1051,7 +1056,7 @@ function VoiceDockInner() {
         {/* compact by default so it never covers page actions; the label slides out on hover or while talking */}
         <span className={cn("overflow-hidden whitespace-nowrap text-left transition-[max-width,padding] duration-500", active ? "max-w-60 pl-3 pr-3" : "max-w-0 group-hover:max-w-60 group-hover:pl-3 group-hover:pr-3")}>
           <span className="block text-[13px] font-medium text-ink-100">{active ? statusText[phase] : "Strata se baat karo"}</span>
-          <span className="block text-[11px] text-ink-400">{active ? "tap to stop" : "press V · Hinglish"}</span>
+          <span className="block text-[11px] text-ink-400">{active ? "tap to stop" : (US_MARKET ? "press V to talk" : "press V · Hinglish")}</span>
         </span>
       </button>
     </div>

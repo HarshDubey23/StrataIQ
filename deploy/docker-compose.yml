@@ -22,6 +22,7 @@ services:
         NEXT_PUBLIC_MARKET: ${MARKET:-US}
         NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
         NEXT_PUBLIC_PAYMENT_URL: ${PAYMENT_URL:-}
+        NEXT_PUBLIC_VOICE: ${VOICE:-}
     environment:
       API_URL: http://api:8000
       PROXY_SECRET: ${PROXY_SECRET:?set PROXY_SECRET in deploy/.env}
@@ -43,6 +44,7 @@ services:
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
       FSQ_API_KEY: ${FSQ_API_KEY:-}
       ORS_API_KEY: ${ORS_API_KEY:-}
+      SPEKO_API_KEY: ${SPEKO_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy

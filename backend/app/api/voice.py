@@ -1,10 +1,10 @@
-"""Voice analyst on Speko: the LLM "brain" and the Hinglish voice.
+"""Voice analyst on Speko: the LLM "brain" and a voice in the market's language.
 
 POST /assistant/agent  one hop of the agent loop. The browser sends the conversation; Speko's LLM answers or asks
                        for tools. Every tool is "inline": it runs in the browser (navigate, read the page, change
                        the plan, run the model...) and the result comes back on the next hop. The LLM never sees a
                        number that a tool or the page didn't give it.
-POST /assistant/tts    text -> natural Hinglish speech (Cartesia Hindi voice via Speko), returned as audio.
+POST /assistant/tts    text -> natural speech (US English, or Hinglish in India, via Speko), returned as audio.
 
 Both need a signed-in (or guest) session so the Speko credits can't be spent by anonymous callers.
 """
@@ -54,6 +54,43 @@ Kaunsa tool kab:
 Agar jawab "mat kholo" hai to saaf bolo aur batao kya badalna padega. Koi project open na ho to do line me StrataIQ samjhao aur idea batane ya demo kholne ka offer do."""
 
 
+PROMPT_US = """You are Strata, the voice business consultant and operator inside StrataIQ. You help US founders find out whether a business can work at a location before they spend money, and you do the work for them in the app.
+
+How you speak (your reply is read aloud):
+- Natural, confident American English, like a sharp consultant friend. Two to four short sentences. No lists, markdown, emoji or headings.
+- Say money so it sounds right: "forty thousand dollars", "1.2 million dollars". Percent: "25 percent".
+- Lead with the main point and the number, then offer one next step, such as "Want me to check better locations nearby?"
+
+Truth rule: you do not know any market number yourself. Every number must come from a tool result or the screen. Never guess; if data is missing, run load_market_and_simulate.
+
+Which tool when:
+- "What's on screen", "explain this", "analyze this": get_screen, then give the two or three things that matter, what they mean for the business, and one concrete next step.
+- Opening a page: navigate, then get_screen and say what is there.
+- Deep analysis ("will this work"): get_screen, get_market_facts and get_insights, then a clear verdict: go, risky, or don't open, with the reason.
+- Competitors, population, profit, break-even, risk: get_market_facts. "What's wrong", "how do I grow": get_insights.
+- The user gives or changes their numbers (rent, payroll, price, marketing, budget): update_plan with only the changed fields ("80 thousand" = 80000, "1.2 million" = 1200000), then compare before and after.
+- Temporary what-if: test_strategy. Price only: test_price.
+- Best location: find_best_location. Best strategy: optimize_strategy, then offer to verify with test_strategy.
+- A new idea ("I want to open a cafe in Austin"): start_new_idea. Load data or run a simulation: load_market_and_simulate.
+- Ground data or a survey: request_field_researcher; street data the user tells you: record_field_data; status: get_field_status.
+- Report: make_report. Projects: list_projects, open_project. Goal: set_goal. Meaning of a term: explain_term. Tour: open_guide. Demo: start_demo.
+- If asked for several things, do them all and report together.
+
+If the answer is "don't open", say so plainly and say what would have to change. If no project is open, explain StrataIQ in two lines and offer to test their idea or open a demo."""
+
+
+def system_prompt(market: str, page: str, project_open: bool) -> str:
+    if market == "US":
+        return PROMPT_US + f"\n\nThe user is on page: {page}. Project open: {'yes' if project_open else 'no'}."
+    return PROMPT + f"\n\nAbhi user is page pe hai: {page}. Project open: {'haan' if project_open else 'nahi'}."
+
+
+def tts_request(text: str, market: str, voice: str) -> dict:
+    req = {"text": text, "intent": {"language": "en" if market == "US" else "hi", "optimizeFor": "latency"},
+           "constraints": {"allowedProviders": {"tts": ["cartesia"]}}}
+    return {**req, "voice": voice} if voice else req
+
+
 def _obj(props: dict | None = None, required: list[str] | None = None) -> dict:
     return {"type": "object", "properties": props or {}, "required": required or []}
 
@@ -67,7 +104,7 @@ TOOLS = [
     {"name": "navigate", "description": "Open a page.", "parameters": _obj({"page": {"type": "string", "enum": [
         "overview", "market", "field", "live", "simulation", "decisions", "report", "genome", "factors", "monitor",
         "dashboard", "new_project", "methodology", "settings", "home"]}}, ["page"])},
-    {"name": "update_plan", "description": "Permanently change the baseline plan (rupees per month; startup_cost one-time) and re-run the simulation. Pass only changed fields.",
+    {"name": "update_plan", "description": "Permanently change the baseline plan (per month in local currency; startup_cost one-time) and re-run the simulation. Pass only changed fields.",
      "parameters": _obj({k: _num for k in ("price", "rent", "payroll", "utilities", "other_fixed", "marketing_spend", "startup_cost", "variable_cost_per_unit", "quality")})},
     {"name": "test_strategy", "description": "Temporary what-if through the 10,000-agent simulation, replayed on the live map. Pass only changed fields.",
      "parameters": _obj({k: _num for k in ("price", "marketing_spend", "quality", "capacity_scale", "open_hour", "close_hour")})},
@@ -162,11 +199,10 @@ def parse_sse(raw: str) -> dict:
 @router.post("/assistant/agent")
 async def agent(body: AgentIn, user: User = Depends(current_user)):
     s = get_settings()
-    context = f"\n\nAbhi user is page pe hai: {body.page}. Project open: {'haan' if body.project_open else 'nahi'}."
     req = {
         "messages": [m.model_dump(exclude_none=True) for m in body.messages],
         "intent": {"language": "en", "optimizeFor": "balanced"},
-        "systemPrompt": PROMPT + context,
+        "systemPrompt": system_prompt(s.market, body.page, body.project_open),
         "tools": TOOLS,
         "temperature": 0.4,
         "maxTokens": 500,
@@ -195,8 +231,7 @@ def _wav(pcm: bytes, rate: int) -> bytes:
 @router.post("/assistant/tts")
 async def tts(body: TtsIn, user: User = Depends(current_user)):
     s = get_settings()
-    req = {"text": body.text, "intent": {"language": "hi", "optimizeFor": "latency"}, "voice": s.speko_voice,
-           "constraints": {"allowedProviders": {"tts": ["cartesia"]}}}
+    req = tts_request(body.text, s.market, s.speko_voice)
     try:
         async with httpx.AsyncClient(timeout=30) as c:
             r = await c.post(f"{s.speko_url}/v1/synthesize", json=req, headers={"Authorization": f"Bearer {_key()}"})

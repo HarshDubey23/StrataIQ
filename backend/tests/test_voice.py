@@ -2,7 +2,7 @@
 import pytest
 from fastapi import HTTPException
 
-from app.api.voice import parse_sse
+from app.api.voice import parse_sse, system_prompt, tts_request
 
 
 def test_parse_sse_text_and_tools():
@@ -27,3 +27,13 @@ def test_parse_sse_drops_unknown_tools_without_done():
 def test_parse_sse_error_only_raises():
     with pytest.raises(HTTPException):
         parse_sse('event: error\ndata: {"error":"no credits","code":"X"}\n\n')
+
+
+def test_us_voice_speaks_english_and_dollars():
+    p = system_prompt("US", "/app", True)
+    assert "American English" in p and "dollars" in p and "Project open: yes" in p
+    for word in ("rupaye", "lakh", "crore", "Hinglish"):
+        assert word not in p
+    assert "Hinglish" in system_prompt("IN", "/app", False)
+    assert tts_request("Hi", "US", "") == {"text": "Hi", "intent": {"language": "en", "optimizeFor": "latency"}, "constraints": {"allowedProviders": {"tts": ["cartesia"]}}}
+    assert tts_request("Hi", "IN", "v1")["intent"]["language"] == "hi" and tts_request("Hi", "IN", "v1")["voice"] == "v1"

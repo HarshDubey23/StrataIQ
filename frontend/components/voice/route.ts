@@ -4,6 +4,7 @@
  * result in Hinglish. Every number in a reply comes from a tool result (simulation, live data, the page itself).
  * Returns null when it doesn't recognise the request, so the caller can fall back to the backend fact router.
  */
+import { US_MARKET } from "@/lib/format";
 import { readPage } from "@/lib/screen";
 
 type Tool = (args?: never) => Promise<string>;
@@ -63,13 +64,17 @@ export function planChanges(q: string): Record<string, number> {
 // ---------------------------------------------------------------- formatting (Indian style)
 export function inr(x: unknown): string {
   const v = Number(x);
+  if (US_MARKET) {
+    if (x === null || x === undefined || !Number.isFinite(v)) return "unknown";
+    return `${v < 0 ? "a loss of " : ""}$${Math.round(Math.abs(v)).toLocaleString("en-US")}`;
+  }
   if (x === null || x === undefined || !Number.isFinite(v)) return "pata nahi";
   const a = Math.abs(v);
   const s = a >= 1e7 ? `₹${(a / 1e7).toFixed(a >= 1e8 ? 0 : 1)} crore` : a >= 1e5 ? `₹${(a / 1e5).toFixed(a >= 1e6 ? 0 : 1)} lakh` : `₹${Math.round(a).toLocaleString("en-IN")}`;
   return v < 0 ? `${s} ka loss` : s;
 }
 /** "₹40,000 profit har mahine" or "₹12,000 ka loss har mahine" */
-const pm = (x: unknown) => (Number(x) < 0 ? `${inr(-Number(x))} ka loss har mahine` : `${inr(x)} profit har mahine`);
+const pm = (x: unknown) => US_MARKET ? `${inr(x)} a month` : (Number(x) < 0 ? `${inr(-Number(x))} ka loss har mahine` : `${inr(x)} profit har mahine`);
 const num = (x: unknown) => (Number.isFinite(Number(x)) ? Math.round(Number(x)).toLocaleString("en-IN") : "?");
 const pct = (x: unknown) => (Number.isFinite(Number(x)) ? `${Math.round(Number(x) * 100)}%` : "?");
 const parse = (s: string) => {
