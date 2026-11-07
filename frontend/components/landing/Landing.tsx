@@ -329,6 +329,7 @@ export default function Landing() {
             <Reveal delay={0.1}>
               <p className="font-display text-6xl font-medium tracking-[-0.04em]">$29</p>
               <p className="mt-3 text-[18px] leading-[1.45]">The full report for one location: profit range, price tests, better spots and your checklist. One payment, no subscription.</p>
+              <RollLink href="/sample-report" className="mt-4 text-[18px] font-medium underline underline-offset-4">See a sample report</RollLink>
             </Reveal>
           </div>
         </section>

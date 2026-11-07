@@ -57,6 +57,12 @@ export default function ReportPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
+      {process.env.NEXT_PUBLIC_PAYMENT_URL && (
+        <a href={process.env.NEXT_PUBLIC_PAYMENT_URL} target="_blank" rel="noreferrer" className="no-print flex flex-wrap items-center justify-between gap-3 bg-accent p-4 text-white">
+          <span className="text-[17px] font-medium">Get the full report for this location: $29, one payment</span>
+          <span className="bg-white px-4 py-2 text-[16px] font-medium text-night">Pay securely</span>
+        </a>
+      )}
       <div className="no-print flex flex-wrap items-center gap-2">
         <Button variant="primary" onClick={() => generate(false)} loading={busy}><RefreshCw className="h-3.5 w-3.5" /> Generate from latest results</Button>
         <Button onClick={() => generate(true)} loading={busy}><Link2 className="h-3.5 w-3.5" /> Generate shareable link</Button>

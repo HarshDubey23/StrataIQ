@@ -74,6 +74,23 @@ export function Tornado({ data, base }: { data: NonNullable<SimResult["sensitivi
   );
 }
 
+/** Customers and awareness week by week in the simulated market. */
+export function RampChart({ data, unit }: { data: { week: number; units: number; aware_share: number }[]; unit: string }) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <ComposedChart data={data} margin={{ top: 10, right: 16, bottom: 4, left: 4 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="week" tickFormatter={(v) => `W${v}`} {...AX} />
+        <YAxis yAxisId="u" tickFormatter={(v) => num(v)} {...AX} width={52} />
+        <YAxis yAxisId="a" orientation="right" domain={[0, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} {...AX} width={44} />
+        <Tooltip {...TT} formatter={(v, n) => (String(n) === "units" ? [num(Number(v)), unit] : [`${Math.round(Number(v) * 100)}%`, "Aware of you"])} labelFormatter={(v) => `Week ${v}`} />
+        <Bar yAxisId="u" dataKey="units" fill="#2447F9" isAnimationActive={false} />
+        <Line yAxisId="a" dataKey="aware_share" stroke="#D93A1E" strokeWidth={2} dot={false} isAnimationActive={false} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
 export function ProfitHistogram({ mc }: { mc: NonNullable<SimResult["monte_carlo"]> }) {
   const { counts, edges } = mc.histogram;
   const data = counts.map((c, i) => ({ x: ((edges[i] ?? 0) + (edges[i + 1] ?? 0)) / 2, c }));
