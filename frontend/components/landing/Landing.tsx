@@ -455,7 +455,7 @@ export default function Landing() {
 
   useEffect(() => {
     if (!storyEnd.current) return;
-    const seen = new IntersectionObserver(([e]) => setInStory(e.isIntersecting), { rootMargin: "0px 0px -45% 0px" });
+    const seen = new IntersectionObserver(([e]) => setInStory(e.isIntersecting), { rootMargin: "-98% 0px 0px 0px" });
     seen.observe(storyEnd.current);
     return () => seen.disconnect();
   }, []);

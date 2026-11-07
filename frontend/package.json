@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "test:lease": "node --experimental-strip-types lib/lease.check.ts",
+    "test:voice": "node --experimental-strip-types lib/voiceTurn.check.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 200"

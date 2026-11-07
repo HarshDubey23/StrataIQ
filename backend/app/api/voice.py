@@ -78,10 +78,14 @@ Which tool when:
 
 If the answer is "don't open", say so plainly and say what would have to change. If no project is open, explain StrataIQ in two lines and offer to test their idea or open a demo."""
 
+INTERRUPTIONS_US = """
+
+The person can cut you off at any moment, and the conversation is one continuous talk. Treat their newest message as what they want now, and use everything said earlier to understand it: "what about Dallas" or "try 60 instead" refers to what you were just discussing, so do not ask them to repeat it. A note saying you were stopped means you never finished that answer: do not apologize or repeat it, and only return to it if they ask. Actions already done on screen stay done, so do not run them again."""
+
 
 def system_prompt(market: str, page: str, project_open: bool) -> str:
     if market == "US":
-        return PROMPT_US + f"\n\nThe user is on page: {page}. Project open: {'yes' if project_open else 'no'}."
+        return PROMPT_US + INTERRUPTIONS_US + f"\n\nThe user is on page: {page}. Project open: {'yes' if project_open else 'no'}."
     return PROMPT + f"\n\nAbhi user is page pe hai: {page}. Project open: {'haan' if project_open else 'nahi'}."
 
 

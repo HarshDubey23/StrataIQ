@@ -22,6 +22,7 @@ step() {
 (cd frontend && step types npx tsc --noEmit) || fail=1
 (cd frontend && step lint npm run lint --silent) || fail=1
 (cd frontend && step lease npm run test:lease --silent) || fail=1
+(cd frontend && step voice npm run test:voice --silent) || fail=1
 (cd backend && step ruff "$PYTHON" -m ruff check .) || fail=1
 (cd backend && MARKET=IN PYTHONPATH=. step "backend tests" "$PYTHON" -m pytest -q -p no:warnings) || fail=1
 

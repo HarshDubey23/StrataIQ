@@ -123,6 +123,8 @@ jobs:
         run: npm run lint
       - name: Lease math
         run: npm run test:lease
+      - name: Voice turns
+        run: npm run test:voice
       - name: Build
         run: |
           set -o pipefail
