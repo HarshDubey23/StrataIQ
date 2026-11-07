@@ -33,6 +33,12 @@ await c.addInitScript(() => {
   };
 });
 const agent = [];
+let brokenHistory = 0;
+const failNext = new Set();
+let ttsDown = false;
+let slowFacts = 0;
+let factsHits = 0;
+let factsDone = 0;
 let delay = () => 150;
 const ANSWER = "Your break-even is 680 members at this rent. Want me to check better locations nearby?";
 await c.route("**/api/v1/**", async (r) => {
@@ -43,8 +49,18 @@ await c.route("**/api/v1/**", async (r) => {
     const q = body.messages.filter((m) => m.role === "user").at(-1).content;
     agent.push({ q, messages: body.messages, done: false });
     await new Promise((res) => setTimeout(res, delay(q)));
+    const bad = body.messages.find((m, i) => m.role === "assistant" && m.toolCalls?.some((c) => !body.messages.slice(i + 1).some((x) => x.toolCallId === c.id)));
+    if (bad) brokenHistory++;
+    if (body.messages[0].role !== "user") brokenHistory++;
+    if (failNext.has(q)) { failNext.delete(q); return json({ detail: "brain down" }, 502); }
+    const lastMsg = body.messages.at(-1);
+    if (q === "use a slow tool" && lastMsg.role === "user") return json({ text: "", tool_calls: [{ id: "c1", name: "get_market_facts", args: "{}" }] });
     return json({ text: `${ANSWER} (answer to: ${q})`, tool_calls: [] });
   }
+  if (u === "/assistant/tts" && ttsDown) return json({ detail: "down" }, 503);
+  if (u === "/projects/11111111-1111-4111-8111-111111111111") return json({ id: "11111111-1111-4111-8111-111111111111", name: "Gym", objective: "start_new", decision_goal: "profit", status: "active", is_demo: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), category: { key: "gym", label: "Gym", method: "taxonomy", filters: ["gym"] }, profile: {}, archetype: { key: "membership", label: "Membership", unit: "members", unit_label: "members", price_label: "Price" }, locations: [{ id: "l1", label: "South Lamar", address: "1402 South Lamar, Austin, TX", lat: 30.25, lng: -97.76, catchment: { radius_km: 3 } }], scenarios: [], snapshots: {}, field: { records: 0, status: null }, summary: null, data_kinds: {} });
+  if (u === "/projects/11111111-1111-4111-8111-111111111111/assistant/facts") { const counts = u.endsWith("facts"); if (counts) factsHits++; await new Promise((res) => setTimeout(res, slowFacts)); if (counts) factsDone++; return json({ id: "11111111-1111-4111-8111-111111111111", name: "Gym", facts: {} }); }
+  if (u.endsWith("/assistant/ask")) return json({ answer: "Fallback answer from the backend.", actions: [] });
   if (u === "/assistant/tts") return r.fulfill({ status: 200, contentType: "audio/wav", body: wav }).catch(() => {});
   if (u === "/auth/me") return json({ id: "u", email: "f@example.com", name: "Founder" });
   if (u === "/system/capabilities") return json({ ai: false, routing: true, model_version: "x" });
@@ -151,5 +167,58 @@ await p.getByRole("button", { name: /Stop voice analyst/ }).click();
 await p.waitForTimeout(500);
 assert.equal(await playing(), 0);
 ok("stopping the voice analyst silences it");
+// 9. cut off while a tool is running: the late result must not corrupt the next request
+await p.goto(BASE + "/app/projects/11111111-1111-4111-8111-111111111111", { waitUntil: "load", timeout: 120000 });
+await p.getByRole("button", { name: /Talk to Strata/ }).click({ timeout: 60000 });
+await p.waitForFunction(() => window.__rec?.running, null, { timeout: 15000 });
+slowFacts = 3000;
+await typed("use a slow tool");
+for (let i = 0; i < 40 && !factsHits; i++) await p.waitForTimeout(100);
+assert.ok(factsHits > 0, "the slow tool really was running");
+const stillRunning = factsDone < factsHits;
+assert.ok(stillRunning, "and had not finished when the new message came");
+await typed("forget that, next question");
+await p.waitForTimeout(3500);
+assert.equal(factsDone, factsHits, "then it finished, late");
+slowFacts = 0;
+await typed("and after that");
+await p.waitForTimeout(800);
+assert.equal(brokenHistory, 0, "no request carried an unanswered tool call");
+const after = agent.at(-1).messages.map((m) => m.content).join(" | ");
+assert.ok(after.includes("use a slow tool") && after.includes("forget that, next question"));
+ok("cut off during a tool, the late result stays out and the next request is valid");
+
+// 10. the AI brain failing must not wipe the conversation
+await waitPlaying();
+failNext.add("brain fails on this");
+await typed("brain fails on this");
+await p.waitForTimeout(1200);
+assert.ok((await text()).includes("Fallback answer from the backend."));
+await typed("are you back");
+await p.waitForTimeout(800);
+assert.ok(agent.at(-1).messages.map((m) => m.content).join(" | ").includes("forget that, next question"), "memory survives an error");
+assert.equal(brokenHistory, 0);
+ok("an AI error falls back to the backend answer and keeps the memory");
+
+// 11. with the natural voice down, the browser voice can be cut off too
+ttsDown = true;
+await typed("first with browser voice");
+await p.waitForTimeout(1500);
+await typed("second with browser voice");
+await p.waitForTimeout(1000);
+assert.ok((await text()).includes("answer to: second with browser voice"));
+ttsDown = false;
+ok("the fallback browser voice can be interrupted as well");
+
+// 12. "stop" while it is still thinking cancels the answer
+delay = () => 1500;
+await typed("slow thinking question");
+await p.waitForTimeout(200);
+await p.evaluate(() => window.__hear("stop", true));
+await p.waitForTimeout(2200);
+assert.ok(!(await text()).includes("answer to: slow thinking question"));
+delay = () => 150;
+ok('"stop" while thinking cancels the answer');
+
 console.log(`${pass} passed; page errors: ${errs.join(" | ") || "none"}`);
 await b.close();

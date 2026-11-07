@@ -9,6 +9,14 @@ assert.equal(isEcho("check better locations", said), true);
 // a person saying something new is, even when it shares a word or two
 assert.equal(isEcho("what about the rent in Dallas instead", said), false);
 assert.equal(isEcho("how much is payroll", said), false);
+// common words in a new order are a person, even when every word was in the answer
+assert.equal(isEcho("what is the rent", "The rent is what matters. What you pay is the main cost."), false);
+// numbers come back as digits, and the mic mishears some words
+const spokenMoney = "Your rent of forty thousand dollars takes thirty percent of sales. That leaves very little room.";
+assert.equal(isEcho("your rent of 40,000 takes 30% of sales", spokenMoney), true);
+assert.equal(isEcho("that leaves very litter room", spokenMoney), true);
+assert.equal(isEcho("6000", spokenMoney), true);
+assert.equal(isEcho("what about 6000", spokenMoney), false);
 
 assert.equal(isStopWord("Stop."), true);
 assert.equal(isStopWord("ruk jao"), true);

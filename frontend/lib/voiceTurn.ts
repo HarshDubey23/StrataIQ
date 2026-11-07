@@ -2,15 +2,23 @@
 
 const words = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
 
+/** Words without digits: Strata says "forty thousand" where the mic may write "40,000". */
+const plain = (s: string) => words(s).filter((x) => !/\d/.test(x));
+
 /**
- * The mic stays open while Strata talks, so it also hears Strata. This tells that echo from a real interruption:
- * if nearly everything heard is in what is being said, it is the speaker, not the person.
+ * The mic stays open while Strata talks, so it also hears Strata. This tells that echo from a real interruption by
+ * looking for a run of words in the same order: "what is the rent" shares common words with most answers, but not as
+ * a run. A long run is enough, because the mic mishears some words. Only numbers counts as echo, so it cannot cut in.
  */
 export function isEcho(heard: string, spoken: string): boolean {
-  const said = new Set(words(spoken));
-  const got = words(heard);
+  const got = plain(heard);
   if (!got.length) return true;
-  return got.filter((w) => said.has(w)).length / got.length >= 0.7;
+  const said = ` ${plain(spoken).join(" ")} `;
+  const need = Math.min(got.length, Math.max(3, Math.ceil(got.length / 2)));
+  for (let i = 0; i + need <= got.length; i++) {
+    if (said.includes(` ${got.slice(i, i + need).join(" ")} `)) return true;
+  }
+  return false;
 }
 
 const STOP = /^(stop|stop it|stop talking|wait|hold on|cancel|never mind|nevermind|quiet|ruko|ruk|ruk jao|bas|chup)$/;
