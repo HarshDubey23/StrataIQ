@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Chip, CountUp, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Tilt3D, WordsIn } from "@/components/motion";
+import { Chip, CountUp, FactItem, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Tilt3D, WordsIn, type Fact } from "@/components/motion";
 import { SiteFooter } from "@/components/SiteFooter";
 import { cn } from "@/components/ui";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
@@ -32,6 +32,14 @@ const FAQ: [string, string][] = [
   ["How does it reach its numbers?", "Every forecast is a range built from local data and your inputs, with each assumption shown so you can check it and change it."],
   ["Has it been tested on real data?", "Yes. We score its market-size estimates against Census business payroll in up to 1,810 US counties it never trained on. Median error is 26% for grocery and 32% for restaurants, roughly half of what population alone gets for restaurants. Single-store revenue is the next test."],
   ["Where does it work?", "Anywhere in the United States, from a downtown corner to a small-town main street."],
+];
+
+const PLAN: Fact[] = [
+  { label: "Customers a day to break even", detail: "The exact number of sales or members you need each month to cover rent, staff and running costs, next to what the model forecasts for your street." },
+  { label: "Profit in a bad, normal and good month", detail: "A range across 800 market scenarios, including how often you would lose money, so you see the downside before you commit." },
+  { label: "The price that earns you the most", detail: "Sales and profit at every price point, using the incomes of the people who actually live and work around your address." },
+  { label: "Better spots nearby", detail: "We test other points around your address and show where the same plan performs better, and which rivals it avoids." },
+  { label: "The risks to check before you sign", detail: "The assumptions that move your profit most, in order, so you know exactly which quotes to get and what to check on the street." },
 ];
 
 const STATS: [number, string][] = [[10000, "simulated customers per test"], [84091, "US neighborhoods profiled"], [84, "days of market played out"]];
@@ -316,13 +324,7 @@ export default function Landing() {
         <section data-scene className="relative mx-5 my-[42svh] max-w-xl bg-paper p-7 md:mx-10 md:p-10">
           <WordsIn text="Change the plan before it costs you." className={HEAD} />
           <Reveal delay={0.15}>
-            <ul className="mt-6 space-y-3 text-[18px] leading-[1.45]">
-              <li>Customers a day you need to break even.</li>
-              <li>Profit in a bad, normal and good month.</li>
-              <li>The price that earns you the most.</li>
-              <li>Better spots nearby that your rivals left open.</li>
-              <li>The risks to check before you sign.</li>
-            </ul>
+            <ul className="mt-6 space-y-2">{PLAN.map((f) => <FactItem key={f.label} fact={f} />)}</ul>
           </Reveal>
         </section>
 

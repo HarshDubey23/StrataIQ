@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Instrument_Serif, Inter_Tight } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
-import VoiceDock from "@/components/voice/VoiceDockLoader";
 
 const inter = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight", display: "swap" });
 const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-instrument", display: "swap" });
@@ -25,7 +24,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="grain min-h-screen font-sans">
         {children}
-        {process.env.NEXT_PUBLIC_VOICE === "1" && <VoiceDock />}
       </body>
     </html>
   );

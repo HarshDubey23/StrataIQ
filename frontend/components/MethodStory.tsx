@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Marquee, Reveal, RollLink, WordsIn } from "@/components/motion";
+import { FactItem, Marquee, Reveal, RollLink, WordsIn, type Fact } from "@/components/motion";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useLenis, useStoryProgress } from "@/components/landing/Landing";
 import { SPOTS } from "@/components/landing/spots";
@@ -13,12 +13,34 @@ const HeroMap = dynamic(() => import("@/components/landing/HeroMap"), { ssr: fal
 const HEAD = "font-display text-[clamp(2.25rem,1.4rem+2.6vw,3.75rem)] font-medium leading-[0.98] tracking-[-0.03em]";
 const SCENES = ["Your street, in 3D", "Your rivals, live", "Your neighborhood", "Your customers deciding", "Your numbers"];
 
-const STEPS: { title: string; body: string; facts: string[] }[] = [
-  { title: "We rebuild your street.", body: "Enter an address and StrataIQ models the buildings, roads and walking routes around it from open map data.", facts: ["Real road and walking distances", "Population placed building by building", "Radius or travel-time catchments"] },
-  { title: "We find your rivals.", body: "Competitors load live from OpenStreetMap and Foursquare. Add what the maps miss, and record their real prices to sharpen the result.", facts: ["Live competitor search", "Your own observed prices and rivals", "Field survey tools for the street"] },
-  { title: "We profile the neighborhood.", body: "Every simulated customer is drawn from Census figures for the tract they live in, so a block of students and a block of retirees behave differently.", facts: ["Income, age and sex", "Household size, jobs and students", "How people get around", "Who works nearby"] },
-  { title: "10,000 customers decide.", body: "Each simulated person has a budget, a routine and friends. For 84 days they choose you, a rival or nothing, remember bad visits and pass on what they think.", facts: ["Price, distance, quality and hours", "Word of mouth through friends", "Crowding when you reach capacity"] },
-  { title: "You get a clear answer.", body: "Hundreds of market scenarios become a profit range, a break-even point and the short list of assumptions most worth checking.", facts: ["Bad, typical and good month", "Price and marketing tests", "Better spots nearby", "Your next steps"] },
+const STEPS: { title: string; body: string; facts: Fact[] }[] = [
+  { title: "We rebuild your street.", body: "Enter an address and StrataIQ models the buildings, roads and walking routes around it from open map data.", facts: [
+    { label: "Real road and walking distances", detail: "Each part of your catchment is routed to your site and to every rival by car and on foot. A river or freeway counts as the barrier it really is, instead of a straight line on a map.", source: "OSRM routing on OpenStreetMap" },
+    { label: "Population placed building by building", detail: "We take the population estimate for the area, then place people across mapped buildings, so a parking lot and an apartment block no longer count the same.", source: "WorldPop and OpenStreetMap" },
+    { label: "Radius or travel-time catchments", detail: "Test the area people will realistically travel from, either as a set distance or as minutes by car or on foot.", source: "openrouteservice" },
+  ] },
+  { title: "We find your rivals.", body: "Competitors load live from OpenStreetMap and Foursquare. Add what the maps miss, and record their real prices to sharpen the result.", facts: [
+    { label: "Live competitor search", detail: "Each test searches for businesses of your type around your address at the moment you run it, and every record keeps its source and date.", source: "OpenStreetMap and Foursquare Places" },
+    { label: "Your own observed prices and rivals", detail: "Add a rival the maps missed, remove one that closed, or enter the price on its menu. Your figures replace our estimates in the next run.", source: "You" },
+    { label: "Field survey tools for the street", detail: "Send a phone-friendly survey link to whoever walks the street. It records prices, hours and rent, then feeds them straight into your forecast.", source: "Your field data" },
+  ] },
+  { title: "We profile the neighborhood.", body: "Every simulated customer is drawn from Census figures for the tract they live in, so a block of students and a block of retirees behave differently.", facts: [
+    { label: "Income, age and sex", detail: "Each simulated person gets an income from their own tract's household income brackets, with age and sex drawn from the same tract. Across 84,091 US neighborhoods, no two areas look alike.", source: "U.S. Census ACS 2023, 5-year" },
+    { label: "Household size, jobs and students", detail: "Whether someone works, studies or is retired follows local rates. That decides when they are free, which shapes when your busy hours fall.", source: "U.S. Census ACS 2023, 5-year" },
+    { label: "How people get around", detail: "Walking, driving, transit and cycling follow each tract's real commute shares. A downtown transit block and a suburban street reach you very differently.", source: "U.S. Census ACS 2023, table B08301" },
+    { label: "Who works nearby", detail: "Offices and downtowns have few residents but many customers. We add the jobs located in each tract, so lunch and after-work demand counts too.", source: "U.S. Census LODES" },
+  ] },
+  { title: "10,000 customers decide.", body: "Each simulated person has a budget, a routine and friends. For 84 days they choose you, a rival or nothing, remember bad visits and pass on what they think.", facts: [
+    { label: "Price, distance, quality and hours", detail: "Every person weighs your price against what they can spend, how far you are, how good you seem and whether you are open when they are free.", source: "StrataIQ choice model" },
+    { label: "Word of mouth through friends", detail: "Customers tell friends and family. People who liked you bring others in, and people who had a bad visit warn them off.", source: "StrataIQ agent simulation" },
+    { label: "Crowding when you reach capacity", detail: "When you fill up, people get turned away or have a worse visit and remember it. A plan that sells out can still lose customers.", source: "StrataIQ agent simulation" },
+  ] },
+  { title: "You get a clear answer.", body: "Hundreds of market scenarios become a profit range, a break-even point and the short list of assumptions most worth checking.", facts: [
+    { label: "Bad, typical and good month", detail: "We rerun your market across 800 scenarios and show the range of monthly profit, including how often you would lose money.", source: "StrataIQ scenario engine" },
+    { label: "Price and marketing tests", detail: "See sales and profit at every price and marketing budget, so you can compare plans before you commit to one.", source: "StrataIQ scenario engine" },
+    { label: "Better spots nearby", detail: "We test other points around your address and show where the same plan performs better, and why.", source: "StrataIQ site search" },
+    { label: "Your next steps", detail: "Your report ends with the risks that matter most and what to check first, in the order they could change your decision.", source: "Your StrataIQ report" },
+  ] },
 ];
 
 // docs/VALIDATION.md, median error on counties held out of the fit.
@@ -65,7 +87,7 @@ export function MethodStory() {
               <WordsIn text={s.title} className={HEAD} />
               <Reveal delay={0.15}><p className="mt-6 text-[19px] leading-[1.45]">{s.body}</p></Reveal>
               <ul className="mt-6 space-y-2">
-                {s.facts.map((f, k) => <Reveal key={f} delay={0.2 + k * 0.07}><li className="bg-white px-4 py-3 text-[17px]">{f}</li></Reveal>)}
+                {s.facts.map((f) => <FactItem key={f.label} fact={f} />)}
               </ul>
             </section>
           ))}

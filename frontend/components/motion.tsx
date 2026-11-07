@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
+import { AnimatePresence, animate, motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -144,5 +144,42 @@ export function Magnetic({ children }: { children: ReactNode }) {
       onPointerLeave={() => { x.set(0); y.set(0); }}>
       {children}
     </motion.span>
+  );
+}
+
+export type Fact = { label: string; detail: string; source?: string };
+
+/** A point that opens a detail panel beside it while the pointer or keyboard focus is on it. On touch screens, a tap opens it inline. */
+export function FactItem({ fact }: { fact: Fact }) {
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const still = useReducedMotion();
+  const show = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const hide = () => { if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(false), 90); };
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  return (
+    <li className={`relative ${open ? "z-40" : "z-0"}`}
+      onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
+      onPointerLeave={(e) => { if (e.pointerType === "mouse") hide(); }}
+      onFocus={show} onBlur={hide}
+      onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
+      <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)}
+        className={`group flex min-h-12 w-full items-center justify-between gap-4 px-4 py-3 text-left text-[17px] transition-colors duration-200 ${open ? "bg-night text-white" : "bg-white text-night"}`}>
+        {fact.label}
+        <span aria-hidden className={`text-[20px] leading-none transition-transform duration-300 motion-reduce:transition-none ${open ? "translate-x-1 text-accent-dim" : "text-accent"}`}>→</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div role="note" initial={still ? false : { opacity: 0, x: -14, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={still ? { opacity: 0 } : { opacity: 0, x: -8 }} transition={{ duration: 0.22, ease: EASE }}
+            className="mt-1 lg:absolute lg:left-full lg:top-1/2 lg:mt-0 lg:w-[26rem] lg:-translate-y-1/2 lg:pl-3">
+            <div className="bg-night p-6 text-white">
+              <h4 className="font-display text-[22px] font-medium leading-tight tracking-[-0.02em]">{fact.label}</h4>
+              <p className="mt-3 text-[16px] leading-[1.5]">{fact.detail}</p>
+              {fact.source && <p className="mt-4 border-t border-white/20 pt-3 text-[14px]">Source: {fact.source}</p>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </li>
   );
 }
