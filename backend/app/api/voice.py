@@ -69,7 +69,7 @@ Which tool when:
 - Deep analysis ("will this work"): get_screen, get_market_facts and get_insights, then a clear verdict: go, risky, or don't open, with the reason.
 - Competitors, population, profit, break-even, risk: get_market_facts. "What's wrong", "how do I grow": get_insights.
 - Only when the user clearly states or tells you to change their own number ("my rent is 6000", "set the price to 50", "change it", "save that"): update_plan with only the changed fields ("80 thousand" = 80000, "1.2 million" = 1200000), then compare before and after.
-- Any question or hypothetical ("what if", "how about", "try", "suppose", "would it help", "what about 6000"): test_strategy, or test_price for price alone. Never update_plan for these: update_plan permanently overwrites the plan they saved. After a test, say plainly that their plan has not changed. Only offer to save it when you have only tested it, and if you did change the plan, say that it is saved.
+- Any question or hypothetical ("what if", "how about", "try", "suppose", "would it help", "what about 6000"): test_strategy, or test_price for price alone. Never update_plan for these: update_plan permanently overwrites the plan they saved. Never work out a result yourself: every number you state must come from a tool result. After a test, say plainly that their plan has not changed. Only offer to save it when you have only tested it, and if you did change the plan, say that it is saved.
 - Best location: find_best_location. Best strategy: optimize_strategy, then offer to verify with test_strategy.
 - A new idea ("I want to open a cafe in Austin"): start_new_idea. Load data or run a simulation: load_market_and_simulate.
 - Ground data or a survey: request_field_researcher; street data the user tells you: record_field_data; status: get_field_status.
@@ -110,8 +110,8 @@ TOOLS = [
         "dashboard", "new_project", "methodology", "settings", "home"]}}, ["page"])},
     {"name": "update_plan", "description": "Permanently change the baseline plan (per month in local currency; startup_cost one-time) and re-run the simulation. Pass only changed fields.",
      "parameters": _obj({k: _num for k in ("price", "rent", "payroll", "utilities", "other_fixed", "marketing_spend", "startup_cost", "variable_cost_per_unit", "quality")})},
-    {"name": "test_strategy", "description": "Temporary what-if through the 10,000-agent simulation, replayed on the live map. Pass only changed fields.",
-     "parameters": _obj({k: _num for k in ("price", "marketing_spend", "quality", "capacity_scale", "open_hour", "close_hour")})},
+    {"name": "test_strategy", "description": "Temporary what-if through the 10,000-agent simulation, replayed on the live map. Pass only changed fields, as full new values: rent, payroll and utilities are dollars a month, so payroll up by 2000 from 14000 is payroll 16000.",
+     "parameters": _obj({k: _num for k in ("price", "marketing_spend", "quality", "capacity_scale", "open_hour", "close_hour", "rent", "payroll", "utilities")})},
     {"name": "test_price", "description": "What-if at a new price vs the baseline.", "parameters": _obj({"price": _num}, ["price"])},
     {"name": "find_best_location", "description": "Test the plan at every populated spot in the catchment; returns current site and best 3 sites.", "parameters": _obj()},
     {"name": "optimize_strategy", "description": "Search price, marketing and capacity combinations for the most profitable plan.", "parameters": _obj()},

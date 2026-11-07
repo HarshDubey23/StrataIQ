@@ -152,6 +152,22 @@ def test_demo_project_runs_offline(client):
     assert len(d["ranking"]) == 2
 
 
+def test_what_if_on_rent_changes_profit_and_leaves_the_plan_alone(client):
+    signup(client)
+    pid = client.post("/api/v1/demo").json()["id"]
+    base = next(s for s in client.get(f"/api/v1/projects/{pid}").json()["scenarios"] if s["is_baseline"])
+    rent = base["inputs"]["rent"]
+    out = client.post(f"/api/v1/projects/{pid}/strategy", json={"rent": rent + 2000})
+    assert out.status_code == 200, out.text
+    body = out.json()
+    # 2000 more rent a month is 2000 less profit in the same month: same customers, only the cost moved
+    assert body["after"]["month3_profit"] - body["before"]["month3_profit"] == pytest.approx(-2000, abs=1)
+    assert body["after"]["month3_units"] == body["before"]["month3_units"]
+    saved = next(s for s in client.get(f"/api/v1/projects/{pid}").json()["scenarios"] if s["is_baseline"])
+    assert saved["inputs"]["rent"] == rent
+    assert client.post(f"/api/v1/projects/{pid}/strategy", json={"rent": -1}).status_code == 422
+
+
 def test_background_refresh_job(client):
     import time
     signup(client, "bg@example.com")

@@ -210,6 +210,9 @@ class StrategyIn(BaseModel):
     capacity_scale: float | None = Field(default=None, gt=0, le=10)
     open_hour: float | None = Field(default=None, ge=0, le=24)
     close_hour: float | None = Field(default=None, ge=0, le=24)
+    rent: float | None = Field(default=None, ge=0, le=100_000_000)
+    payroll: float | None = Field(default=None, ge=0, le=100_000_000)
+    utilities: float | None = Field(default=None, ge=0, le=100_000_000)
     name: str | None = Field(default=None, max_length=80)
 
 
@@ -250,6 +253,11 @@ def apply_changes(arch, inputs: dict, ch: dict) -> tuple[dict, list[str]]:
             off["close_hour"] = float(ch["close_hour"])
         out["offer"] = off
         label.append(f"hours {int(off.get('open_hour') or 0)}–{int(off.get('close_hour') or 24)}")
+    # after capacity, so a monthly cost the founder names wins over the cost capacity would scale to
+    for key in ("rent", "payroll", "utilities"):
+        if ch.get(key) is not None:
+            out[key] = float(ch[key])
+            label.append(f"{key} {_inr(out[key])}")
     return out, label
 
 
@@ -296,7 +304,7 @@ def _run_strategy(project_id: str, body: dict) -> dict:
         before = run_view(r0.results)
         inputs, label = apply_changes(arch, src.inputs, body)
         if not label:
-            raise HTTPException(422, "Change at least one thing: price, marketing, quality, capacity or hours")
+            raise HTTPException(422, "Change at least one thing: price, marketing, quality, capacity, hours, rent, payroll or utilities")
         name = (body.get("name") or ("Strategy: " + " · ".join(label)))[:120]
         s = next((x for x in p.scenarios if x.name == name), None)
         if s is None:

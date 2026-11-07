@@ -167,7 +167,7 @@ function VoiceDockInner() {
           return JSON.stringify({ error: e instanceof Error ? e.message : "insights unavailable" });
         }
       },
-      test_strategy: async (args: { price?: number; marketing_spend?: number; quality?: number; capacity_scale?: number; open_hour?: number; close_hour?: number }) => {
+      test_strategy: async (args: { price?: number; marketing_spend?: number; quality?: number; capacity_scale?: number; open_hour?: number; close_hour?: number; rent?: number; payroll?: number; utilities?: number }) => {
         const pid = pidRef.current;
         if (!pid) return JSON.stringify({ error: "Open a project first." });
         const sc = readScreen();
