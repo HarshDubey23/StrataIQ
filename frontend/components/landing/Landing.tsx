@@ -202,6 +202,7 @@ export default function Landing() {
   }
 
   const comps = preview && preview.spot.key === spot.key ? preview.competitors : [];
+  const named = comps.map((c) => c.name).filter((n) => n && n !== "Unnamed");
   const catLabel = CATS.find((c) => c.key === cat)?.label.toLowerCase() || "businesses";
   const area = spot.label.split(",")[0];
   const action = "inline-flex min-h-14 items-center justify-center gap-2 bg-accent px-7 text-[18px] font-medium text-white transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 motion-reduce:transform-none";
@@ -281,7 +282,7 @@ export default function Landing() {
                 : <>
                     <p className="font-display text-[clamp(4rem,3rem+4vw,7rem)] font-medium leading-none tracking-[-0.04em] text-data"><CountUp to={comps.length} /></p>
                     <p className="mt-2 text-[18px]">{catLabel} found around {area}</p>
-                    {comps.length > 0 && <p className="mt-3 text-[17px]">Including {comps.slice(0, 3).map((c) => c.name).join(", ")}.</p>}
+                    {named.length > 0 && <p className="mt-3 text-[17px]">Including {named.slice(0, 3).join(", ")}.</p>}
                   </>}
             </div>
           </Reveal>
