@@ -12,6 +12,7 @@ from geoalchemy2.functions import ST_DWithin, ST_GeogFromText
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..categories.competitors import real_rivals
 from ..categories.archetypes import get_archetype
 from ..config import get_settings
 from ..db import session_factory
@@ -183,7 +184,7 @@ def competitors_for(db: Session, project: Project, loc: CandidateLocation, radiu
         Competitor.project_id == project.id, Competitor.active.is_(True),
         ST_DWithin(Competitor.geog, ST_GeogFromText(point_wkt(loc.lat, loc.lng)), reach_m),
     ).order_by(Competitor.created_at)
-    return list(db.scalars(q))
+    return real_rivals(list(db.scalars(q)))
 
 
 def _hash(obj: dict) -> str:

@@ -236,3 +236,29 @@ def classify_competitor(target_category_key: str, poi_tags: dict | None, poi_nam
         reason=f"Nearby business in catchment area of {target_category_key}.",
         is_direct_or_partial=False,
     )
+
+
+# Amenities only residents, guests or students can use. Listing sites file them under gyms, pools or cafes, but they do not compete for paying customers.
+_PRIVATE_AMENITY = re.compile(
+    r"(apartments?|apts?|condos?|lofts|residences?|residential|townhomes?|villas|at [a-z]+ (?:ridge|park|point)|"
+    r"marriott|hilton|hyatt|sheraton|westin|wyndham|holiday inn|hampton|doubletree|embassy suites|courtyard|hotel|motel|inn|"
+    r"university|college|campus|school|alumni|rec cent(?:er|re)|dorm|employee|staff|corporate)", re.I)
+
+
+def is_private_amenity(name: str | None) -> bool:
+    return bool(name and _PRIVATE_AMENITY.search(name))
+
+
+def real_rivals(comps: list, same_place_km: float = 0.15) -> list:
+    """Drop private amenities and repeat listings of one business. Rivals a founder entered or priced are always kept."""
+    kept: list = []
+    for c in comps:
+        mine = getattr(c, "source", "") == "user" or getattr(c, "price", None)
+        if not mine and is_private_amenity(c.name):
+            continue
+        name = (c.name or "").strip().lower()
+        twin = any(name and name == (k.name or "").strip().lower() and abs(c.lat - k.lat) * 111 < same_place_km and abs(c.lng - k.lng) * 96 < same_place_km for k in kept)
+        if not mine and twin:
+            continue
+        kept.append(c)
+    return kept
