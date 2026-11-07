@@ -41,6 +41,11 @@ US_ELASTICITY_SCALE = 0.5
 # See docs/VALIDATION.md. Types with no direct fit use their model group's fit.
 MARKET_ELASTICITY_US = {"gym": 2.8, "cafe": 3.0, "restaurant": 3.0, "salon": 3.0, "beauty_salon": 3.0, "dentist": 1.7, "grocery": 1.65, "pharmacy": 0.0, "clothing": 1.2}
 MARKET_ELASTICITY_GROUP = {"membership": 2.8, "dine_in": 3.0, "takeaway": 3.0, "retail": 1.2, "appointment": 1.7, "lodging": 1.2}
+# Monthly spending per US resident: industry payroll per person (County Business Patterns 2022) / assumed labor share of sales.
+SPEND_PER_PERSON_US = {
+    "gym": (2.95, 0.40), "cafe": (4.42, 0.30), "bakery_cafe": (4.42, 0.30), "restaurant": (34.83, 0.33), "pizza": (23.32, 0.28), "fast_food": (23.32, 0.28),
+    "salon": (3.12, 0.50), "beauty_salon": (3.12, 0.50), "dentist": (14.74, 0.28), "grocery": (19.34, 0.11), "pharmacy": (7.01, 0.12), "clothing": (3.59, 0.15),
+}
 MARKET_LIFT_LIMITS = (0.25, 4.0)  # fitted across whole counties, so held within limits for one neighbourhood
 TASTE_SIGMA = (0.3, 0.2, 0.45)  # log-sd of WTP among people with the same consumption (assumption)
 HEALTH_KEYS = {"dentist", "clinic", "physio", "diagnostics", "pharmacy", "optician"}
@@ -85,7 +90,7 @@ def school_age_share(age_sex: dict | None) -> float | None:
 
 
 def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones: int, *, age_sex: dict | None = None,
-          samples_per_zone: int = 300, seed: int = 0) -> BehaviourEvidence:
+          samples_per_zone: int = 300, seed: int = 0, ref_price: float | None = None) -> BehaviourEvidence:
     rng = np.random.default_rng(seed + 9001)
     zi = np.repeat(np.arange(n_zones), samples_per_zone)
     x, u = ctx.draw(rng, zi)
@@ -132,8 +137,16 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
         ref = nat.median
         lift = float(np.clip(((x / ref) ** e).mean() / ((xn / ref) ** e).mean(), *MARKET_LIFT_LIMITS))
         base = arch.params["participation"]
-        params["participation"] = (base.value * lift, base.low * lift, base.high * lift, "derived",
-                                   f"Starting rate x{lift:.2f} for this neighbourhood's incomes. Income effect {e:g} fitted on US counties against Census payroll; starting rate is an assumption")
+        anchor = SPEND_PER_PERSON_US.get(category_key)
+        if anchor and ref_price:
+            payroll, labor = anchor
+            rate = min(payroll / labor / (arch.params["frequency"].value * ref_price), 0.9)
+            low, high, how = rate * 0.7, min(rate * 1.3, 0.95), f"From real spending of about ${payroll / labor:,.0f} per person a month (Census payroll ${payroll:g} / assumed labor share {labor:.0%})"
+        else:
+            rate, low, high, how = base.value, base.low, base.high, "Starting rate is an assumption"
+        cap = 0.95
+        params["participation"] = (min(rate * lift, cap), min(low * lift, cap), min(high * lift, cap), "derived",
+                                   f"{how}, x{lift:.2f} for this neighborhood's incomes (income effect {e:g} fitted on US counties against Census payroll)")
     elif category_key in PARTICIPATION:
         (v, lo, hi), status, src = PARTICIPATION[category_key]
         params["participation"] = (v * lift, lo * lift, hi * lift, status,

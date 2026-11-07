@@ -66,6 +66,11 @@ def test_rich_and_poor_neighbourhoods_get_different_segments_and_wtp():
     assert rich.params["participation"][3] == "derived" and "Census payroll" in rich.params["participation"][4]
     base = arch.params["participation"].value
     assert base * 0.25 <= poor.params["participation"][0] and rich.params["participation"][0] <= base * 4
+    # With a price, the rate comes from real spending: a pricier gym needs a smaller share of people to reach the same dollars.
+    ctx = iu.build_context([30.0], [-97.0], state="Texas", data=DATA)
+    cheap, dear = (eb.build(arch, "gym", ctx, 1, seed=1, ref_price=p).params["participation"] for p in (30.0, 60.0))
+    assert cheap[0] == pytest.approx(2 * dear[0], rel=0.01)
+    assert "Census payroll" in cheap[4] and "per person a month" in cheap[4]
     # India's labels must not leak into a US catchment.
     assert "India" not in " ".join(c["label"] for c in rich.summary["classes"])
     assert rich.summary["histogram"][-1]["hi"] is None and sum(h["share"] for h in rich.summary["histogram"]) == pytest.approx(1.0, abs=0.01)

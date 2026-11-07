@@ -211,7 +211,7 @@ ACTIVITY_EQUIVALENT = 120.0  # residents per activity point, the model's default
 class MarketInputs:
     """Everything the run needs from the snapshot's real-data layers, built identically for a run and its re-inspection."""
 
-    def __init__(self, arch, category_key: str | None, snap: MarketSnapshot, seed: int, circuity: float, speed_kmh: float):
+    def __init__(self, arch, category_key: str | None, snap: MarketSnapshot, seed: int, circuity: float, speed_kmh: float, ref_price: float | None = None):
         keep = [i for i, z in enumerate(snap.zones) if z["population"] > 0]
         self.zones = [em.Zone(snap.zones[i]["lat"], snap.zones[i]["lng"], snap.zones[i]["population"], snap.zones[i].get("activity", 0)) for i in keep]
         self.zone_ll = np.array([[z.lat, z.lng] for z in self.zones]) if self.zones else np.zeros((0, 2))
@@ -234,7 +234,7 @@ class MarketInputs:
                 for z, jobs in zip(self.zones, us_ctx.people["zone_jobs"]):
                     z.activity += float(jobs) * WORKER_RESIDENT_SHARE / ACTIVITY_EQUIVALENT
             self.income = us_ctx
-            self.behaviour = eb.build(arch, category_key, us_ctx, len(self.zones), age_sex=pop_meta.get("age_sex"), seed=seed)
+            self.behaviour = eb.build(arch, category_key, us_ctx, len(self.zones), age_sex=pop_meta.get("age_sex"), seed=seed, ref_price=ref_price)
             self.arch = eb.apply(arch, self.behaviour)
         elif self.zones and india:
             ctx = ei.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state"), sector=adm.get("settlement"))
@@ -293,7 +293,7 @@ def execute_run(db: Session, project: Project, scenario: Scenario) -> Simulation
     )
     base_params = em.ResolvedParams.from_archetype(arch, inputs.get("param_overrides") or {})
     mi = MarketInputs(arch, (project.category or {}).get("key"), snap, seed, base_params.values.get("circuity", 1.3),
-                      base_params.values.get("urban_speed_kmh", 20.0))
+                      base_params.values.get("urban_speed_kmh", 20.0), ref_price=float(inputs.get("reference_price") or ref_fill or inputs["price"]))
     field = field_summary(db, project)
     mi.add_field(field.evidence)
     zones = mi.zones

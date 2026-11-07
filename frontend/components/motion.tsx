@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, motion, useInView, useReducedMotion, useScroll, useSpring } from "motion/react";
+import { animate, motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -77,4 +77,72 @@ export function ScrollBar() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
   return <motion.div aria-hidden style={{ scaleX }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-accent" />;
+}
+
+/** A card that tilts toward the pointer in 3D, the Aceternity "3D card" pattern. */
+export function Tilt3D({ children, className }: { children: ReactNode; className?: string }) {
+  const still = useReducedMotion();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [7, -7]), { stiffness: 160, damping: 18 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-9, 9]), { stiffness: 160, damping: 18 });
+  if (still) return <div className={className}>{children}</div>;
+  return (
+    <div style={{ perspective: 1400 }} className={className}>
+      <motion.div style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        onPointerMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); x.set((e.clientX - r.left) / r.width - 0.5); y.set((e.clientY - r.top) / r.height - 0.5); }}
+        onPointerLeave={() => { x.set(0); y.set(0); }}>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+/** A picture that rises out of a tilted screen as the page scrolls, the Fey / Aceternity "scroll out" pattern. */
+export function ScrollOut({ children }: { children: ReactNode }) {
+  const still = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "center center"] });
+  const rotateX = useTransform(scrollYProgress, [0, 1], [24, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [0.86, 1]);
+  const y = useTransform(scrollYProgress, [0, 1], [70, 0]);
+  if (still) return <div ref={ref}>{children}</div>;
+  return (
+    <div ref={ref} style={{ perspective: 1600 }}>
+      <motion.div style={{ rotateX, scale, y, transformOrigin: "50% 100%" }}>{children}</motion.div>
+    </div>
+  );
+}
+
+/** A slow, endless row of names. Reduced motion shows a wrapped, still list. */
+export function Marquee({ items }: { items: string[] }) {
+  const still = useReducedMotion();
+  const row = (hidden: boolean) => (
+    <ul aria-hidden={hidden} className="flex shrink-0 items-center gap-14 pr-14">
+      {items.map((t) => <li key={t} className="whitespace-nowrap font-display text-[clamp(1.75rem,1.2rem+2vw,3.25rem)] font-medium tracking-[-0.03em]">{t}</li>)}
+    </ul>
+  );
+  if (still) return <ul className="flex flex-wrap gap-x-10 gap-y-2 px-5 text-[20px]">{items.map((t) => <li key={t}>{t}</li>)}</ul>;
+  return (
+    <div className="flex overflow-hidden">
+      <motion.div className="flex" animate={{ x: ["0%", "-50%"] }} transition={{ duration: 34, ease: "linear", repeat: Infinity }}>
+        {row(false)}{row(true)}
+      </motion.div>
+    </div>
+  );
+}
+
+/** A button that drifts toward the pointer, the Aceternity "magnetic button" pattern. */
+export function Magnetic({ children }: { children: ReactNode }) {
+  const still = useReducedMotion();
+  const x = useSpring(0, { stiffness: 220, damping: 16 });
+  const y = useSpring(0, { stiffness: 220, damping: 16 });
+  if (still) return <>{children}</>;
+  return (
+    <motion.span className="inline-flex" style={{ x, y }}
+      onPointerMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); x.set((e.clientX - r.left - r.width / 2) * 0.22); y.set((e.clientY - r.top - r.height / 2) * 0.3); }}
+      onPointerLeave={() => { x.set(0); y.set(0); }}>
+      {children}
+    </motion.span>
+  );
 }

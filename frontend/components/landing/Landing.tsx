@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Chip, CountUp, Reveal, RollLink, ScrollBar, WordsIn } from "@/components/motion";
+import { Chip, CountUp, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Tilt3D, WordsIn } from "@/components/motion";
+import { SiteFooter } from "@/components/SiteFooter";
 import { cn } from "@/components/ui";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
 import { US_MARKET } from "@/lib/format";
@@ -53,7 +54,7 @@ async function ensureSession(): Promise<void> {
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function useLenis() {
+export function useLenis() {
   useEffect(() => {
     if (reduced()) return;
     let raf = 0;
@@ -105,7 +106,7 @@ function useTypewriter(lines: string[]) {
 }
 
 /** Scroll position as a chapter number with a fraction (0 = hero, 5 = last chapter), plus the nearest whole chapter. */
-function useStoryProgress() {
+export function useStoryProgress() {
   const progress = useRef(0);
   const [scene, setScene] = useState(0);
   useEffect(() => {
@@ -227,7 +228,7 @@ export default function Landing() {
           <Link href="/" className="font-display text-2xl font-medium tracking-tight">StrataIQ</Link>
           <nav className="flex items-center gap-5 text-[16px]">
             <RollLink href="#pricing" className="hidden sm:inline-block">Pricing</RollLink>
-            <RollLink href="/methodology" className="hidden sm:inline-block">Method</RollLink>
+            <RollLink href="/methodology" className="hidden sm:inline-block">How it works</RollLink>
             <RollLink href="/sign-in">Sign in</RollLink>
           </nav>
         </header>
@@ -245,9 +246,11 @@ export default function Landing() {
               <input id="idea" aria-label="Your business idea" value={idea} onChange={(e) => setIdea(e.target.value)} placeholder={placeholder}
                 className="min-h-14 w-full bg-white px-4 text-[17px] text-night outline-offset-2 transition-shadow placeholder:text-night/55 focus:outline-2 focus:outline-accent" />
               <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <button type="submit" disabled={busy !== null || idea.trim().length < 3} className={action}>
-                  {busy === "idea" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Test my location free
-                </button>
+                <Magnetic>
+                  <button type="submit" disabled={busy !== null || idea.trim().length < 3} className={action}>
+                    {busy === "idea" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Test my location free
+                  </button>
+                </Magnetic>
                 <button type="button" onClick={() => void liveDemo()} disabled={busy !== null} className="min-h-12 text-[17px] underline underline-offset-4 disabled:opacity-60">
                   {busy === "live" ? "Opening…" : `See ${area}`}
                 </button>
@@ -320,6 +323,27 @@ export default function Landing() {
           </Reveal>
         </section>
 
+        <section className="-mx-5 overflow-hidden bg-white px-5 py-24 md:-mx-10 md:px-10 lg:-mx-14 lg:px-14">
+          <WordsIn text="A report built for the decision." className={HEAD} />
+          <Reveal delay={0.15}><p className="mt-5 max-w-[46ch] text-[18px] leading-[1.5]">A clean PDF with your verdict, profit range, charts, risks and next steps.</p></Reveal>
+          <div className="mt-10">
+            <ScrollOut>
+              <Tilt3D>
+                <Link href="/sample-report" aria-label="Open the sample report">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/product/report.png" alt="The first page of a StrataIQ report for a cafe in Downtown Austin, with the verdict, key numbers and profit charts" width={1440} height={1100} loading="lazy" className="w-full bg-paper" />
+                </Link>
+              </Tilt3D>
+            </ScrollOut>
+          </div>
+          <RollLink href="/sample-report" className="mt-7 text-[18px] font-medium underline underline-offset-4">Read the sample report</RollLink>
+        </section>
+
+        <section className="-mx-5 overflow-hidden bg-paper py-14 md:-mx-10 lg:-mx-14">
+          <p className="mb-6 px-5 text-[18px] font-medium md:px-10 lg:px-14">Built on public data</p>
+          <Marquee items={["U.S. Census ACS", "Census LODES jobs", "County Business Patterns", "OpenStreetMap", "Foursquare Places", "WorldPop"]} />
+        </section>
+
         <section id="pricing" className="-mx-5 bg-night px-5 py-24 text-white md:-mx-10 md:px-10 lg:-mx-14 lg:px-14">
           <WordsIn text="$29 now, or years on the wrong lease." className={HEAD} />
           <div className="mt-10 grid gap-10 sm:grid-cols-2">
@@ -353,16 +377,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <footer className="max-w-[46ch] py-8 text-[14px] leading-[1.5]">
-          <nav className="mb-3 flex flex-wrap gap-x-5 gap-y-1 text-[16px]">
-            <RollLink href="/terms">Terms</RollLink>
-            <RollLink href="/privacy">Privacy</RollLink>
-            <RollLink href="/refunds">Refunds</RollLink>
-            <RollLink href="/methodology">Method</RollLink>
-          </nav>
-          <p className="mb-2 text-[16px]">© 2026 StrataIQ{process.env.NEXT_PUBLIC_CONTACT_EMAIL && <> · <a className="underline underline-offset-4" href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Support</a></>}</p>
-          Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Income and neighborhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau. Tiles © OpenFreeMap / OpenMapTiles. Forecasts are estimates, not guarantees or financial advice.
-        </footer>
+        <SiteFooter />
       </main>
     </div>
   );

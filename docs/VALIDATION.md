@@ -22,6 +22,10 @@
 
 Three fitted values sit at the top of the search range, so their true value may be higher.
 
+## How the results are used
+
+US demand starts from real spending per person: industry payroll per resident from County Business Patterns, divided by an assumed labor share of sales. The fitted income effect then adjusts it for each neighborhood, within limits. Workers are added from Census LODES jobs data, each counted as an assumed 30% of a resident.
+
 ## What this does not show
 
 - It scores county market size, not one store's revenue. Revenue at a single site has not been tested against real results.
