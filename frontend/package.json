@@ -9,22 +9,22 @@
     "lint": "next lint --max-warnings 200"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.1.0",
+    "@deck.gl/core": "^9.1.0",
+    "@deck.gl/geo-layers": "^9.1.0",
+    "@deck.gl/layers": "^9.1.0",
+    "@deck.gl/mapbox": "^9.1.0",
+    "@elevenlabs/react": "latest",
     "clsx": "2.1.1",
+    "lenis": "^1.3.4",
     "lucide-react": "0.511.0",
     "maplibre-gl": "^5.5.0",
+    "motion": "^14.10.1",
     "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "recharts": "2.15.3",
-    "zod": "3.25.28",
-    "@deck.gl/core": "^9.1.0",
-    "@deck.gl/layers": "^9.1.0",
-    "@deck.gl/geo-layers": "^9.1.0",
-    "@deck.gl/aggregation-layers": "^9.1.0",
-    "@deck.gl/mapbox": "^9.1.0",
-    "@elevenlabs/react": "latest",
-    "lenis": "^1.3.4",
-    "motion": "14.10.1"
+    "zod": "3.25.28"
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.1",
