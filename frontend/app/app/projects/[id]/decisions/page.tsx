@@ -65,7 +65,7 @@ export default function Decisions() {
   return (
     <main className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-ink-300">Optimise recommendations for</div>
+        <div className="text-sm text-ink-300">Optimize recommendations for</div>
         <Segmented<Goal>
           value={goal}
           onChange={changeGoal}
@@ -96,7 +96,7 @@ export default function Decisions() {
         <Metric label="Revenue / mo" value={money(fs.revenue, { compact: true })} kind="model" sub={fs.scenario} />
         <Metric label="Operating cost / mo" value={money(fs.operating_cost, { compact: true })} kind="model" />
         <Metric label="Operating profit / mo" value={<span className={fs.operating_profit < 0 ? "text-red-700" : "text-emerald-700"}>{money(fs.operating_profit, { compact: true })}</span>} kind="model" sub={`P10 ${money(fs.profit_p10, { compact: true })} · P90 ${money(fs.profit_p90, { compact: true })}`} />
-        <Metric label="Modeled P(loss)" value={pct(fs.prob_loss)} kind="model" sub="conditional on assumptions" />
+        <Metric label="Chance of a monthly loss" value={pct(fs.prob_loss)} kind="model" sub="conditional on assumptions" />
         <Metric label="Break-even" value={fs.break_even_units === null ? "n/a" : num(fs.break_even_units)} sub={`${fs.unit_label} / month`} kind="model" />
         <Metric label="Capacity use" value={pct(fs.utilization)} kind="model" />
         <Metric label="Cash before opening" value={money(fs.startup_cost, { compact: true })} kind="user" />

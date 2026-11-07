@@ -89,7 +89,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           <div>
             <h1 className="font-display text-4xl font-medium leading-none tracking-[-0.03em]">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
             <p className="mt-1 text-sm text-ink-300">
-              {demo ? "Sign in to open the labelled demo scenario." : mode === "sign-up" ? "Start testing business ideas against a model of the real market." : "Welcome back."}
+              {demo ? "Sign in to open the labeled demo scenario." : mode === "sign-up" ? "Start testing business ideas against a model of the real market." : "Welcome back."}
             </p>
           </div>
           {error && <ErrorState message={error} />}

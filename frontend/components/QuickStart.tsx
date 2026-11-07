@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Quick start for people who don't know the jargon: write the idea in one sentence (English or Hinglish),
- * see the plan StrataIQ understood — with every guessed number labelled — fix anything, and go.
+ * Quick start for people who don't know the jargon: write the idea in one sentence ,
+ * see the plan StrataIQ understood — with every guessed number labeled — fix anything, and go.
  */
 import { ArrowRight, Check, Lightbulb, MapPin, Pencil, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -117,11 +117,11 @@ export function QuickStart({ compact = false, autoFocus = false }: { compact?: b
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-accent/35 bg-[linear-gradient(135deg,rgba(47,73,255,.14),rgba(47,73,255,.02)_55%,transparent)]", compact ? "p-4" : "p-5 sm:p-7")}>
       <div className="flex items-center gap-2 text-sm font-medium text-ink-100"><Sparkles className="h-4 w-4 text-accent" /> Describe your idea in one line</div>
-      <p className="mt-1 text-xs text-ink-400">English or Hinglish. Business type and place are enough — I&apos;ll fill the rest with typical numbers you can change.</p>
+      <p className="mt-1 text-xs text-ink-400">Business type and place are enough — I&apos;ll fill the rest with typical numbers you can change.</p>
       <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); void understand(); }}>
         <input autoFocus={autoFocus} value={text} onChange={(e) => setText(e.target.value)} placeholder={`e.g. ${EXAMPLES[0]}`} aria-label="Your business idea"
           className="h-12 flex-1 rounded-lg border border-black/10 bg-ink-950/70 px-4 text-[15px] outline-none transition-[border-color,box-shadow] placeholder:text-ink-500 focus:border-accent focus:shadow-[0_0_0_3px_rgba(47,73,255,.2)]" />
-        <Button type="submit" variant="primary" size="lg" loading={busy === "plan"}>Understand it <ArrowRight className="h-4 w-4" /></Button>
+        <Button type="submit" variant="primary" size="lg" loading={busy === "plan"}>Build my plan <ArrowRight className="h-4 w-4" /></Button>
       </form>
       {!plan && (
         <div className="mt-3 flex flex-wrap gap-1.5">

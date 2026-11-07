@@ -179,7 +179,7 @@ export function DataLineage({ res, className }: { res: SimResult; className?: st
       )}
       {g && (
         <div className="mt-2 border-t border-black/[0.06] pt-2 text-[10.5px] text-ink-400">
-          Each agent carries {g.per_agent} parameters. Placement, age–sex, travel distance and spending power come from data; behavioural traits are generated from documented, correlated assumptions and are labelled as such in every agent&apos;s X-ray.
+          Each agent carries {g.per_agent} parameters. Placement, age–sex, travel distance and spending power come from data; behavioural traits are generated from documented, correlated assumptions and are labeled as such in every agent&apos;s X-ray.
         </div>
       )}
     </section>

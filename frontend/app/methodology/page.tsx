@@ -26,7 +26,7 @@ export default function Methodology() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-ink-100">1. Open categories</h2>
           <p>
-            You can describe any business. The text is matched to a catalogue of OpenStreetMap tags; if nothing matches, an optional AI step proposes tags that are validated
+            You can describe any business. The text is matched to a catalog of OpenStreetMap tags; if nothing matches, an optional AI step proposes tags that are validated
             against an allow-list, and the final fallback searches business names for your keyword. Each category is assigned to one of six economic model types (membership,
             dine-in, takeaway, retail, appointment, lodging). The model type decides what a sold “unit” is and how capacity works. You can always override it.
           </p>
@@ -37,7 +37,7 @@ export default function Methodology() {
           <ul className="list-disc space-y-1.5 pl-5">
             <li><b>Competitors:</b> OpenStreetMap via the Overpass API, fetched when you load a location. Each record keeps its OSM reference, last-edit time, and our retrieval time. Contributor usernames are discarded.</li>
             <li><b>Population:</b> WorldPop 100 m gridded estimates (reference year shown) summed over the catchment, then distributed across ~300 m demand zones in proportion to mapped buildings (dasymetric mapping). Where building data is thin, population is spread uniformly and flagged.</li>
-            <li><b>Catchment:</b> a straight-line radius, or a travel-time area from openrouteservice when a routing key is configured. The method in use is always labelled.</li>
+            <li><b>Catchment:</b> a straight-line radius, or a travel-time area from openrouteservice when a routing key is configured. The method in use is always labeled.</li>
             <li><b>Coverage indicator:</b> computed from mapped buildings per 1,000 residents, completeness and edit recency of competitor records. It is a heuristic, not a measured recall rate.</li>
             <li>Retrieval time is not the same as the time the underlying data was last updated; both are shown.</li>
           </ul>
@@ -75,8 +75,8 @@ d_zj = OSRM road-network distance (car), t_zj = OSRM walking time             zo
           <ul className="list-disc space-y-1 pl-5">
             <li><b>Official:</b> HCES 2023-24 Tables 3.1 and 3.4R/U (all-India fractiles; P10–P90 for 18 states, rural and urban). Fit error is reported with every run.</li>
             <li><b>Published evidence:</b> gym membership 0.8 % of India (Deloitte & HFA 2025, industry), dental visits 24 %/year (Talukdar et al. 2022), private coaching 25.5 % rural / 30.7 % urban of students (NSO CMS: Education 2025), dining out 3.7×/month (NRAI 2024, industry), health-spend income elasticity ≈ 0.25 (Dubey 2020), work-trip mode shares walk 28.3 % / two-wheeler 42.6 % (MoSPI NHTS 2025-26).</li>
-            <li><b>Still assumptions</b> (labelled and varied in Monte Carlo): income elasticities for services, the taste spread of WTP, price and quality coefficients, distance decay. No Indian study calibrates these for local services yet.</li>
-            <li>Limits: spending follows the state and rural/urban curve, so two neighbourhoods in the same city get the same mix; outside India the archetype assumptions are used.</li>
+            <li><b>Still assumptions</b> (labeled and varied in Monte Carlo): income elasticities for services, the taste spread of WTP, price and quality coefficients, distance decay. No Indian study calibrates these for local services yet.</li>
+            <li>Limits: spending follows the state and rural/urban curve, so two neighborhoods in the same city get the same mix; outside India the archetype assumptions are used.</li>
           </ul>
         </section>
 

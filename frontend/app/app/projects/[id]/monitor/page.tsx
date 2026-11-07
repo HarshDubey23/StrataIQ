@@ -109,7 +109,7 @@ export default function MonitorPage() {
             <Field label="Total costs"><NumberInput value={costs} onChange={setCosts} prefix={CUR} allowEmpty /></Field>
             <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. launch offer running" /></Field>
             <Button type="submit" variant="primary" className="w-full" loading={busy}>Save</Button>
-            <p className="text-[11px] text-ink-500">Figures are labelled user-reported and are not independently verified. Saving the same month again overwrites it.</p>
+            <p className="text-[11px] text-ink-500">Figures are labeled user-reported and are not independently verified. Saving the same month again overwrites it.</p>
           </form>
         </Card>
       </div>

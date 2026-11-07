@@ -449,7 +449,7 @@ function PopulationFallback({ projectId, locationId, onSaved }: { projectId: str
   const [busy, setBusy] = useState(false);
   return (
     <div className="space-y-2">
-      <p className="text-xs text-amber-800">Official population data could not be loaded. Retry later, or enter your best figure for the catchment (labelled as user-entered).</p>
+      <p className="text-xs text-amber-800">Official population data could not be loaded. Retry later, or enter your best figure for the catchment (labeled as user-entered).</p>
       <div className="flex gap-2">
         <NumberInput value={pop} onChange={setPop} allowEmpty suffix="people" />
         <Button
@@ -639,7 +639,7 @@ function AddCompetitorDialog({ draft, projectId, onClose, onAdded }: { draft: { 
       }
     >
       <div className="space-y-3">
-        <p className="text-xs text-ink-400">At {draft?.lat.toFixed(5)}, {draft?.lng.toFixed(5)}. It will be labelled as user-entered, not verified.</p>
+        <p className="text-xs text-ink-400">At {draft?.lat.toFixed(5)}, {draft?.lng.toFixed(5)}. It will be labeled as user-entered, not verified.</p>
         {err && <ErrorState message={err} />}
         <Field label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
         <Field label="Price (if you know it)"><NumberInput value={price} onChange={setPrice} prefix={CUR} allowEmpty /></Field>

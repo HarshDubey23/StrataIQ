@@ -225,12 +225,12 @@ export default function SimulationLab() {
           >
             <div className="flex items-center gap-2 text-xs">
               <Select aria-label="Opening time" className="h-8" value={draft.offer?.open_hour ?? ""} onChange={(e) => set("offer", { open_hour: e.target.value === "" ? null : Number(e.target.value), close_hour: draft.offer?.close_hour ?? 22, weekend_open: draft.offer?.weekend_open ?? true, attributes: draft.offer?.attributes ?? {} })}>
-                <option value="">default</option>
+                <option value="">Auto</option>
                 {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
               </Select>
               <span className="text-ink-400">to</span>
               <Select aria-label="Closing time" className="h-8" value={draft.offer?.close_hour ?? ""} onChange={(e) => set("offer", { open_hour: draft.offer?.open_hour ?? 6, close_hour: e.target.value === "" ? null : Number(e.target.value), weekend_open: draft.offer?.weekend_open ?? true, attributes: draft.offer?.attributes ?? {} })}>
-                <option value="">default</option>
+                <option value="">Auto</option>
                 {Array.from({ length: 24 }, (_, h) => h + 1).map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
               </Select>
               <label className="ml-auto flex items-center gap-1 text-ink-300">
@@ -328,7 +328,7 @@ export default function SimulationLab() {
               onCandidateClick={(id) => setDraftLoc(id)}
             />
             <div className="panel absolute bottom-8 left-2 z-10 space-y-1.5 rounded-md p-2 text-[11px]">
-              <Segmented value={agentColor} onChange={setAgentColor} options={[{ value: "choice", label: "Colour by choice" }, { value: "red", label: "All agents" }]} />
+              <Segmented value={agentColor} onChange={setAgentColor} options={[{ value: "choice", label: "Color by choice" }, { value: "red", label: "All agents" }]} />
               {agentColor === "choice" ? (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-ink-300">
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" /> chooses you</span>
@@ -413,8 +413,8 @@ export default function SimulationLab() {
                           ["Revenue / mo", (m) => money(m.revenue, { compact: true })],
                           ["Operating cost / mo", (m) => money(m.operating_cost, { compact: true })],
                           ["Operating profit / mo", (m) => money(m.operating_profit, { compact: true })],
-                          ["Profit P10 – P90", (m) => `${money(m.profit_p10, { compact: true })} – ${money(m.profit_p90, { compact: true })}`],
-                          ["Modeled P(loss)", (m) => pct(m.prob_loss)],
+                          ["Profit range", (m) => `${money(m.profit_p10, { compact: true })} – ${money(m.profit_p90, { compact: true })}`],
+                          ["Chance of a monthly loss", (m) => pct(m.prob_loss)],
                           ["Break-even units", (m) => num(m.break_even_units)],
                           ["Capacity use", (m) => pct(m.utilization)],
                           ["Payback", (m) => (m.payback_months ? `${num(m.payback_months, 1)} mo` : "not reached")],
@@ -473,9 +473,9 @@ export default function SimulationLab() {
                   kind="model"
                   delta={d(res.finance.operating_profit, baseRes?.finance.operating_profit) !== null ? money(d(res.finance.operating_profit, baseRes?.finance.operating_profit), { sign: true }) : null}
                   deltaGood={(d(res.finance.operating_profit, baseRes?.finance.operating_profit) ?? 0) >= 0}
-                  sub={res.monte_carlo ? `P10 ${money(res.monte_carlo.profit.p10, { compact: true })} · P90 ${money(res.monte_carlo.profit.p90, { compact: true })}` : undefined}
+                  sub={res.monte_carlo ? `Range ${money(res.monte_carlo.profit.p10, { compact: true })} to ${money(res.monte_carlo.profit.p90, { compact: true })}` : undefined}
                 />
-                <Metric label="Modeled P(loss)" value={pct(res.monte_carlo?.prob_loss)} kind="model" delta={d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) !== null ? `${signed((d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) * 100)} pts` : null} deltaGood={(d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) <= 0} />
+                <Metric label="Chance of a monthly loss" value={pct(res.monte_carlo?.prob_loss)} kind="model" delta={d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) !== null ? `${signed((d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) * 100)} pts` : null} deltaGood={(d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) <= 0} />
                 <Metric label="Break-even" value={res.finance.break_even_units === null ? "n/a" : num(res.finance.break_even_units)} sub={res.unit_label} kind="model" />
                 <Metric label="Capacity use" value={pct(res.finance.utilization)} sub={`of ${num(res.summary.capacity_units)}`} kind="model" />
                 <Metric label="Payback" value={res.finance.payback_months ? `${num(res.finance.payback_months, 1)} mo` : "not reached"} kind="model" />

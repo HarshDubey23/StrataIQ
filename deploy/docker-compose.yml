@@ -41,7 +41,6 @@ services:
       PROXY_SECRET: ${PROXY_SECRET}
       COOKIE_SECURE: "true"
       CORS_ORIGINS: https://${DOMAIN}
-      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
       FSQ_API_KEY: ${FSQ_API_KEY:-}
       ORS_API_KEY: ${ORS_API_KEY:-}
       SPEKO_API_KEY: ${SPEKO_API_KEY:-}

@@ -33,8 +33,8 @@ const FAQ: [string, string][] = [
   ["Where does it work?", "Anywhere in the United States, from a downtown corner to a small-town main street."],
 ];
 
-const STATS: [number, string][] = [[10000, "simulated customers per test"], [84091, "US neighbourhoods profiled"], [84, "days of market played out"]];
-const SCENES = ["Your street, in 3D", "Your rivals, live", "Your neighbourhood", "Your customers deciding", "Your numbers"];
+const STATS: [number, string][] = [[10000, "simulated customers per test"], [84091, "US neighborhoods profiled"], [84, "days of market played out"]];
+const SCENES = ["Your street, in 3D", "Your rivals, live", "Your neighborhood", "Your customers deciding", "Your numbers"];
 
 interface Preview {
   spot: Spot;
@@ -270,7 +270,7 @@ export default function Landing() {
         <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
           <WordsIn text="Your competition, mapped live." className={HEAD} />
           <Reveal delay={0.15}>
-            <p className="mt-6 text-[18px] leading-[1.5]">Pick a neighbourhood and a business type. Your rivals load from OpenStreetMap right now, on a real 3D map of the block.</p>
+            <p className="mt-6 text-[18px] leading-[1.5]">Pick a neighborhood and a business type. Your rivals load from OpenStreetMap right now, on a real 3D map of the block.</p>
             <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="City">
               {SPOTS.map((s) => <Chip key={s.key} group="city" on={s.key === spot.key} tone="bg-night" onClick={() => setSpot(s)}>{s.label.split(",")[0]}</Chip>)}
             </div>
@@ -293,7 +293,7 @@ export default function Landing() {
           <WordsIn text="Know your customers, block by block." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">
-              Income, age, households, jobs, students and how people get around, from US Census data for 84,091 neighbourhoods. Two streets apart can mean two different markets, and you will see it.
+              Income, age, households, jobs, students and how people get around, from US Census data for 84,091 neighborhoods. Two streets apart can mean two different markets, and you will see it.
             </p>
           </Reveal>
         </section>
@@ -302,7 +302,7 @@ export default function Landing() {
           <WordsIn text="Watch 10,000 customers decide." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">
-              Each simulated person has an income, a budget, a job, a weekly routine and friends. Day by day they choose you, a rival, or nothing. They remember bad visits, and word of mouth spreads through the neighbourhood. Then you see why you won them or lost them.
+              Each simulated person has an income, a budget, a job, a weekly routine and friends. Day by day they choose you, a rival, or nothing. They remember bad visits, and word of mouth spreads through the neighborhood. Then you see why you won them or lost them.
             </p>
           </Reveal>
         </section>
@@ -360,7 +360,8 @@ export default function Landing() {
             <RollLink href="/refunds">Refunds</RollLink>
             <RollLink href="/methodology">Method</RollLink>
           </nav>
-          Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Income and neighbourhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau. Tiles © OpenFreeMap / OpenMapTiles. Forecasts are estimates, not guarantees or financial advice.
+          <p className="mb-2 text-[16px]">© 2026 StrataIQ{process.env.NEXT_PUBLIC_CONTACT_EMAIL && <> · <a className="underline underline-offset-4" href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Support</a></>}</p>
+          Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Income and neighborhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau. Tiles © OpenFreeMap / OpenMapTiles. Forecasts are estimates, not guarantees or financial advice.
         </footer>
       </main>
     </div>

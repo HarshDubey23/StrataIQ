@@ -23,13 +23,13 @@ from .serialize import project_out
 router = APIRouter(tags=["demo"])
 
 DEMO_LABEL = "DEMO SCENARIO — Illustrative market data; not verified live conditions."
-CENTER = (12.9352, 77.6245)  # placeholder coordinates for the illustrative map only
+CENTER = (30.2672, -97.7431) if get_settings().market == "US" else (12.9352, 77.6245)  # placeholder coordinates for the illustrative map only
 
 
 @router.post("/demo", status_code=201)
 def create_demo(user: User = Depends(current_user), db: Session = Depends(get_db)):
     cat = from_taxonomy_key("gym", "gym").as_dict()
-    p = Project(owner_id=user.id, name="Demo — Neighbourhood gym", objective="start_new", decision_goal="profit", category=cat,
+    p = Project(owner_id=user.id, name="Sample: neighborhood gym", objective="start_new", decision_goal="profit", category=cat,
                 profile={"description": "Illustrative demo project", "demo_label": DEMO_LABEL, "positioning": ["Premium experience", "Better service"], "operating_hours": "5:30am–10:30pm"}, status="created", is_demo=True)
     db.add(p)
     db.flush()

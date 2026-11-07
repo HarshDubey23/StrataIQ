@@ -263,11 +263,11 @@ export default function LiveMarket() {
                 aria-label="Simulation day"
               />
               <Segmented value={String(speed)} onChange={(v) => setSpeed(Number(v))} options={[{ value: "0.5", label: "½×" }, { value: "1", label: "1×" }, { value: "2", label: "2×" }, { value: "4", label: "4×" }]} />
-              <Select value={colorMode} onChange={(e) => setColorMode(e.target.value as typeof colorMode)} className="h-8 w-auto text-xs" aria-label="Colour agents by">
-                <option value="choice">Colour: customer status</option>
-                <option value="segment">Colour: spending power (real data)</option>
-                <option value="mode">Colour: travel mode</option>
-                <option value="age">Colour: age group</option>
+              <Select value={colorMode} onChange={(e) => setColorMode(e.target.value as typeof colorMode)} className="h-8 w-auto text-xs" aria-label="Color agents by">
+                <option value="choice">Color: customer status</option>
+                <option value="segment">Color: spending power (real data)</option>
+                <option value="mode">Color: travel mode</option>
+                <option value="age">Color: age group</option>
               </Select>
               <label className="flex items-center gap-1.5 text-xs text-ink-300"><input type="checkbox" checked={heat} onChange={(e) => setHeat(e.target.checked)} /> Density</label>
               <label className="flex items-center gap-1.5 text-xs text-ink-300"><input type="checkbox" checked={trails} onChange={(e) => setTrails(e.target.checked)} /> Trips</label>

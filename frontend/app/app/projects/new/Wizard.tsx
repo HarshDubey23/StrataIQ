@@ -234,7 +234,7 @@ export function Wizard() {
                 </button>
               ))}
             </div>
-            <Field label="What should the recommendation optimise for?">
+            <Field label="What should the recommendation optimize for?">
               <Segmented<Goal>
                 value={goal}
                 onChange={setGoal}
@@ -272,13 +272,12 @@ export function Wizard() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{category.label}</span>
                   <Badge tone={category.method === "taxonomy" || category.method === "manual" ? "ok" : "warn"}>
-                    {category.method === "taxonomy" ? "Catalogue match" : category.method === "llm" ? <><Sparkles className="h-3 w-3" /> AI-mapped, validated</> : category.method === "manual" ? "Selected" : "Keyword search"}
+                    {category.method === "taxonomy" ? "Matched" : category.method === "llm" ? <><Sparkles className="h-3 w-3" /> AI-mapped, validated</> : category.method === "manual" ? "Selected" : "Keyword search"}
                   </Badge>
                   <span className="num text-xs text-ink-400">match {pct(category.confidence)}</span>
                 </div>
                 {category.notes.map((n, i) => <Notice key={i} tone="warn">{n}</Notice>)}
                 <div className="text-xs text-ink-300">
-                  Competitors will be searched on OpenStreetMap with: <code className="num text-ink-200">{category.filters.join("  OR  ") || "—"}</code>
                 </div>
                 <Field label="Business model type" hint={arch.description}>
                   <Select
@@ -290,7 +289,7 @@ export function Wizard() {
                 </Field>
                 {category.alternatives.length > 0 && (
                   <div>
-                    <div className="mb-1.5 text-xs text-ink-400">Not quite right? Closest catalogue matches:</div>
+                    <div className="mb-1.5 text-xs text-ink-400">Not quite right? Closest catalog matches:</div>
                     <div className="flex flex-wrap gap-1.5">
                       {category.alternatives.slice(0, 5).map((a) => (
                         <button key={a.key} onClick={() => pickAlternative(a.key)} className="rounded-full border border-ink-600 px-2.5 py-1 text-xs text-ink-200 hover:border-accent">

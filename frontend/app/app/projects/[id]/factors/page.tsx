@@ -69,7 +69,7 @@ export default function Factors() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Factor Intelligence Engine</h2>
-          <p className="text-sm text-ink-300">{data.counts.total} factors across {Object.keys(data.domains).length} domains, each labelled with where its value comes from.</p>
+          <p className="text-sm text-ink-300">{data.counts.total} factors across {Object.keys(data.domains).length} domains, each labeled with where its value comes from.</p>
         </div>
         <Select value={sid} onChange={(e) => setSid(e.target.value)} className="w-auto" aria-label="Scenario">
           {scenarios.map((s) => <option key={s.id} value={s.id}>{s.name}{s.is_baseline ? " (baseline)" : ""}</option>)}

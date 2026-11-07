@@ -122,6 +122,15 @@ function VoiceDockInner() {
   const [engine, setEngine] = useState<Engine>("browser");
   const [phase, setPhase] = useState<Phase>("idle");
   const [turns, setTurns] = useState<Turn[]>([]);
+  const chatRef = useRef<HTMLDivElement>(null);
+  // Bring the latest question to the top of the chat, with its answer below it.
+  useEffect(() => {
+    const box = chatRef.current;
+    if (!box) return;
+    const asked = box.querySelectorAll<HTMLElement>("[data-asked]");
+    const latest = asked[asked.length - 1];
+    box.scrollTo({ top: latest ? latest.offsetTop - box.offsetTop : box.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, [turns.length]);
   const [interim, setInterim] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
@@ -975,14 +984,14 @@ function VoiceDockInner() {
             </button>
           </div>
 
-          <div className="mt-4 max-h-64 space-y-2.5 overflow-y-auto px-5 pb-1 text-[13.5px] leading-relaxed">
+          <div ref={chatRef} className="relative mt-4 max-h-64 space-y-2.5 overflow-y-auto px-5 pb-1 text-[13.5px] leading-relaxed">
             {turns.length === 0 && !interim && (
               <p className="text-ink-400">
                 {US_MARKET ? "Just talk. Strata creates the project, loads the data, changes your plan and runs the numbers for you." : "Bas bolo — Hinglish, Hindi ya English."} {!US_MARKET && `Strata khud project banata hai, data load karta hai, plan badalta hai, researcher bhejta hai aur report banata hai. Har number simulation se aata hai, guess se nahi.`}
               </p>
             )}
             {turns.map((t) => (
-              <div key={t.ts + t.who} className={cn("flex", t.who === "you" ? "justify-end" : "justify-start")}>
+              <div key={t.ts + t.who} data-asked={t.who === "you" ? "" : undefined} className={cn("flex", t.who === "you" ? "justify-end" : "justify-start")}>
                 <div className={cn("max-w-[85%] rounded-xl px-3.5 py-2", t.who === "you" ? "bg-black/[0.07] text-ink-100" : "bg-accent-dim text-ink-100")}>{t.text}</div>
               </div>
             ))}

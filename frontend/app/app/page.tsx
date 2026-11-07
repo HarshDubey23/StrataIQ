@@ -15,7 +15,7 @@ const actions = [
   { href: "/app/projects/new?objective=start_new", t: "Start a business", d: "Test a new idea at a location", i: Rocket },
   { href: "/app/projects/new?objective=improve_existing", t: "Grow my business", d: "Diagnose and improve with your figures", i: TrendingUp },
   { href: "/app/projects/new?objective=compare_locations", t: "Compare locations", d: "Rank candidate sites side by side", i: MapPinned },
-  { href: "/app/projects/new?objective=test_strategy", t: "Optimise my strategy", d: "Price, marketing and capacity tests", i: GitCompareArrows },
+  { href: "/app/projects/new?objective=test_strategy", t: "Optimize my strategy", d: "Price, marketing and capacity tests", i: GitCompareArrows },
 ];
 
 export default function Dashboard() {
@@ -64,20 +64,17 @@ export default function Dashboard() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
-      <div className="rise relative overflow-hidden rounded-md bg-accent text-white">
-        <div aria-hidden className="lp-grid pointer-events-none absolute inset-0" />
+      <div className="rise bg-night text-white">
         <div className="relative flex flex-col justify-between gap-8 p-6 md:flex-row md:items-end md:p-10">
           <div>
-            <p className="label-mono text-white/60">{user?.name && user.name !== "Guest" ? `Namaste, ${user.name.split(" ")[0]}` : "Namaste"}</p>
-            <h1 className="lp-wide mt-4 max-w-3xl text-[clamp(2.2rem,4.8vw,4.4rem)] leading-[0.9] tracking-[-0.045em]">What would you open, and where?</h1>
-            <p className="mt-5 max-w-xl text-[15.5px] leading-relaxed text-white/75">Describe any business and pick any street. StrataIQ loads the real market around it and simulates who would come.</p>
+            <h1 className="font-display max-w-3xl text-[clamp(2.25rem,1.5rem+2.4vw,3.75rem)] font-medium leading-[1] tracking-[-0.03em]">Which location are you considering?</h1>
+            <p className="mt-5 max-w-xl text-[17px] leading-snug text-white">Describe your business and pick a street. We load the competition and the neighborhood, then test your plan.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={liveDemo} loading={liveBusy}>
-              <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ok opacity-70" /><span className="relative inline-flex h-2 w-2 rounded-full bg-ok" /></span>
-              Live demo
+              See an example
             </Button>
-            <Link href="/app/projects/new" className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md bg-night px-4.5 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-night">New analysis <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/app/projects/new" className="inline-flex h-10 items-center gap-2 whitespace-nowrap bg-accent px-4.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 motion-reduce:transform-none">New analysis <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </div>
@@ -86,11 +83,10 @@ export default function Dashboard() {
         <QuickStart />
       </div>
 
-      <div className="rise rise-2 mt-4 grid gap-px overflow-hidden rounded-md border border-ink-100/[0.12] bg-ink-100/[0.12] sm:grid-cols-2 lg:grid-cols-4">
-        {actions.map((a, i) => (
+      <div className="rise rise-2 mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {actions.map((a) => (
           <Link key={a.t} href={a.href} className="group relative bg-white p-5 transition-colors duration-300 hover:bg-night hover:text-white">
-            <div className="flex items-center justify-between">
-              <span className="idx group-hover:text-white/50">0{i + 1}.</span>
+            <div>
               <a.i className="h-4.5 w-4.5 text-ink-400 transition-colors group-hover:text-accent" />
             </div>
             <div className="font-display mt-8 text-[17px] tracking-tight">{a.t}</div>
@@ -103,9 +99,9 @@ export default function Dashboard() {
       </div>
 
       <div className="mt-14 flex items-end justify-between border-b border-ink-100 pb-3">
-        <h2 className="font-display text-2xl tracking-tight">Your simulations {projects && projects.length > 0 && <span className="num ml-1 font-mono text-sm text-ink-500">{projects.length}</span>}</h2>
+        <h2 className="font-display text-2xl tracking-tight">Your simulations {projects && projects.length > 0 && <span className="num ml-1 text-sm text-ink-400">{projects.length}</span>}</h2>
         <Button size="sm" variant="ghost" onClick={demo} loading={busy}>
-          <FlaskConical className="h-3.5 w-3.5" /> Open labelled demo
+          <FlaskConical className="h-3.5 w-3.5" /> Open a sample project
         </Button>
       </div>
 

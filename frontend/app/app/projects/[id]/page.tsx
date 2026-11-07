@@ -57,7 +57,7 @@ export default function Overview() {
               )}
             </div>
             <div className="space-y-2">
-              <label className="block text-xs text-ink-400" htmlFor="goal">Recommendations optimise for</label>
+              <label className="block text-xs text-ink-400" htmlFor="goal">Recommendations optimize for</label>
               <Select id="goal" value={p.decision_goal} onChange={(e) => setGoal(e.target.value as Goal)}>
                 {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </Select>

@@ -46,7 +46,7 @@ export const GLOSSARY: [string, string][] = [
   ["Operating profit", "Revenue minus variable and fixed costs, before tax, loan interest and depreciation."],
   ["Break-even", "Sales per month needed so revenue exactly covers costs. Below it you lose money."],
   ["Payback", "Months of profit needed to earn back your startup investment."],
-  ["P10 / P90", "Bad case / good case. In 10% of the uncertainty runs profit was below P10; in 10% above P90."],
+  ["Bad and good month", "In one scenario in ten profit falls below the bad-month figure, and in one in ten it rises above the good-month figure."],
   ["Chance of a loss", "Share of the uncertainty runs where a month ends in a loss."],
   ["Scenario", "One version of your plan (price, costs, capacity, marketing). Make several and compare."],
   ["Baseline", "Your starting plan; everything else is compared against it."],
@@ -142,7 +142,7 @@ export function Journey({ project }: { project: Project }) {
                     active ? "text-white" : s.done ? "text-[#3ddc84]" : "text-white/35 group-hover:text-white/70",
                   )}
                 >
-                  {s.done && !active ? <Check className="h-3.5 w-3.5" /> : `0${i + 1}.`}
+                  {s.done && !active ? <Check className="h-3.5 w-3.5" /> : null}
                 </span>
                 {s.label}
                 {s.key === "field" && (project.field?.records ?? 0) > 0 && <span className="num rounded-sm bg-[#3ddc84]/15 px-1 font-mono text-[10px] text-[#3ddc84]">{project.field?.records}</span>}
@@ -182,11 +182,11 @@ export function Journey({ project }: { project: Project }) {
 }
 
 const SLIDES = [
-  { icon: MapIcon, t: "1 · Your real market", d: "We load every real competitor near your place (OpenStreetMap + Foursquare) and how many people live around it (WorldPop). Amber pillars are rivals, the blue pillar is you, the dashed circle is where customers come from." },
-  { icon: Footprints, t: "2 · Check the street", d: "Maps miss informal shops and real prices. Request a field researcher from your industry: they open a link on their phone, interview people, visit every rival and count footfall. The agents switch to that ground data." },
-  { icon: Users, t: "3 · 10,000 simulated people decide", d: "Each simulated person has a budget, a way to travel, free hours and tastes. Every day, those who need what you sell pick you, a rival or nothing. That gives your orders, profit and risk." },
-  { icon: Crosshair, t: "4 · Try other plans", d: "In the Simulation lab change price, rent, marketing or the site and run again. \"Best sites\" on the map tests your plan at every spot nearby." },
-  { icon: Mic, t: "5 · Just ask", d: "Press V and talk, in English or Hinglish: \"how can I grow?\", \"best location kahan hai?\", \"what is break-even?\". Strata answers from the simulation." },
+  { icon: MapIcon, t: "Your real market", d: "We load every real competitor near your place (OpenStreetMap + Foursquare) and how many people live around it (WorldPop). Amber pillars are rivals, the blue pillar is you, the dashed circle is where customers come from." },
+  { icon: Footprints, t: "Check the street", d: "Maps miss informal shops and real prices. Request a field researcher from your industry: they open a link on their phone, interview people, visit every rival and count footfall. The agents switch to that ground data." },
+  { icon: Users, t: "10,000 simulated people decide", d: "Each simulated person has a budget, a way to travel, free hours and tastes. Every day, those who need what you sell pick you, a rival or nothing. That gives your orders, profit and risk." },
+  { icon: Crosshair, t: "Try other plans", d: "In the Simulation lab change price, rent, marketing or the site and run again. \"Best sites\" on the map tests your plan at every spot nearby." },
+  { icon: Mic, t: "Just ask", d: "Press V and talk: \"how can I grow?\", \"where is the best location?\", \"what is break-even?\". Strata answers from the simulation." },
 ]
 
 function Tour({ onClose, base }: { onClose: () => void; base: string }) {

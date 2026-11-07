@@ -116,11 +116,11 @@ function Executive({ c }: { c: ReportContent }) {
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {mc?.histogram && <ChartCard title="Range of monthly profit" note="Each bar is how often a profit level came up across market scenarios."><ProfitHistogram mc={mc} /></ChartCard>}
-        {r.sensitivity?.price_curve?.length > 0 && <ChartCard title="Price test" note="Profit and sales at each price, using this neighbourhood's customers."><PriceCurve data={r.sensitivity.price_curve} current={r.summary.price} unit={unit} /></ChartCard>}
+        {r.sensitivity?.price_curve?.length > 0 && <ChartCard title="Price test" note="Profit and sales at each price, using this neighborhood's customers."><PriceCurve data={r.sensitivity.price_curve} current={r.summary.price} unit={unit} /></ChartCard>}
         {abm?.weekly?.length > 0 && <ChartCard title="First months after opening" note={`${num(abm.n_agents)} simulated customers over ${abm.days} days: sales and how many have heard of you.`}><RampChart data={abm.weekly} unit={unit} /></ChartCard>}
         {r.sensitivity?.tornado?.length > 0 && <ChartCard title="What moves your profit most" note="Check the longest bars first. These assumptions matter most."><Tornado data={r.sensitivity.tornado} base={f.operating_profit} /></ChartCard>}
         {r.sensitivity?.marketing_curve?.length > 0 && <ChartCard title="Marketing test" note="Profit at each monthly marketing budget."><MarketingCurve data={r.sensitivity.marketing_curve} current={Number((best?.scenario as any)?.inputs?.marketing_spend ?? 0)} /></ChartCard>}
-        {abm?.metrics?.customer_modes && <ChartCard title="How customers reach you" note="From commute data for these neighbourhoods."><ShareBars data={abm.metrics.customer_modes} /></ChartCard>}
+        {abm?.metrics?.customer_modes && <ChartCard title="How customers reach you" note="From commute data for these neighborhoods."><ShareBars data={abm.metrics.customer_modes} /></ChartCard>}
         {abm?.life?.occupation_shares && <ChartCard title="Who lives in your catchment" note="Job and student status of simulated residents, drawn from Census figures."><ShareBars data={abm.life.occupation_shares} /></ChartCard>}
       </div>
       {r.income && <div className="mt-3 break-inside-avoid"><IncomeMix income={r.income} price={r.summary.price} /></div>}
@@ -237,13 +237,13 @@ export function ReportView({ c }: { c: ReportContent }) {
         <div key={s.id} className="mb-3">
           <div className="font-medium text-ink-100">{s.name}{s.is_baseline && " (baseline)"}</div>
           <p className="text-xs">Price {money(r.summary.price)} · modeled demand {num(r.summary.modeled_demand_units)} {r.unit_label ?? c.archetype.unit_label}/month (capacity {num(r.summary.capacity_units)}) · revenue {money(r.finance.revenue)} · operating cost {money((r.finance.fixed_cost || 0) + (r.finance.variable_cost || 0))} · <b>operating profit {money(r.finance.operating_profit)}</b> · break-even {num(r.finance.break_even_units)} units · payback {r.finance.payback_months ? `${num(r.finance.payback_months, 1)} months` : "not reached"}.</p>
-          {r.monte_carlo && <p className="text-xs text-ink-400">Monte Carlo ({r.monte_carlo.draws} draws): profit P10 {money(r.monte_carlo.profit.p10)}, P50 {money(r.monte_carlo.profit.p50)}, P90 {money(r.monte_carlo.profit.p90)}; modeled probability of loss {pct(r.monte_carlo.prob_loss)}.</p>}
+          {r.monte_carlo && <p className="text-xs text-ink-400">Across {num(r.monte_carlo.draws)} market scenarios: bad month {money(r.monte_carlo.profit.p10)}, typical month {money(r.monte_carlo.profit.p50)}, good month {money(r.monte_carlo.profit.p90)}. Chance of a monthly loss: {pct(r.monte_carlo.prob_loss)}.</p>}
         </div>
       ))}
 
       <H n={8}>Scenario comparison</H>
       <table className="w-full text-xs">
-        <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">Rank</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Units</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">P(loss)</th></tr></thead>
+        <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">Rank</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Units</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">Chance of loss</th></tr></thead>
         <tbody>{d.ranking.map((r) => <tr key={r.scenario_id} className="border-t border-black/[0.06]"><td className="py-1">{r.rank}</td><td>{r.name}</td><td className="text-right">{num(r.units)}</td><td className="text-right">{money(r.profit)}</td><td className="text-right">{pct(r.prob_loss)}</td></tr>)}</tbody>
       </table>
       <p className="mt-2"><b>Result:</b> {d.headline}</p>
@@ -266,7 +266,7 @@ export function ReportView({ c }: { c: ReportContent }) {
       <p>Demand is estimated with a multinomial-logit customer-choice model over synthetic customer segments placed on a population grid, with an outside option, lognormal affordability, distance decay and capacity limits. Uncertainty is propagated by Monte Carlo over documented parameter ranges. Default behaviour parameters are not calibrated against observed sales; no accuracy figure is claimed. See /methodology for formulas.</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-ink-300">{(ran[0]?.result?.limitations || []).map((l) => <li key={l}>{l}</li>)}</ul>
       <BottomLine c={c} />
-      <p className="mt-6 text-[11px] leading-snug text-ink-400">{c.disclaimer} Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Neighbourhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau.</p>
+      <p className="mt-6 text-[11px] leading-snug text-ink-400">{c.disclaimer} Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Neighborhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau.</p>
     </article>
   );
 }
