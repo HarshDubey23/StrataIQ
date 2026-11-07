@@ -15,10 +15,12 @@ export const viewport: Viewport = { themeColor: "#1d4f91", colorScheme: "light" 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${publicSans.variable} ${barlow.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${publicSans.variable} ${barlow.variable}`}>
       <head>
+        {/* runs before paint, so a returning visitor never sees the opening sheet */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("siq-intro")||matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.dataset.seen="1"}catch(e){}` }} />
         {/* Entrance animations start hidden; without script the text must still show */}
-        <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style></noscript>
+        <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}.curtain{display:none}`}</style></noscript>
       </head>
       <body className="grain min-h-screen font-sans">
         {children}

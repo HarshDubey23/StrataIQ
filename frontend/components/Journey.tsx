@@ -5,6 +5,7 @@
  * click away, a short welcome tour, and a plain-language glossary of every term the app uses.
  */
 import { BookA, Check, ChevronDown, ChevronRight, Crosshair, Footprints, Map as MapIcon, Mic, Users, X } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -131,10 +132,11 @@ export function Journey({ project }: { project: Project }) {
             const active = path.startsWith(base + s.seg);
             return (
               <Link key={s.key} href={base + s.seg} title={s.hint} aria-current={active ? "page" : undefined}
-                className={cn("flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-[14px] transition-colors", active ? "bg-ink-950 font-medium text-night" : "text-white hover:bg-atlas-deep")}>
-                {s.done && !active ? <Check className="h-3.5 w-3.5" aria-label="Done" /> : <span className="num text-[13px]">{i + 1}</span>}
-                {s.label}
-                {s.key === "field" && (project.field?.records ?? 0) > 0 && <span className="num bg-moss px-1 text-[11px] text-night">{project.field?.records}</span>}
+                className={cn("relative flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-[14px] transition-colors duration-200", active ? "font-medium text-night" : "text-white hover:bg-atlas-deep")}>
+                {active && <motion.span layoutId="step-tab" className="absolute inset-0 bg-ink-950" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
+                {s.done && !active ? <Check className="relative h-3.5 w-3.5" aria-label="Done" /> : <span className="num relative text-[13px]">{i + 1}</span>}
+                <span className="relative">{s.label}</span>
+                {s.key === "field" && (project.field?.records ?? 0) > 0 && <span className="num relative bg-moss px-1 text-[11px] text-night">{project.field?.records}</span>}
               </Link>
             );
           })}
@@ -156,7 +158,7 @@ export function Journey({ project }: { project: Project }) {
           <button onClick={() => setWords(true)} className="hidden items-center gap-1 px-2.5 py-1.5 text-[13px] text-white hover:bg-atlas-deep lg:inline-flex"><BookA className="h-3.5 w-3.5" /> Glossary</button>
           {next && (
             <Link href={base + next.seg} title={next.hint} className="group ml-1 inline-flex h-8 items-center gap-1.5 border border-night bg-you px-3 text-[13px] font-semibold text-night transition-colors hover:bg-you-deep">
-              Next: {next.label} <ChevronRight className="h-3.5 w-3.5" />
+              Next: {next.label} <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           )}
         </div>

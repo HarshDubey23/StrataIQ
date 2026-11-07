@@ -82,8 +82,8 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   return (
     <div className="grid min-h-screen bg-paper lg:grid-cols-[1.15fr_1fr]">
       <div className="relative hidden overflow-hidden border-r border-night bg-atlas lg:block">
-        <BlockPlan seed={14} cols={8} rows={8} className="absolute inset-0 h-full w-full" />
-        <div className="sheet absolute bottom-6 left-6 w-72 p-4">
+        <BlockPlan seed={14} cols={8} rows={8} draw className="absolute inset-0 h-full w-full" />
+        <div className="sheet rise absolute bottom-6 left-6 w-72 p-4" style={{ animationDelay: "500ms" }}>
           <p className="font-display text-[22px] leading-tight">Every block tells you something. Every number says where it came from.</p>
           <AtlasKey className="mt-4" />
         </div>

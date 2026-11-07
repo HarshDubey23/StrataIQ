@@ -213,6 +213,38 @@ code {
 .rise-3 { animation-delay: 180ms; }
 .rise-4 { animation-delay: 240ms; }
 
+/* a lot being drawn on the sheet */
+@keyframes lot-in {
+  from { transform: scale(0); opacity: 0; }
+  60% { opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+.lot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lot-in 0.55s var(--ease-out-expo) both;
+}
+
+/* a band of color pulled across the sheet */
+@keyframes wipe-in {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.wipe {
+  animation: wipe-in 0.6s var(--ease-in-out-quart) both;
+}
+
+/* if script never lifts the opening sheet, it still gets out of the way */
+@keyframes curtain-gone {
+  to { visibility: hidden; }
+}
+.curtain {
+  animation: curtain-gone 0.01s 4s forwards;
+}
+[data-seen] .curtain {
+  display: none;
+}
+
 @keyframes marquee {
   to { transform: translateX(-50%); }
 }

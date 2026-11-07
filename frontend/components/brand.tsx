@@ -2,15 +2,16 @@ import Link from "next/link";
 import cn from "clsx";
 
 /** Mark: one city block, the way a fire atlas draws it, with your lot in yellow. */
-export function LogoMark({ size = 24, tone = "light" }: { size?: number; tone?: "light" | "dark" }) {
+export function LogoMark({ size = 24, tone = "light", draw = false }: { size?: number; tone?: "light" | "dark"; draw?: boolean }) {
   const ink = tone === "dark" ? "#ffffff" : "#0f1f3d";
+  const lot = (i: number) => (draw ? { className: "lot", style: { animationDelay: `${0.1 + i * 0.11}s` } } : {});
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      <rect x="1" y="1" width="9" height="13" fill="#e98f86" stroke={ink} strokeWidth="1.5" />
-      <rect x="10" y="1" width="13" height="7" fill="#a9c4e4" stroke={ink} strokeWidth="1.5" />
-      <rect x="10" y="8" width="7" height="15" fill="#f2c94c" stroke={ink} strokeWidth="1.5" />
-      <rect x="1" y="14" width="9" height="9" fill="#a9c4e4" stroke={ink} strokeWidth="1.5" />
-      <rect x="17" y="8" width="6" height="15" fill="#e98f86" stroke={ink} strokeWidth="1.5" />
+      <rect x="1" y="1" width="9" height="13" {...lot(0)} fill="#e98f86" stroke={ink} strokeWidth="1.5" />
+      <rect x="10" y="1" width="13" height="7" {...lot(1)} fill="#a9c4e4" stroke={ink} strokeWidth="1.5" />
+      <rect x="10" y="8" width="7" height="15" {...lot(4)} fill="#f2c94c" stroke={ink} strokeWidth="1.5" />
+      <rect x="1" y="14" width="9" height="9" {...lot(2)} fill="#a9c4e4" stroke={ink} strokeWidth="1.5" />
+      <rect x="17" y="8" width="6" height="15" {...lot(3)} fill="#e98f86" stroke={ink} strokeWidth="1.5" />
     </svg>
   );
 }
@@ -32,12 +33,12 @@ const KEY: [string, string, string][] = [
 ];
 
 /** The printed color key. Every map and number in the product follows it. */
-export function AtlasKey({ tone = "light", className }: { tone?: "light" | "dark"; className?: string }) {
+export function AtlasKey({ tone = "light", className, on }: { tone?: "light" | "dark"; className?: string; on?: string }) {
   return (
     <ul className={cn("space-y-1.5 text-[13px] leading-none", className)} aria-label="Color key">
       {KEY.map(([c, l, d]) => (
-        <li key={l} title={d} className="flex items-center gap-2">
-          <span aria-hidden className={cn("h-3 w-4 shrink-0 border", c, tone === "dark" ? "border-white" : "border-night")} />
+        <li key={l} title={d} className={cn("flex items-center gap-2 transition-[font-weight] duration-200", on === l && "font-bold")}>
+          <span aria-hidden className={cn("h-3 shrink-0 border transition-[width] duration-300 ease-out", on === l ? "w-7" : "w-4", c, tone === "dark" ? "border-white" : "border-night")} />
           {l}
         </li>
       ))}
@@ -51,7 +52,7 @@ function seeded(seed: number) {
 }
 
 /** A drawn atlas plate: blocks and lots in the key's colors. Illustrative, it shows no real place. */
-export function BlockPlan({ seed = 14, cols = 7, rows = 6, className }: { seed?: number; cols?: number; rows?: number; className?: string }) {
+export function BlockPlan({ seed = 14, cols = 7, rows = 6, className, draw = false }: { seed?: number; cols?: number; rows?: number; className?: string; draw?: boolean }) {
   const r = seeded(seed);
   const B = 120;
   const GAP = 26;
@@ -76,7 +77,11 @@ export function BlockPlan({ seed = 14, cols = 7, rows = 6, className }: { seed?:
   if (pick) pick.f = "#f2c94c";
   return (
     <svg viewBox={`-${GAP} -${GAP} ${cols * (B + GAP) + GAP} ${rows * (B + GAP) + GAP}`} preserveAspectRatio="xMidYMid slice" className={className} aria-hidden>
-      {lots.map((l, i) => <rect key={i} x={l.x} y={l.y} width={l.w} height={l.h} fill={l.f} stroke="#0f1f3d" strokeWidth="1.25" />)}
+      {lots.map((l, i) => {
+        // the block fills in outward from your lot
+        const d = pick ? Math.hypot(l.x - pick.x, l.y - pick.y) / 900 : 0;
+        return <rect key={i} x={l.x} y={l.y} width={l.w} height={l.h} fill={l.f} stroke="#0f1f3d" strokeWidth="1.25" className={draw ? "lot" : undefined} style={draw ? { animationDelay: `${d.toFixed(2)}s` } : undefined} />;
+      })}
     </svg>
   );
 }

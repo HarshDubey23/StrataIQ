@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { BookOpen, LayoutGrid, LogOut, Menu, Plus, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -56,12 +57,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={n.href}
               href={n.href}
               className={cn(
-                "group flex items-center gap-3 px-3 py-2.5 text-[15px] transition-colors",
-                active ? "bg-ink-950 font-medium text-night" : "text-white hover:bg-atlas-deep",
+                "group relative flex items-center gap-3 px-3 py-2.5 text-[15px] transition-colors duration-200",
+                active ? "font-medium text-night" : "text-white hover:bg-atlas-deep",
               )}
             >
-              <span className="flex-1">{n.label}</span>
-              <n.icon className="h-4 w-4" />
+              {active && <motion.span layoutId="nav-tab" className="absolute inset-0 bg-ink-950" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
+              <span className="relative flex-1">{n.label}</span>
+              <n.icon className="relative h-4 w-4" />
             </Link>
           );
         })}

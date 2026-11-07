@@ -40,6 +40,8 @@ function rand(seed: number) {
 interface Person {
   home: [number, number];
   choice: "you" | "rival" | "none";
+  /** km from the site: the decision wave reaches nearer people first */
+  d: number;
   path: [number, number][];
   ts: number[];
 }
@@ -74,6 +76,7 @@ function makePeople(spot: Spot, comps: PreviewComp[], n = 2200): Person[] {
     const dur = 120 + bs * 90;
     out.push({
       home,
+      d,
       choice: none ? "none" : best.you ? "you" : "rival",
       path: none ? [] : [home, mid, [best.lng, best.lat]],
       ts: none ? [] : [t0, t0 + dur * 0.5, t0 + dur],
@@ -118,7 +121,7 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
   // one stable array per street: a new array each frame would restart the pillar's rise forever
   const site = useRef<Spot[]>([spot]);
   if (site.current[0] !== spot) site.current = [spot];
-  const state = useRef({ spot, comps, scene, people: [] as Person[], bins: [] as Bin[], walkers: [] as Person[], free: false, cur: CAMERAS[0] as Cam, t0: 0 });
+  const state = useRef({ spot, comps, scene, people: [] as Person[], bins: [] as Bin[], walkers: [] as Person[], free: false, riseAt: 0, riseFor: null as PreviewComp[] | null, chooseAt: 0, wasChoose: false, cur: CAMERAS[0] as Cam, t0: 0 });
   state.current.spot = spot;
   state.current.comps = comps;
   state.current.scene = scene;
@@ -173,10 +176,21 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
           const showPeople = all || sc >= 2;
           const choose = all || sc >= 3;
           const showTrips = all || sc >= 3;
+          if (S.riseFor !== S.comps) { S.riseFor = S.comps; S.riseAt = now; }
+          if (choose && !S.wasChoose) S.chooseAt = now + (all ? 2600 : 200);
+          S.wasChoose = choose;
+          const riseAge = now - S.riseAt;
+          const rising = riseAge < 3200;
+          const riseStep = rising ? Math.round(riseAge / 33) : -1;
+          const waveAge = now - S.chooseAt;
+          const waving = choose && waveAge < 2600;
+          const waveStep = waving ? Math.round(Math.max(0, waveAge) / 80) : -1;
+          const kmLat = 111.32;
+          const kmLng = 111.32 * Math.cos((S.spot.lat * Math.PI) / 180);
           const t = (now / 22) % 1400;
           const pulse = (now / 12) % 260;
           const binMax = Math.max(1, ...S.bins.map((b) => b.n));
-          const pc = (p: Person) => (!choose ? rgba(STONE, 235) : p.choice === "you" ? rgba(YOU, 255) : p.choice === "rival" ? rgba(BRICK, 240) : rgba(STONE, 110));
+          const pc = (p: Person) => (!choose || p.d * 1200 > waveAge ? rgba(STONE, 235) : p.choice === "you" ? rgba(YOU, 255) : p.choice === "rival" ? rgba(BRICK, 240) : rgba(STONE, 110));
           d?.setLayers((DL) => [
             new DL.ScatterplotLayer({
               id: "catchment", data: site.current, getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
@@ -198,14 +212,19 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
             new DL.ScatterplotLayer({
               id: "people", data: S.people, getPosition: (p: Person) => p.home, radiusUnits: "meters", radiusMinPixels: showPeople ? 1.5 : 0,
               getRadius: showPeople ? 13 : 0, getFillColor: pc, stroked: false,
-              transitions: { getRadius: { duration: 900, easing: easeOut }, getFillColor: { duration: 900 } },
-              updateTriggers: { getRadius: showPeople, getFillColor: choose },
+              transitions: { getRadius: { duration: 900, easing: easeOut } },
+              updateTriggers: { getRadius: showPeople, getFillColor: [choose, waveStep] },
             }),
             new DL.ColumnLayer({
               id: "comps", data: S.comps, diskResolution: 4, angle: 45, radius: 13, extruded: true, wireframe: true, material: false,
-              getPosition: (c: PreviewComp) => [c.lng, c.lat], getElevation: showComps ? 75 : 0,
+              getPosition: (c: PreviewComp) => [c.lng, c.lat],
+              // each rival rises in turn, spreading out from your site
+              getElevation: (c: PreviewComp) => {
+                const km = Math.hypot((c.lat - S.spot.lat) * kmLat, (c.lng - S.spot.lng) * kmLng);
+                return 75 * easeOut(Math.max(0, Math.min(1, (riseAge - 300 - km * 900) / 700)));
+              },
               getFillColor: rgba(BRICK, 255), getLineColor: [15, 31, 61, 255],
-              transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: showComps },
+              updateTriggers: { getElevation: riseStep },
             }),
             new DL.ScatterplotLayer({
               id: "site-ring", data: site.current, getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",

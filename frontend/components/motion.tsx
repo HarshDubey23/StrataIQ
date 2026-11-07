@@ -20,7 +20,7 @@ export function Reveal({ children, delay = 0, className }: { children: ReactNode
 }
 
 /** Word-by-word headline, the Aceternity "text generate" pattern. Screen readers get the sentence once. */
-export function WordsIn({ text, className, as: Tag = "h2" }: { text: string; className?: string; as?: "h1" | "h2" }) {
+export function WordsIn({ text, className, as: Tag = "h2", delay = 0 }: { text: string; className?: string; as?: "h1" | "h2"; delay?: number }) {
   const still = useReducedMotion();
   if (still) return <Tag className={className}>{text}</Tag>;
   return (
@@ -28,12 +28,52 @@ export function WordsIn({ text, className, as: Tag = "h2" }: { text: string; cla
       {text.split(" ").map((w, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden pb-[0.08em] align-top">
           <motion.span className="inline-block" initial={{ y: "105%" }} whileInView={{ y: 0 }} viewport={{ once: true }}
-            transition={{ duration: 0.75, delay: i * 0.06, ease: EASE }}>
+            transition={{ duration: 0.85, delay: delay + i * 0.055, ease: EASE }}>
             {w}&nbsp;
           </motion.span>
         </span>
       ))}
     </Tag>
+  );
+}
+
+/** A map sheet lying on the city: it swings up flat as it reaches you and tips away as you pass. Solid paper, it never fades. Tied to the scroll. */
+export function AtlasSheet({ children, className, hero = false }: { children: ReactNode; className?: string; hero?: boolean }) {
+  const still = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: hero ? ["start start", "end start"] : ["start end", "end start"] });
+  const stops = hero ? [0, 1] : [0, 0.32, 0.72, 1];
+  const rotateX = useTransform(scrollYProgress, stops, hero ? [0, -16] : [26, 0, 0, -14]);
+  const y = useTransform(scrollYProgress, stops, hero ? [0, -40] : [120, 0, 0, -60]);
+  const scale = useTransform(scrollYProgress, stops, hero ? [1, 0.95] : [0.92, 1, 1, 0.95]);
+    if (still) return <div className={className}>{children}</div>;
+  return (
+    <div ref={ref} style={{ perspective: 1500 }}>
+      <motion.div className={className} style={{ rotateX, y, scale, transformOrigin: hero ? "50% 100%" : "50% 60%" }}>{children}</motion.div>
+    </div>
+  );
+}
+
+/** A full-width section pulled open from a narrower sheet as it scrolls in. */
+export function WipeSection({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
+  const still = useReducedMotion();
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 30%"] });
+  const side = useTransform(scrollYProgress, [0, 1], [7, 0]);
+  const clipPath = useTransform(side, (v) => `inset(0 ${v}% 0 ${v}%)`);
+  if (still) return <section id={id} className={className}>{children}</section>;
+  return <motion.section ref={ref} id={id} className={className} style={{ clipPath }}>{children}</motion.section>;
+}
+
+/** A figure pressed onto the sheet like a stamp. */
+export function Stamp({ children, className }: { children: ReactNode; className?: string }) {
+  const still = useReducedMotion();
+  if (still) return <p className={className}>{children}</p>;
+  return (
+    <motion.p className={className} style={{ transformOrigin: "20% 80%" }} initial={{ opacity: 0, scale: 1.7, rotate: -7 }} whileInView={{ opacity: 1, scale: 1, rotate: 0 }} viewport={{ once: true, margin: "-10% 0px" }}
+      transition={{ type: "spring", stiffness: 420, damping: 24, mass: 0.9 }}>
+      {children}
+    </motion.p>
   );
 }
 

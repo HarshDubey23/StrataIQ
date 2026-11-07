@@ -86,7 +86,7 @@ export default function Dashboard() {
             <p className="mt-2 max-w-[44ch] text-[15px] text-ink-300">Name a business and a place above, and StrataIQ will draw the block, load the rivals and test your plan.</p>
             <ButtonLink href="/app/projects/new" variant="secondary" className="mt-5">Use the full form</ButtonLink>
           </div>
-          <div className="h-48 overflow-hidden border-t border-night bg-atlas md:h-auto md:border-l md:border-t-0"><BlockPlan seed={23} className="h-full w-full" /></div>
+          <div className="h-48 overflow-hidden border-t border-night bg-atlas md:h-auto md:border-l md:border-t-0"><BlockPlan seed={23} draw className="h-full w-full" /></div>
         </div>
       )}
       {projects && projects.length > 0 && (

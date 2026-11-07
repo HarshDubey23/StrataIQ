@@ -5,9 +5,9 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { Chip, CountUp, FactItem, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Tilt3D, WordsIn, type Fact } from "@/components/motion";
-import { AtlasKey, Logo } from "@/components/brand";
+import { AnimatePresence, motion, useInView } from "motion/react";
+import { AtlasSheet, Chip, CountUp, FactItem, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Stamp, Tilt3D, WipeSection, WordsIn, type Fact } from "@/components/motion";
+import { AtlasKey, BlockPlan, Logo, LogoMark } from "@/components/brand";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
 import { US_MARKET } from "@/lib/format";
@@ -25,7 +25,9 @@ const CATS = [
 const IDEAS = US_MARKET ? ["A gym in South Austin, fees $49 a month", "A café in Wynwood, Miami, coffee at $6", "A salon in Downtown Phoenix", "A dental clinic near Downtown Austin"] : ["A gym in Bandra West, fees ₹2,000", "A café in Indiranagar, coffee at ₹250", "A salon in Sector 18, Noida", "A pharmacy near Connaught Place"];
 
 const HEAD = "font-display text-[clamp(2.5rem,1.6rem+2.8vw,4.25rem)] leading-[1.02]";
-const SHEET = "sheet relative mx-5 my-[42svh] max-w-xl p-7 md:mx-10 md:p-10";
+const STORY = "relative mx-5 my-[46svh] max-w-xl md:mx-10";
+const SHEET = "sheet relative p-7 md:p-10";
+const KEY_FOR_SCENE = [undefined, "Measured", "Measured", "Estimated", "Yours"];
 
 const FAQ: [string, string][] = [
   ["What do I need to start?", "Just your idea and an address. StrataIQ fills in the market data and starting costs, and you can replace any number with your own quotes."],
@@ -147,7 +149,46 @@ export function useStoryProgress() {
   return { progress, scene };
 }
 
+/** The opening: one block is drawn, then the sheet lifts off the real city. Once a session, never with reduced motion. */
+function Opening({ first }: { first: boolean }) {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    if (!first || reduced()) return setOn(false);
+    try {
+      sessionStorage.setItem("siq-intro", "1");
+    } catch {
+      /* storage blocked: the opening just plays again */
+    }
+    const t = setTimeout(() => setOn(false), 1150);
+    return () => clearTimeout(t);
+  }, [first]);
+  return (
+    <AnimatePresence>
+      {on && (
+        <motion.div aria-hidden exit={{ clipPath: "inset(0 0 100% 0)" }} initial={{ clipPath: "inset(0 0 0% 0)" }} transition={{ duration: 0.85, ease: [0.76, 0, 0.24, 1] }}
+          className="curtain pointer-events-none fixed inset-0 z-50 flex items-center justify-center gap-5 bg-atlas text-white">
+          <LogoMark size={84} tone="dark" draw /><span className="font-display text-[64px] leading-none">StrataIQ</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function DrawnBlock() {
+  const ref = useRef<HTMLDivElement>(null);
+  const seen = useInView(ref, { once: true, margin: "-20% 0px" });
+  return <div ref={ref} aria-hidden className="absolute inset-y-0 right-0 hidden w-[46%] overflow-hidden border-l border-night bg-atlas md:block">{seen && <BlockPlan seed={31} draw className="h-full w-full" />}</div>;
+}
+
 export default function Landing() {
+  const [first] = useState(() => {
+    try {
+      return typeof window !== "undefined" && !sessionStorage.getItem("siq-intro") && !reduced();
+    } catch {
+      return false;
+    }
+  });
+  const lift = first ? 1.25 : 0;
   const router = useRouter();
   const [spot, setSpot] = useState<Spot>(SPOTS[0]);
   const [cat, setCat] = useState("cafe");
@@ -215,11 +256,12 @@ export default function Landing() {
   const named = comps.map((c) => c.name).filter((n) => n && n !== "Unnamed");
   const catLabel = CATS.find((c) => c.key === cat)?.label.toLowerCase() || "businesses";
   const area = spot.label.split(",")[0];
-  const action = "inline-flex min-h-14 w-full items-center justify-center gap-2 whitespace-nowrap border border-night bg-you px-6 text-[18px] font-semibold text-night transition-colors duration-150 hover:bg-you-deep disabled:opacity-60";
+  const action = "inline-flex min-h-14 w-full items-center justify-center gap-2 whitespace-nowrap border border-night bg-you px-6 text-[18px] font-semibold text-night transition-colors duration-150 hover:bg-you-deep active:translate-y-px disabled:opacity-60";
   const sheetNo = (n: number) => <p className="absolute right-4 top-3 font-display text-[14px] font-medium">Sheet {n} of 5</p>;
 
   return (
-    <div className="relative text-night">
+    <div className="relative overflow-x-clip text-night">
+      <Opening first={first} />
       {/* The whole page sits on one live atlas sheet of the real street */}
       <div className="fixed inset-0 z-0 overflow-hidden bg-atlas">
         <HeroMap spot={spot} comps={comps} scene={scene} progress={progress} />
@@ -230,7 +272,7 @@ export default function Landing() {
               {SCENES[scene] ?? SCENES[0]}
             </motion.p>
           </AnimatePresence>
-          <AtlasKey />
+          <AtlasKey on={KEY_FOR_SCENE[scene]} />
         </div>
       </div>
 
@@ -245,13 +287,13 @@ export default function Landing() {
         </header>
 
         <section data-scene className="flex min-h-svh items-end px-5 pb-5 pt-20 md:px-10">
-          <div className="sheet relative w-full max-w-[42rem] p-6 md:p-9">
+          <div className="w-full max-w-[42rem]"><AtlasSheet hero className="sheet relative p-6 md:p-9">
             {sheetNo(1)}
-            <WordsIn as="h1" text="Know your numbers before you sign the lease." className="font-display pr-14 text-[clamp(2.5rem,1.6rem+3.2vw,4.75rem)] leading-[1]" />
-            <Reveal delay={0.25}>
+            <WordsIn as="h1" delay={lift} text="Know your numbers before you sign the lease." className="font-display pr-14 text-[clamp(2.5rem,1.6rem+3.2vw,4.75rem)] leading-[1]" />
+            <Reveal delay={lift + 0.3}>
               <p className="mt-5 text-[18px] leading-[1.4]">StrataIQ puts 10,000 simulated customers on the real streets around your address, then shows your rivals, your break-even and your profit range in minutes.</p>
             </Reveal>
-            <Reveal delay={0.35}>
+            <Reveal delay={lift + 0.4}>
               <form className="mt-6" onSubmit={(e) => { e.preventDefault(); if (idea.trim().length < 3) document.getElementById("idea")?.focus(); else void simulate(idea); }}>
                 <label htmlFor="idea" className="mb-1.5 block text-[14px] font-semibold">Your business and where</label>
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -266,15 +308,16 @@ export default function Landing() {
                 {goErr && <p role="alert" className="mt-3 text-[16px] text-danger">{goErr}</p>}
               </form>
             </Reveal>
-            <Reveal delay={0.45}>
+            <Reveal delay={lift + 0.5}>
               <button type="button" onClick={() => void liveDemo()} disabled={busy !== null} className="mt-4 min-h-11 text-[17px] font-medium underline underline-offset-4 disabled:opacity-60">
                 {busy === "live" ? "Opening…" : `Or watch it run in ${area}`}
               </button>
             </Reveal>
-          </div>
+          </AtlasSheet></div>
         </section>
 
-        <section data-scene className={`${SHEET} md:ml-auto`}>
+        <section data-scene className={`${STORY} md:ml-auto`}>
+          <AtlasSheet className={SHEET}>
           {sheetNo(2)}
           <WordsIn text="Your competition, mapped live." className={`${HEAD} pr-14`} />
           <Reveal delay={0.15}>
@@ -295,17 +338,21 @@ export default function Landing() {
                   </>}
             </div>
           </Reveal>
+          </AtlasSheet>
         </section>
 
-        <section data-scene className={SHEET}>
+        <section data-scene className={STORY}>
+          <AtlasSheet className={SHEET}>
           {sheetNo(3)}
           <WordsIn text="Know your customers, block by block." className={`${HEAD} pr-14`} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">Income, age, households, jobs, students and how people get around, from US Census data for 84,091 neighborhoods. Two streets apart can mean two different markets, and you will see it.</p>
           </Reveal>
+          </AtlasSheet>
         </section>
 
-        <section data-scene className={`${SHEET} md:ml-auto`}>
+        <section data-scene className={`${STORY} md:ml-auto`}>
+          <AtlasSheet className={SHEET}>
           {sheetNo(4)}
           <WordsIn text="Watch 10,000 customers decide." className={`${HEAD} pr-14`} />
           <Reveal delay={0.15}>
@@ -316,17 +363,20 @@ export default function Landing() {
               <li className="flex items-center gap-2.5"><span aria-hidden className="h-3 w-3 rounded-full border border-night bg-stone" /> Stayed home</li>
             </ul>
           </Reveal>
+          </AtlasSheet>
         </section>
 
-        <section data-scene className={SHEET}>
+        <section data-scene className={STORY}>
+          <AtlasSheet className={SHEET}>
           {sheetNo(5)}
           <WordsIn text="Change the plan before it costs you." className={`${HEAD} pr-14`} />
           <Reveal delay={0.15}>
             <ul className="mt-6 space-y-2">{PLAN.map((f) => <FactItem key={f.label} fact={f} />)}</ul>
           </Reveal>
+          </AtlasSheet>
         </section>
 
-        <section className="relative overflow-hidden border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
+        <WipeSection className="relative overflow-hidden border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
           <div className="mx-auto max-w-6xl">
             <WordsIn text="A report built for the decision." className={HEAD} />
             <Reveal delay={0.15}><p className="mt-5 max-w-[46ch] text-[18px] leading-[1.5]">A clean PDF with your verdict, profit range, charts, risks and next steps, every number marked measured, yours or estimated.</p></Reveal>
@@ -342,7 +392,7 @@ export default function Landing() {
             </div>
             <RollLink href="/sample-report" className="mt-7 text-[18px] font-medium underline underline-offset-4">Read the sample report</RollLink>
           </div>
-        </section>
+        </WipeSection>
 
         <section className="relative overflow-hidden border-t border-night bg-paper py-14">
           <p className="mb-6 px-5 text-[18px] font-semibold md:px-10 lg:px-14">Built on public data</p>
@@ -358,7 +408,7 @@ export default function Landing() {
                 <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">Your first look: the live map, your rivals and your break-even point.</p>
               </Reveal>
               <Reveal delay={0.1}>
-                <p className="font-display text-[5rem] leading-none text-you">$29</p>
+                <Stamp className="font-display text-[5rem] leading-none text-you">$29</Stamp>
                 <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">The full report for one location: profit range, price tests, better spots and your checklist. One payment, no subscription.</p>
                 <RollLink href="/sample-report" className="mt-4 text-[18px] font-medium underline underline-offset-4">See a sample report</RollLink>
               </Reveal>
@@ -380,15 +430,16 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="relative border-t border-night bg-you px-5 py-24 text-night md:px-10 lg:px-14">
-          <div className="mx-auto max-w-6xl">
+        <WipeSection className="relative overflow-hidden border-t border-night bg-you px-5 py-28 text-night md:px-10 lg:px-14">
+          <DrawnBlock />
+          <div className="relative md:max-w-[46%]">
             <WordsIn text="Which street are you betting on?" className={HEAD} />
             <Reveal delay={0.15}>
               <button onClick={() => { document.getElementById("idea")?.focus(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="mt-7 inline-flex min-h-14 items-center bg-night px-7 text-[18px] font-semibold text-white transition-colors hover:bg-atlas">Test it free</button>
+                className="mt-7 inline-flex min-h-14 items-center bg-night px-7 text-[18px] font-semibold text-white transition-colors hover:bg-atlas active:translate-y-px">Test it free</button>
             </Reveal>
           </div>
-        </section>
+        </WipeSection>
 
         <div className="relative border-t border-night bg-paper px-5 md:px-10 lg:px-14"><div className="mx-auto max-w-6xl"><SiteFooter /></div></div>
       </main>

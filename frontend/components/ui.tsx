@@ -12,7 +12,7 @@ export function cn(...a: Parameters<typeof clsx>) {
 /** `next` is yellow and marks the one next step on a screen. */
 type BtnVariant = "primary" | "next" | "secondary" | "ghost" | "danger";
 const btnBase =
-  "inline-flex items-center justify-center gap-2 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  "inline-flex items-center justify-center gap-2 text-sm font-semibold transition-[color,background-color,border-color,transform] duration-150 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 const btnVariants: Record<BtnVariant, string> = {
   primary: "border border-atlas bg-atlas text-white hover:border-atlas-deep hover:bg-atlas-deep",
   next: "border border-night bg-you text-night hover:bg-you-deep",

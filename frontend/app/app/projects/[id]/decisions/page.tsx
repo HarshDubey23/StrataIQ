@@ -81,7 +81,7 @@ export default function Decisions() {
         </Notice>
       ) : null}
 
-      <section className={cn("border border-night p-6 text-night", V.tone === "ok" ? "bg-moss" : V.tone === "danger" ? "bg-brick" : V.tone === "warn" ? "bg-you" : "bg-ink-800")}>
+      <section className={cn("wipe border border-night p-6 text-night", V.tone === "ok" ? "bg-moss" : V.tone === "danger" ? "bg-brick" : V.tone === "warn" ? "bg-you" : "bg-ink-800")}>
         <div className="flex items-center gap-2 text-[15px] font-semibold"><V.icon className="h-5 w-5" /> {V.label}</div>
         <p className="font-display mt-2 max-w-[44ch] text-[30px] leading-[1.1]">{d.headline}</p>
       </section>
@@ -94,8 +94,8 @@ export default function Decisions() {
           { l: "To break even", v: fs.break_even_units === null ? "Not reached" : num(fs.break_even_units), n: `${fs.unit_label} a month` },
           { l: "Chance of a losing month", v: pct(fs.prob_loss), n: "Under these inputs" },
           { l: "Payback", v: fs.payback_months ? `${num(fs.payback_months, 1)} mo` : "Not reached", n: `${money(fs.startup_cost, { compact: true })} to open` },
-        ].map((x) => (
-          <div key={x.l} className="border-b border-r border-night p-4">
+        ].map((x, i) => (
+          <div key={x.l} className="rise border-b border-r border-night p-4" style={{ animationDelay: `${150 + i * 45}ms` }}>
             <div className="text-[13px] text-ink-300">{x.l}</div>
             <div className="num font-display mt-1.5 text-[30px] leading-none">{x.v}</div>
             <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-ink-400"><span aria-hidden className="h-2 w-3 shrink-0 border border-night bg-stone" title="Estimated" /> <span className="truncate">{x.n}</span></div>
