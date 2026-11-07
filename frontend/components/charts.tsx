@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { money, num } from "@/lib/format";
+import { money, num, CUR } from "@/lib/format";
 import type { SimResult } from "@/lib/types";
 
 const AX = { stroke: "#75716A", fontSize: 11 };
@@ -9,7 +9,7 @@ const GRID = "#E7E4DC";
 const TT = { contentStyle: { background: "#FFFFFF", border: "1px solid #E7E4DC", borderRadius: 6, fontSize: 12 }, labelStyle: { color: "#34322E" } };
 
 function compactMoney(v: number) {
-  return money(v, { compact: true }).replace("₹", "");
+  return money(v, { compact: true }).replace(CUR, "");
 }
 
 export function PriceCurve({ data, current, unit }: { data: NonNullable<SimResult["sensitivity"]>["price_curve"]; current: number; unit: string }) {
@@ -17,7 +17,7 @@ export function PriceCurve({ data, current, unit }: { data: NonNullable<SimResul
     <ResponsiveContainer width="100%" height={240}>
       <ComposedChart data={data} margin={{ top: 10, right: 16, bottom: 4, left: 4 }}>
         <CartesianGrid stroke={GRID} vertical={false} />
-        <XAxis dataKey="price" tickFormatter={(v) => `₹${num(v)}`} {...AX} />
+        <XAxis dataKey="price" tickFormatter={(v) => `${CUR}${num(v)}`} {...AX} />
         <YAxis yAxisId="p" tickFormatter={compactMoney} {...AX} width={56} />
         <YAxis yAxisId="u" orientation="right" tickFormatter={(v) => num(v)} {...AX} width={44} />
         <Tooltip {...TT} formatter={(v, n) => (String(n) === "units" ? [num(Number(v)), unit] : [money(Number(v)), "Operating profit"])} labelFormatter={(l) => `Price ₹${num(Number(l))}`} />

@@ -15,6 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from typing import Literal
 
+from ..config import get_settings
+
 ArchetypeKey = Literal[
     "membership", "dine_in", "takeaway", "retail", "appointment", "lodging"
 ]
@@ -110,7 +112,7 @@ def _common(**over: Param) -> dict[str, Param]:
         "outside_utility": Param(0.0, -0.5, 0.5, "utility", "Attractiveness of NOT buying from any modeled business (going elsewhere, doing without)."),
         "wtp_sigma": Param(0.45, 0.3, 0.7, "log-sd", "Spread of willingness-to-pay around each segment's median."),
         "awareness_base": Param(0.25, 0.1, 0.4, "share", "Share of in-market people aware of a NEW business with zero marketing."),
-        "marketing_half_saturation": Param(25000, 10000, 60000, "currency / month", "Monthly marketing spend that closes half the remaining awareness gap."),
+        "marketing_half_saturation": Param(*((2500, 1000, 6000) if get_settings().market == "US" else (25000, 10000, 60000)), "currency / month", "Monthly marketing spend that closes half the remaining awareness gap."),
         "circuity": Param(1.3, 1.15, 1.5, "ratio", "Road distance / straight-line distance. Used only when no routing engine result is available."),
         "competitor_quality": Param(0.5, 0.35, 0.65, "0-1", "Assumed quality of competitors whose quality is unknown."),
         "competitor_price_ratio": Param(1.0, 0.8, 1.25, "x reference", "Assumed competitor price relative to the reference price when unknown."),

@@ -2,7 +2,7 @@
 
 import { ExternalLink, Landmark, Route, Wallet } from "lucide-react";
 import { Evidence, cn, statusToKind } from "@/components/ui";
-import { money, pct } from "@/lib/format";
+import { money, pct, CUR, LOCALE } from "@/lib/format";
 import type { IncomeEvidence, SimResult } from "@/lib/types";
 
 /* Real-data panels: who lives here (income mix from official data) and where every model parameter came from. */
@@ -15,7 +15,7 @@ const METHOD_LABEL: Record<IncomeEvidence["method"], string> = {
 };
 
 function rupees(x: number) {
-  return "₹" + Math.round(x).toLocaleString("en-IN");
+  return CUR + Math.round(x).toLocaleString(LOCALE);
 }
 
 export function IncomeMix({ income, price, className }: { income: IncomeEvidence; price?: number; className?: string }) {

@@ -15,6 +15,8 @@ from ..providers.registry import SOURCES
 from ..schemas import CategoryIn
 from ..security import current_user
 
+from ..config import get_settings  # noqa: E402
+
 router = APIRouter(tags=["catalog"])
 
 
@@ -59,7 +61,7 @@ def by_key(key: str, user: User = Depends(current_user)):
 async def search(q: str = Query(min_length=2, max_length=200), country: str | None = Query(default=None, max_length=20),
                  user: User = Depends(current_user)):
     try:
-        results, prov = await osm.geocode(q, cache=Cache(session_factory()), country_codes=country)
+        results, prov = await osm.geocode(q, cache=Cache(session_factory()), country_codes=country or get_settings().search_countries)
     except ProviderError as e:
         raise HTTPException(502, f"Place search is unavailable right now ({e.message[:120]}). You can still drop a pin on the map.") from e
     return {"results": results, "source": prov}

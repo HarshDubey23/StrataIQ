@@ -10,9 +10,14 @@ import { useEffect, useState } from "react";
 import { LocationPicker, type PickedPlace } from "@/components/LocationPicker";
 import { Button, cn, Notice, NumberInput } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money } from "@/lib/format";
+import { money, CUR, US_MARKET } from "@/lib/format";
 
-const EXAMPLES = [
+const EXAMPLES = US_MARKET ? [
+  "A café in Wynwood, Miami, coffee at $6",
+  "Gym in South Austin, fees $49 a month, budget $250k",
+  "A pizza shop in Downtown Phoenix",
+  "Dental clinic near Downtown Austin",
+] : [
   "A café in Indiranagar, Bengaluru, coffee at ₹250",
   "Gym in Bandra West Mumbai, fees ₹2,000 a month, budget 30 lakh",
   "Mujhe Koramangala mein pizza shop kholna hai",
@@ -114,7 +119,7 @@ export function QuickStart({ compact = false, autoFocus = false }: { compact?: b
       <div className="flex items-center gap-2 text-sm font-medium text-ink-100"><Sparkles className="h-4 w-4 text-accent" /> Describe your idea in one line</div>
       <p className="mt-1 text-xs text-ink-400">English or Hinglish. Business type and place are enough — I&apos;ll fill the rest with typical numbers you can change.</p>
       <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); void understand(); }}>
-        <input autoFocus={autoFocus} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. A café in Indiranagar, Bengaluru, coffee at ₹250" aria-label="Your business idea"
+        <input autoFocus={autoFocus} value={text} onChange={(e) => setText(e.target.value)} placeholder={`e.g. ${EXAMPLES[0]}`} aria-label="Your business idea"
           className="h-12 flex-1 rounded-lg border border-black/10 bg-ink-950/70 px-4 text-[15px] outline-none transition-[border-color,box-shadow] placeholder:text-ink-500 focus:border-accent focus:shadow-[0_0_0_3px_rgba(47,73,255,.2)]" />
         <Button type="submit" variant="primary" size="lg" loading={busy === "plan"}>Understand it <ArrowRight className="h-4 w-4" /></Button>
       </form>
@@ -170,7 +175,7 @@ function Edit({ label, v, set }: { label: string; v: number | null; set: (x: num
   return (
     <label className="block text-[11px] text-ink-500">
       {label}
-      <NumberInput value={v} onChange={set} prefix="₹" allowEmpty placeholder="0" />
+      <NumberInput value={v} onChange={set} prefix={CUR} allowEmpty placeholder="0" />
       {v ? <span className="num text-[10px] text-ink-500">{money(v, { compact: true })}</span> : null}
     </label>
   );

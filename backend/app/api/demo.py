@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..categories.resolver import from_taxonomy_key
+from ..config import get_settings
 from ..db import get_db
 from ..engine.geo import circle_polygon, hex_grid
 from ..models import CandidateLocation, Competitor, MarketSnapshot, Project, Scenario, User, utcnow
@@ -56,11 +57,12 @@ def create_demo(user: User = Depends(current_user), db: Session = Depends(get_db
                           catchment_method="radius", zones=zones, population={"method": "demo_synthetic", "source": "demo", "total": total, "radius_km": 3.0,
                                                                              "zones": len(zones), "spacing_km": 0.35},
                           sources=[src], coverage={"level": "unknown", "note": DEMO_LABEL, "signals": [], "method": "demo"}, activity_points=[], errors=[]))
-    base = {"price": 1800, "quality": 0.6, "marketing_spend": 15000, "reference_price": 1600, "variable_cost_per_unit": None,
-            "capacity": {"max_members": 350}, "rent": 65000, "payroll": 90000, "utilities": 18000, "other_fixed": 12000,
-            "startup_cost": 1800000, "param_overrides": {}, "seed": 42}
+    f = 0.03 if get_settings().market == "US" else 1.0  # illustrative rupee figures scaled to the market's currency
+    base = {"price": round(1800 * f), "quality": 0.6, "marketing_spend": round(15000 * f), "reference_price": round(1600 * f), "variable_cost_per_unit": None,
+            "capacity": {"max_members": 350}, "rent": round(65000 * f), "payroll": round(90000 * f), "utilities": round(18000 * f), "other_fixed": round(12000 * f),
+            "startup_cost": round(1800000 * f), "param_overrides": {}, "seed": 42}
     db.add(Scenario(project_id=p.id, location_id=loc.id, name="Baseline", is_baseline=True, inputs=base))
-    db.add(Scenario(project_id=p.id, location_id=loc.id, name="Lower price ₹1,500", inputs=base | {"price": 1500}))
+    db.add(Scenario(project_id=p.id, location_id=loc.id, name=f"Lower price {get_settings().currency}{round(1500 * f):,}", inputs=base | {"price": round(1500 * f)}))
     db.commit()
     db.refresh(p)
     # Pre-run both scenarios so the live market plays immediately.
@@ -71,14 +73,43 @@ def create_demo(user: User = Depends(current_user), db: Session = Depends(get_db
     return project_out(p)
 
 
-LIVE_SPOTS = {
+LIVE_SPOTS_US = {
+    "austin": ("Downtown Austin, Texas", 30.2672, -97.7431),
+    "miami": ("Wynwood, Miami, Florida", 25.8005, -80.1990),
+    "phoenix": ("Downtown Phoenix, Arizona", 33.4484, -112.0740),
+}
+LIVE_SPOTS_IN = {
     "cp-delhi": ("Connaught Place, New Delhi", 28.6315, 77.2167),
     "indiranagar": ("Indiranagar, Bengaluru", 12.9719, 77.6412),
     "bandra": ("Bandra West, Mumbai", 19.0596, 72.8295),
 }
 
+# Example business inputs, labelled as assumptions a founder should replace with quotes.
+LIVE_KINDS_US = {
+    "cafe": {
+        "key": "cafe", "name": "Specialty café", "radius_km": 1.5, "alt": ("Lower price $7", 7),
+        "positioning": ["Premium experience", "Better service"], "hours": "7am–8pm",
+        "base": {"price": 9, "quality": 0.65, "marketing_spend": 1500, "reference_price": None, "variable_cost_per_unit": None,
+                 "capacity": {"seats": 40, "turns_per_day": 4, "open_days_per_month": 30}, "rent": 9000, "payroll": 20000,
+                 "utilities": 2500, "other_fixed": 2000, "startup_cost": 250000, "param_overrides": {}, "seed": 42},
+    },
+    "pizza": {
+        "key": "pizza", "name": "Pizza outlet", "radius_km": 3.0, "alt": ("Lower price $15", 15),
+        "positioning": ["Lower price", "Faster delivery"], "hours": "11am–11pm",
+        "base": {"price": 19, "quality": 0.55, "marketing_spend": 2000, "reference_price": None, "variable_cost_per_unit": 9,
+                 "capacity": {"max_orders_per_day": 220, "open_days_per_month": 30}, "rent": 7000, "payroll": 18000, "utilities": 2500,
+                 "other_fixed": 2000, "startup_cost": 180000, "param_overrides": {}, "seed": 42},
+    },
+    "gym": {
+        "key": "gym", "name": "Gym", "radius_km": 2.5, "alt": ("Lower price $39", 39),
+        "positioning": ["Premium experience", "Extended operating hours"], "hours": "5am–10pm",
+        "base": {"price": 49, "quality": 0.65, "marketing_spend": 2000, "reference_price": None, "variable_cost_per_unit": None,
+                 "capacity": {"max_members": 700}, "rent": 12000, "payroll": 14000, "utilities": 2500, "other_fixed": 1500,
+                 "startup_cost": 350000, "param_overrides": {}, "seed": 42},
+    },
+}
 
-LIVE_KINDS = {
+LIVE_KINDS_IN = {
     "cafe": {
         "key": "cafe", "name": "Specialty café", "radius_km": 1.5, "alt": ("Lower price ₹280", 280),
         "positioning": ["Premium experience", "Better service"], "hours": "8am–11pm",
@@ -105,13 +136,18 @@ LIVE_KINDS = {
 }
 
 
+US = get_settings().market == "US"
+LIVE_SPOTS = LIVE_SPOTS_US if US else LIVE_SPOTS_IN
+LIVE_KINDS = LIVE_KINDS_US if US else LIVE_KINDS_IN
+DEFAULT_SPOT = next(iter(LIVE_SPOTS))
+
+
 @router.post("/demo/live", status_code=201)
-async def create_live_demo(spot: str = "cp-delhi", kind: str = "cafe", user: User = Depends(current_user), db: Session = Depends(get_db)):
+async def create_live_demo(spot: str = DEFAULT_SPOT, kind: str = "cafe", user: User = Depends(current_user), db: Session = Depends(get_db)):
     """A real-data demo: live OpenStreetMap competitors + WorldPop population around a real street.
     Only the business inputs (price, rent, payroll…) are example assumptions, and they are labelled as such."""
-    from ..config import get_settings
     from ..services.runs import execute_run, refresh_snapshot, start_refresh
-    label, lat, lng = LIVE_SPOTS.get(spot, LIVE_SPOTS["cp-delhi"])
+    label, lat, lng = LIVE_SPOTS.get(spot, LIVE_SPOTS[DEFAULT_SPOT])
     k = LIVE_KINDS.get(kind, LIVE_KINDS["cafe"])
     cat = from_taxonomy_key(k["key"], k["key"]).as_dict()
     p = Project(owner_id=user.id, name=f"{k['name']} near {label.split(',')[0]}", objective="start_new", decision_goal="profit", category=cat,

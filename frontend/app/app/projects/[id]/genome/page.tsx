@@ -8,7 +8,7 @@ import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Evidence, Notice, Select, Spinner, cn } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { CHANNEL_LABEL, GROUP_COLOR, GROUP_LABEL, MECH_LABEL, pctRGB } from "@/lib/genome";
-import { num } from "@/lib/format";
+import { num, CUR, LOCALE } from "@/lib/format";
 import type { GenomeMatrix, Run, SimResult, SurveyKit } from "@/lib/types";
 
 function decode(b64: string): Uint8Array {
@@ -89,7 +89,7 @@ function DnaCanvas({ m, onPick }: { m: GenomeMatrix; onPick: (agent: number) => 
       />
       {hover && (
         <div className="pointer-events-none absolute z-10 w-64 rounded-md border border-ink-600 bg-ink-950/95 p-2 text-[11px] shadow-xl" style={{ left: Math.min(hover.x + 14, (wrap.current?.clientWidth || 600) - 270), top: hover.y + 14 }}>
-          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: GROUP_COLOR[m.groups[hover.r]] }} /> Agent #{m.agent_index[hover.r].toLocaleString("en-IN")} · {GROUP_LABEL[m.groups[hover.r]]}</div>
+          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: GROUP_COLOR[m.groups[hover.r]] }} /> Agent #{m.agent_index[hover.r].toLocaleString(LOCALE)} · {GROUP_LABEL[m.groups[hover.r]]}</div>
           {hp ? (
             <>
               <div className="mt-1 font-medium text-ink-100">{hp.label}</div>
@@ -160,7 +160,7 @@ export default function GenomePage() {
       }
       lines.push(`${i + 1}. ${q.text}`);
       (q.options || []).forEach((o) => lines.push(`   [ ] ${o}`));
-      if (q.type === "money") lines.push("   ₹ ______");
+      if (q.type === "money") lines.push(`   ${CUR} ______`);
       if (q.type === "scale5") lines.push("   1   2   3   4   5");
     });
     lines.push("", `Sample: ${k.sample_size.recommended} people (minimum ${k.sample_size.minimum}). ${k.sample_size.how}`);

@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..categories.archetypes import ARCHETYPES
+from ..config import get_settings
 from ..categories.resolver import from_taxonomy_key, rank_taxonomy, resolve_offline
 from ..db import get_db, session_factory
 from ..models import CandidateLocation, Project, Scenario, User
@@ -26,7 +27,7 @@ from .serialize import project_out
 router = APIRouter(tags=["quickstart"])
 
 # Typical price per unit (₹) for common categories — starter assumptions, shown as such.
-TYPICAL_PRICE = {
+TYPICAL_PRICE_IN = {
     "gym": 1500, "yoga_studio": 1800, "dance_school": 1500, "martial_arts": 1500, "swimming": 2000, "coaching_centre": 2500,
     "language_school": 3000, "music_school": 2000, "driving_school": 4500, "coworking": 6000, "library": 1200, "kindergarten": 5000,
     "sports_club": 1500, "pg_hostel": 9000,
@@ -39,10 +40,10 @@ TYPICAL_PRICE = {
     "pet_grooming": 900, "car_repair": 2500, "car_wash": 500, "laundry": 300, "tailor": 600, "phone_repair": 900, "photo_studio": 1500,
     "tattoo": 3000, "print_shop": 100, "hotel": 2800, "guest_house": 1800, "hostel": 700, "banquet": 60000,
 }
-ARCH_PRICE = {"membership": 1500, "dine_in": 300, "takeaway": 250, "retail": 600, "appointment": 500, "lodging": 2500}
+ARCH_PRICE_IN = {"membership": 1500, "dine_in": 300, "takeaway": 250, "retail": 600, "appointment": 500, "lodging": 2500}
 
 # Monthly fixed costs and startup for a small outlet, by model type (₹). Starter assumptions.
-ARCH_COSTS = {
+ARCH_COSTS_IN = {
     "membership": {"rent": 120000, "payroll": 120000, "utilities": 25000, "other_fixed": 10000, "marketing_spend": 20000, "startup_cost": 2500000},
     "dine_in": {"rent": 90000, "payroll": 120000, "utilities": 30000, "other_fixed": 15000, "marketing_spend": 15000, "startup_cost": 1500000},
     "takeaway": {"rent": 60000, "payroll": 100000, "utilities": 25000, "other_fixed": 15000, "marketing_spend": 20000, "startup_cost": 1000000},
@@ -51,7 +52,36 @@ ARCH_COSTS = {
     "lodging": {"rent": 300000, "payroll": 200000, "utilities": 60000, "other_fixed": 30000, "marketing_spend": 30000, "startup_cost": 5000000},
 }
 
-_MONEY = r"(?:₹|rs\.?|inr|rupees?)?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|hazaar|hazar|lakh|lac|l|crore|cr)?\b"
+# US starter assumptions: rough small-outlet figures in dollars, shown as assumptions for the founder to replace with quotes.
+TYPICAL_PRICE_US = {
+    "gym": 45, "yoga_studio": 120, "dance_school": 110, "martial_arts": 130, "swimming": 90, "coaching_centre": 250,
+    "language_school": 220, "music_school": 180, "driving_school": 400, "coworking": 280, "library": 30, "kindergarten": 1100,
+    "sports_club": 90, "pg_hostel": 900,
+    "cafe": 8, "restaurant": 22, "bar": 28, "ice_cream": 7, "juice_bar": 9, "food_court": 13, "tea_stall": 5, "bakery_cafe": 10,
+    "pizza": 18, "fast_food": 11, "cloud_kitchen": 16, "bakery": 12, "biryani": 16, "chinese_takeaway": 15, "street_food": 10,
+    "pharmacy": 25, "grocery": 45, "fruit_veg": 20, "butcher": 35, "dairy": 12, "clothing": 50, "shoes": 75, "electronics": 150,
+    "hardware": 35, "stationery": 15, "jewelry": 300, "optician": 200, "cosmetics": 35, "pet_shop": 40, "florist": 45,
+    "furniture": 600, "liquor": 30, "sports_shop": 60, "toy_shop": 25, "fuel": 40, "ev_charging": 15,
+    "salon": 40, "beauty_salon": 70, "clinic": 150, "dentist": 180, "physio": 110, "diagnostics": 120, "veterinary": 90,
+    "pet_grooming": 65, "car_repair": 350, "car_wash": 15, "laundry": 25, "tailor": 30, "phone_repair": 90, "photo_studio": 200,
+    "tattoo": 200, "print_shop": 12, "hotel": 130, "guest_house": 110, "hostel": 40, "banquet": 5000,
+}
+ARCH_PRICE_US = {"membership": 60, "dine_in": 15, "takeaway": 14, "retail": 35, "appointment": 70, "lodging": 120}
+ARCH_COSTS_US = {
+    "membership": {"rent": 8000, "payroll": 14000, "utilities": 2000, "other_fixed": 1500, "marketing_spend": 2000, "startup_cost": 250000},
+    "dine_in": {"rent": 7000, "payroll": 18000, "utilities": 2500, "other_fixed": 2000, "marketing_spend": 1500, "startup_cost": 200000},
+    "takeaway": {"rent": 5000, "payroll": 12000, "utilities": 2000, "other_fixed": 1500, "marketing_spend": 1500, "startup_cost": 120000},
+    "retail": {"rent": 5000, "payroll": 8000, "utilities": 1000, "other_fixed": 1000, "marketing_spend": 800, "startup_cost": 100000},
+    "appointment": {"rent": 4000, "payroll": 9000, "utilities": 1000, "other_fixed": 800, "marketing_spend": 800, "startup_cost": 60000},
+    "lodging": {"rent": 30000, "payroll": 35000, "utilities": 8000, "other_fixed": 5000, "marketing_spend": 4000, "startup_cost": 1500000},
+}
+_US = get_settings().market == "US"
+CUR = get_settings().currency
+TYPICAL_PRICE = TYPICAL_PRICE_US if _US else TYPICAL_PRICE_IN
+ARCH_PRICE = ARCH_PRICE_US if _US else ARCH_PRICE_IN
+ARCH_COSTS = ARCH_COSTS_US if _US else ARCH_COSTS_IN
+
+_MONEY = r"(?:₹|\$|rs\.?|inr|usd|rupees?|dollars?)?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|hazaar|hazar|lakh|lac|l|crore|cr)?\b"
 
 
 def _amount(num: str, unit: str | None) -> float:
@@ -69,14 +99,14 @@ def parse_idea(text: str) -> dict:
     if m:
         budget = _amount(m.group(1), m.group(2))
     price = None
-    m = re.search(r"(?:price|charge|fee|fees|rate|sell\w*|at|for|@)\s*(?:of\s*)?(?:₹|rs\.?|inr)\s*(\d[\d,]*)", tl) or \
-        re.search(r"(?:price|charge|fee|fees|rate)\D{0,12}(\d[\d,]*)", tl) or re.search(r"(?:₹|rs\.?)\s*(\d[\d,]*)\s*(?:per|a|each|/)", tl)
+    m = re.search(r"(?:price|charge|fee|fees|rate|sell\w*|at|for|@)\s*(?:of\s*)?(?:₹|\$|rs\.?|inr|usd)\s*(\d[\d,]*(?:\.\d+)?)", tl) or \
+        re.search(r"(?:price|charge|fee|fees|rate)\D{0,12}(\d[\d,]*(?:\.\d+)?)", tl) or re.search(r"(?:₹|\$|rs\.?)\s*(\d[\d,]*(?:\.\d+)?)\s*(?:per|a|each|/)", tl)
     if m:
         price = float(m.group(1).replace(",", ""))
         if budget and abs(price - budget) < 1:
             price = None
     place = None
-    stop_after = r"(?=\s*,?\s+(?:with|for|at|price|budget|and|under|charging|selling|fees?|rate|per|₹|rs|mein|me|pe|par)\b|\s*,\s*(?:fees?|price|budget|rate)\b|[.!?]|$)"
+    stop_after = r"(?=\s*,?\s+(?:with|for|at|price|budget|and|under|charging|selling|fees?|rate|per|mein|me|pe|par)\b|\s*,\s*[^\W\d_]+\s+(?:at|for)\s+(?:₹|\$|rs\b|inr\b|usd\b|\d)|\s*,\s*(?:fees?|price|budget|rate)\b|[.!?]|$)"
     hm = re.search(r"([A-Za-z][A-Za-z .,'-]{2,60}?)\s+(?:mein|me|pe|par)\s", t, re.I)  # Hinglish: "Koramangala mein ..."
     m = re.search(r"\b(?:in|at|near|around)\s+([A-Za-z][A-Za-z0-9 .,'-]{2,80}?)" + stop_after, t, re.I)
     if m:
@@ -89,7 +119,7 @@ def parse_idea(text: str) -> dict:
         business = re.sub(r"\b(?:in|at|near|around)\s+" + re.escape(place) + r"|" + re.escape(place) + r"\s+(?:mein|me|pe|par)\b", " ", t, flags=re.I)
         business = re.split(r",\s*(?:fees?|price|budget|rate)\b", business, flags=re.I)[0]
         business = re.sub(r"\b(mujhe|ek|kholna|kholni|hai|chahta|chahti|hoon|hu|i want to open|i want to start|want to open)\b", " ", business, flags=re.I)
-    business = re.sub(r"(?:₹|rs\.?)\s*\d[\d,]*|\d[\d,]*\s*(?:k|lakh|lac|crore)?", " ", business, flags=re.I)
+    business = re.sub(r"(?:₹|\$|rs\.?)\s*\d[\d,.]*|\d[\d,]*\s*(?:k|lakh|lac|crore)?", " ", business, flags=re.I)
     return {"text": t, "business": business.strip(), "place": place, "price": price, "budget": budget}
 
 
@@ -117,7 +147,7 @@ async def build_plan(body: dict) -> dict:
         place = {"name": body.get("place_label") or "Selected place", "display_name": body.get("place_label") or "", "lat": body["lat"], "lng": body["lng"]}
     elif p["place"]:
         try:
-            res, _ = await osm.geocode(p["place"], limit=3, cache=Cache(session_factory()), country_codes=None)
+            res, _ = await osm.geocode(p["place"], limit=3, cache=Cache(session_factory()), country_codes=get_settings().search_countries)
         except ProviderError:
             res = []
         if res:
@@ -133,14 +163,14 @@ async def build_plan(body: dict) -> dict:
     price = p["price"]
     if not price:
         price = float(TYPICAL_PRICE.get(cat["key"], ARCH_PRICE[arch_key]))
-        assumptions.append(f"{arch.price_label}: ₹{int(price):,} (a typical price for this kind of business — change it to yours)")
+        assumptions.append(f"{arch.price_label}: {CUR}{int(price):,} (a typical price for this kind of business — change it to yours)")
     if p["budget"]:
         costs["startup_cost"] = float(p["budget"])
     else:
-        assumptions.append(f"Startup cost: ₹{int(costs['startup_cost']):,} (typical for a small outlet)")
+        assumptions.append(f"Startup cost: {CUR}{int(costs['startup_cost']):,} (typical for a small outlet)")
     assumptions += [
-        f"Rent ₹{int(costs['rent']):,}, staff ₹{int(costs['payroll']):,}, utilities ₹{int(costs['utilities']):,} and other ₹{int(costs['other_fixed']):,} a month",
-        f"Marketing ₹{int(costs['marketing_spend']):,} a month",
+        f"Rent {CUR}{int(costs['rent']):,}, staff {CUR}{int(costs['payroll']):,}, utilities {CUR}{int(costs['utilities']):,} and other {CUR}{int(costs['other_fixed']):,} a month",
+        f"Marketing {CUR}{int(costs['marketing_spend']):,} a month",
         "Food / material cost per sale: a typical share of price for this category",
         "Capacity: " + ", ".join(f"{f.label.lower()} {int(f.default) if f.default is not None else '—'}" for f in arch.capacity_fields),
     ]

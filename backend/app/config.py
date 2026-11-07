@@ -24,6 +24,9 @@ class Settings:
     jwt_secret: str = field(default_factory=lambda: os.getenv("JWT_SECRET", "dev-insecure-change-me"))
     # Shared with the Next.js proxy, which alone may tell the API who the real client is (rate limits).
     proxy_secret: str = field(default_factory=lambda: os.getenv("PROXY_SECRET", ""))
+    # One deployment sells in one market: it sets currency, starter costs, map search and demo places.
+    market: str = field(default_factory=lambda: os.getenv("MARKET", "US").upper())
+    census_api_key: str = field(default_factory=lambda: os.getenv("CENSUS_API_KEY", ""))
     jwt_ttl_hours: int = field(default_factory=lambda: int(os.getenv("JWT_TTL_HOURS", "168")))
     cookie_secure: bool = field(default_factory=lambda: _bool(os.getenv("COOKIE_SECURE"), False))
     cors_origins: list[str] = field(default_factory=lambda: _list(os.getenv("CORS_ORIGINS"), ["http://localhost:3000"]))
@@ -55,6 +58,14 @@ class Settings:
     # Serverless hosts (Vercel) cannot run work after the response: refresh market data inside the request.
     serverless: bool = field(default_factory=lambda: _bool(os.getenv("SERVERLESS"), bool(os.getenv("VERCEL"))))
     auto_migrate: bool = field(default_factory=lambda: _bool(os.getenv("AUTO_MIGRATE"), False))
+
+    @property
+    def currency(self) -> str:
+        return "$" if self.market == "US" else "₹"
+
+    @property
+    def search_countries(self) -> str | None:
+        return "us" if self.market == "US" else None
 
     @property
     def user_agent(self) -> str:

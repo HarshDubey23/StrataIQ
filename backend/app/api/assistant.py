@@ -33,6 +33,8 @@ from ..engine.geo import haversine_km
 from .decisions import _decision
 
 router = APIRouter(tags=["assistant"])
+from ..config import get_settings  # noqa: E402
+
 log = logging.getLogger("strataiq.assistant")
 
 
@@ -43,6 +45,8 @@ def inr(x: float | None) -> str:
         return "unknown"
     neg = x < 0
     v = abs(float(x))
+    if get_settings().market == "US":
+        return ("minus " if neg else "") + f"${int(round(v)):,}"
     if v >= 1e7:
         s = f"₹{v / 1e7:.2f} crore".replace(".00 ", " ")
     elif v >= 1e5:
@@ -263,7 +267,7 @@ INTENTS: list[tuple[str, list[str]]] = [
     ("tour", [r"\b(tour|guide me|walk me through|show me around|how (do i|to) use|where do i start|what do i do( first| now| next)?|next step|samjhao|kaise use|kya karu ab|aage kya)\b"]),
     ("insights", [r"insight", r"suggest", r"advice", r"advise", r"improve", r"\bgrow", r"badh", r"sujhav", r"what should i change", r"how (can|do) i (get|increase|make|win)",
                   r"what('s| is) wrong", r"problem", r"why (so )?(low|less|few)", r"kam kyu", r"analy[sz]"]),
-    ("try_price", [r"\b(try|test|simulate|run|what if|kya hoga|check)\b.*\b(price|fee|charge|₹|rs|rupees?|\d{3,})", r"\bprice (of|at|to) \d"]),
+    ("try_price", [r"\b(try|test|simulate|run|what if|kya hoga|check)\b.*\b(price|fee|charge|₹|rs|rupees?|dollars?|\d{2,})", r"\bprice (of|at|to) \d"]),
     ("navigate", [r"\b(open|show|go to|take me|navigate|dikhao|kholo)\b"]),
     ("competitors", [r"compet", r"rival", r"\bnearby\b", r"\baround\b", r"kitne .*(gym|shop|cafe|store)", r"other (gyms|shops|cafes|stores)"]),
     ("breakeven", [r"break.?even", r"\bbep\b", r"recover", r"payback"]),
@@ -289,7 +293,7 @@ def detect(q: str) -> str:
     return "unknown"
 
 
-_PRICE = re.compile(r"(?:₹|rs\.?|inr|rupees?)?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|hazaar|hazar)?", re.I)
+_PRICE = re.compile(r"(?:₹|\$|rs\.?|inr|usd|rupees?|dollars?)?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|hazaar|hazar)?", re.I)
 
 
 def parse_price(q: str) -> float | None:
@@ -435,7 +439,7 @@ def parse_strategy(q: str, cur: dict, cap_now: float | None) -> dict:
             c = float(m.group(1))
             c += 12 if (m.group(2) == "pm" or not m.group(2)) and c < 12 else 0
             ch["close_hour"] = min(24.0, c)
-    m = re.search(r"(?:price|fee|charge|rate)\D{0,12}(?:₹|rs\.?|inr)?\s*(\d[\d,]*)", ql)
+    m = re.search(r"(?:price|fee|charge|rate)\D{0,12}(?:₹|\$|rs\.?|inr|usd)?\s*(\d[\d,]*)", ql)
     if m:
         ch["price"] = float(m.group(1).replace(",", ""))
     return ch
@@ -655,7 +659,10 @@ async def ask(project_id: str, body: Ask, user: User = Depends(current_user), db
         return {"answer": text, "intent": intent, "actions": actions, "grounded": True}
     # Open question: let the LLM phrase an answer from the fact sheet, but only keep it if every number is grounded.
     if ai.enabled():
-        sys = ("You are StrataIQ's voice analyst for an Indian small-business owner. Answer in 2-4 short spoken sentences, "
+        sys = ("You are StrataIQ's analyst for a US small-business owner. Answer in 2-4 short spoken sentences of plain English. Use ONLY facts and numbers in the JSON. "
+               "If the JSON does not contain the answer, say what you can't tell and what to check. Money in US dollars."
+               if get_settings().market == "US" else
+               "You are StrataIQ's voice analyst for an Indian small-business owner. Answer in 2-4 short spoken sentences, "
                "in natural Hinglish written in Roman script (switch to plain English only if the user wrote pure English). Use ONLY facts and numbers in the JSON. "
                "If the JSON does not contain the answer, say what you can't tell and what to check. Money in rupees, Indian style (lakh/crore).")
         resp = await ai._call(sys, f"Facts: {json.dumps(f, default=str)[:9000]}\n\nQuestion: {q}", None, 300)

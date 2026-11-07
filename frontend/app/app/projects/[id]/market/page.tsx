@@ -12,7 +12,7 @@ import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, cn, Dialog, EmptyState, ErrorState, Evidence, Field, Input, Notice, NumberInput, Segmented, Select, Spinner } from "@/components/ui";
 import { IncomeMix } from "@/components/RealData";
 import { api, ApiError } from "@/lib/api";
-import { ago, money, num, pct, when } from "@/lib/format";
+import { ago, money, num, pct, when, CUR } from "@/lib/format";
 import { refreshLocation, waitForSnapshot } from "@/lib/market";
 import type { CompetitorRec, MarketData, Run, SimResult } from "@/lib/types";
 
@@ -534,7 +534,7 @@ function CompetitorPanel({
         <div className="font-medium text-ink-200">Unknown unless you add it</div>
         <Field label="Price" kind={c.price ? "user" : "unknown"} hint={c.price ? undefined : "Not available in map data. The model assumes the local reference price."}>
           <div className="flex gap-2">
-            <NumberInput value={price} onChange={setPrice} prefix="₹" allowEmpty placeholder="unknown" />
+            <NumberInput value={price} onChange={setPrice} prefix={CUR} allowEmpty placeholder="unknown" />
             <Button size="sm" loading={busy} onClick={() => patch(price ? { price } : { clear_price: true })}>Save</Button>
           </div>
         </Field>
@@ -642,7 +642,7 @@ function AddCompetitorDialog({ draft, projectId, onClose, onAdded }: { draft: { 
         <p className="text-xs text-ink-400">At {draft?.lat.toFixed(5)}, {draft?.lng.toFixed(5)}. It will be labelled as user-entered, not verified.</p>
         {err && <ErrorState message={err} />}
         <Field label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
-        <Field label="Price (if you know it)"><NumberInput value={price} onChange={setPrice} prefix="₹" allowEmpty /></Field>
+        <Field label="Price (if you know it)"><NumberInput value={price} onChange={setPrice} prefix={CUR} allowEmpty /></Field>
         <Segmented value={hyp ? "hyp" : "obs"} onChange={(v) => setHyp(v === "hyp")} options={[{ value: "obs", label: "I saw it on the ground" }, { value: "hyp", label: "Hypothetical new entrant" }]} />
         <Field label="Notes"><Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. opened last month, small, women-only" /></Field>
       </div>

@@ -1,3 +1,4 @@
+import { CUR, US_MARKET } from "@/lib/format";
 /** Purely illustrative, static market visual for the landing page. Contains no real data. */
 
 function rng(seed: number) {
@@ -66,8 +67,8 @@ export function MarketPreview() {
             <div className="text-[11px] text-ink-400">Scenario comparison (illustrative)</div>
             <div className="mt-2 space-y-2">
               {[
-                { n: "Baseline ₹1,800", w: 46, c: "bg-ink-400" },
-                { n: "Lower price ₹1,500", w: 63, c: "bg-accent" },
+                { n: `Baseline ${CUR}${US_MARKET ? "59" : "1,800"}`, w: 46, c: "bg-ink-400" },
+                { n: `Lower price ${CUR}${US_MARKET ? "49" : "1,500"}`, w: 63, c: "bg-accent" },
                 { n: "Location B", w: 38, c: "bg-ink-500" },
               ].map((b) => (
                 <div key={b.n}>

@@ -33,6 +33,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..config import get_settings
+
 GENOME_SIZE = 615
 
 # ---------------------------------------------------------------- latent structure
@@ -185,7 +187,12 @@ def _L(s: str) -> tuple:
 REG: list[Param] = []
 
 
+CUR = get_settings().currency
+VALUE_OF_TIME = (8.0, 100.0) if get_settings().market == "US" else (80.0, 2000.0)  # per hour, low and high
+
+
 def P(key, label, block, unit, mech, loads="", mu=0.0, sd=0.6, tr="sig", lo=0.0, hi=1.0, w=0.0, feat=None, origin="generated"):
+    label, unit = label.replace("₹", CUR), unit.replace("₹", CUR)
     REG.append(Param(key, label, block, unit, origin, mech, mu, _L(loads), sd, tr, lo, hi, w, feat))
 
 
@@ -264,7 +271,7 @@ P("ec_paid_ads_trust", "Trust in paid promotions", E, "0-1", "awareness", "novel
 P("ec_sunk_cost", "Sunk-cost effect (stays after paying)", E, "0-1", "retention", "risk_aversion:.3 habit:.2", w=-.15)
 P("ec_family_pricing_pull", "Pull of family / couple pricing", E, "0-1", "utility", "family_load:.5", w=.06, feat="attr_family")
 P("ec_monthly_cycle", "Salary-cycle spending effect", E, "0-1", "participation", "income:-.2 planning:-.15", w=.04)
-P("ec_price_threshold_round", "Sensitivity to price endings (₹999 vs ₹1,000)", E, "0-1", "utility", "price_consc:.3 planning:-.2", w=-.03, feat="price_rel")
+P("ec_price_threshold_round", "Sensitivity to price endings (a 99 ending vs a round price)", E, "0-1", "utility", "price_consc:.3 planning:-.2", w=-.03, feat="price_rel")
 P("ec_willing_deposit", "Willing to pay deposits / joining fees", E, "0-1", "retention", "income:.4 planning:.2", w=.06)
 P("ec_premium_service_add", "Buys add-on services", E, "0-1", "utility", "income:.35 status:.25 novelty:.15", w=.08, feat="attr_extras")
 P("ec_coupon_use", "Coupon usage", E, "0-1", "awareness", "price_consc:.45 digital:.25", w=.08)
@@ -365,7 +372,7 @@ for k, sp, _tol in MODES:
       "car": "status:.4 income:.3", "auto": "convenience:.3", "bus": "price_consc:.4", "metro": "time_poverty:.3 planning:.2", "cycle": "health:.5"}[k], sd=.7)
 for k, lbl, loads, unit, tr, lo, hi, mu, sd, w in [
     ("dist_tol", "Distance tolerance multiplier", "mobility:.3 convenience:-.25 time_poverty:-.2 locality:-.15 age:-.1", "×", "logn", 1.0, 3.0, 0.0, .22, 0),
-    ("value_of_time", "Value of time (₹/hour)", "income:.6 time_poverty:.4", "₹/h", "logn", 80.0, 2000.0, 0.0, .5, 0),
+    ("value_of_time", "Value of time (₹/hour)", "income:.6 time_poverty:.4", "₹/h", "logn", *VALUE_OF_TIME, 0.0, .5, 0),
     ("max_trip_min", "Maximum acceptable trip time", "mobility:.3 time_poverty:-.3 health:.1", "min", "logn", 18.0, 60.0, 0.0, .3, 0),
     ("parking_need", "Needs parking", "income:.4 mobility:.4", "0-1", "sig", 0, 1, 0.0, .6, .25),
     ("trip_chaining", "Combines trips (on the way)", "time_poverty:.4 planning:.3", "0-1", "sig", 0, 1, 0.0, .6, -0.15),

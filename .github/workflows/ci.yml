@@ -138,6 +138,9 @@ jobs:
       JWT_SECRET: ci-secret-not-for-production
       CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
       API_URL: http://127.0.0.1:8000
+      # shortcut: the browser journeys still use Indian places; move them to US places once US income data lands.
+      MARKET: IN
+      NEXT_PUBLIC_MARKET: IN
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

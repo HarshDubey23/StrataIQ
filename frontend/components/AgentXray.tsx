@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge, ErrorState, Spinner, cn } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { CHANNEL_LABEL, MECH_LABEL, ORIGIN_LABEL, fmtParam, getRegistry, pctColor } from "@/lib/genome";
-import { money } from "@/lib/format";
+import { money, CUR, LOCALE } from "@/lib/format";
 import type { AgentXray as Xray, GenomeRegistry } from "@/lib/types";
 
 const MODE_LABEL: Record<string, string> = { walk: "walks", two_wheeler: "two-wheeler", car: "car", auto: "auto", bus: "bus", metro: "metro", cycle: "cycle" };
@@ -70,7 +70,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
         <div className="flex items-center gap-2">
           <Dna className="h-4 w-4 text-agent" />
           <div>
-            <div className="text-sm font-semibold text-ink-100">Agent #{agent.toLocaleString("en-IN")} — decision X-ray</div>
+            <div className="text-sm font-semibold text-ink-100">Agent #{agent.toLocaleString(LOCALE)} — decision X-ray</div>
             <div className="text-[11px] text-ink-400">615-parameter synthetic genome · not a real person</div>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
               <Badge>{x.segment}</Badge>
               <Badge>{MODE_LABEL[x.mode] || x.mode}</Badge>
               <Badge>{s.dist_km} km from you</Badge>
-              {typeof s.mpce === "number" && <Badge>spends ₹{Math.round(s.mpce).toLocaleString("en-IN")}/month per person</Badge>}
+              {typeof s.mpce === "number" && <Badge>spends {CUR}{Math.round(s.mpce).toLocaleString(LOCALE)}/month per person</Badge>}
               <Badge>WTP {money(s.wtp)}</Badge>
               {price !== undefined && <Badge tone={s.wtp >= price ? "ok" : "danger"}>{s.wtp >= price ? "can afford you" : "you're above their WTP"}</Badge>}
               <Badge tone={choice === 0 ? "accent" : choice > 0 ? "warn" : "neutral"}>

@@ -8,6 +8,7 @@ import { Check, Crosshair, Footprints, Home, Loader2, MessageSquareText, Minus, 
 import { useEffect, useRef, useState } from "react";
 import { cn, inputCls, NumberInput } from "@/components/ui";
 import type { FieldKind } from "@/lib/types";
+import { CUR } from "@/lib/format";
 
 export interface RecordDraft {
   kind: FieldKind;
@@ -189,7 +190,7 @@ function InterviewForm({ category, priceLabel, busy, onSave }: { category: strin
       {uses && (
         <>
           <Q n={uses === "yes" ? "05" : "02"} label={<>The most you would pay — <span className="text-ink-400">{priceLabel.toLowerCase()}</span></>}>
-            <NumberInput value={price} onChange={setPrice} prefix="₹" placeholder="e.g. 1500" allowEmpty min={1} />
+            <NumberInput value={price} onChange={setPrice} prefix={CUR} placeholder="e.g. 1500" allowEmpty min={1} />
           </Q>
           <Q n={uses === "yes" ? "06" : "03"} label="Age group (optional)">
             <Chips label="Age group" value={age} onChange={setAge} options={[{ v: "18_24", l: "18–24" }, { v: "25_34", l: "25–34" }, { v: "35_49", l: "35–49" }, { v: "50_plus", l: "50+" }]} />
@@ -247,7 +248,7 @@ function CompetitorForm({ site, priceLabel, busy, onSave }: { site: { lat: numbe
         {gps === "err" && <p className="text-xs text-warn">Location permission was denied. Allow it in the browser, or stand at the site.</p>}
       </Q>
       <Q n="03" label={<>Real price you saw — <span className="text-ink-400">{priceLabel.toLowerCase()}</span></>}>
-        <NumberInput value={price} onChange={setPrice} prefix="₹" placeholder="from the menu / board / staff" allowEmpty min={1} />
+        <NumberInput value={price} onChange={setPrice} prefix={CUR} placeholder="from the menu / board / staff" allowEmpty min={1} />
       </Q>
       <Q n="04" label="Your rating of the place">
         <div className="flex gap-1.5" role="radiogroup" aria-label="Rating">
@@ -353,11 +354,11 @@ function RentForm({ busy, onSave }: { busy: boolean; onSave: (d: RecordDraft) =>
       }}
     >
       <Q n="01" label="Monthly rent quoted">
-        <NumberInput value={rent} onChange={setRent} prefix="₹" placeholder="e.g. 65000" allowEmpty min={1} />
+        <NumberInput value={rent} onChange={setRent} prefix={CUR} placeholder="e.g. 65000" allowEmpty min={1} />
       </Q>
       <div className="grid grid-cols-2 gap-3">
         <Q n="02" label="Deposit">
-          <NumberInput value={dep} onChange={setDep} prefix="₹" placeholder="optional" allowEmpty min={0} />
+          <NumberInput value={dep} onChange={setDep} prefix={CUR} placeholder="optional" allowEmpty min={0} />
         </Q>
         <Q n="03" label="Area">
           <NumberInput value={area} onChange={setArea} suffix="sq ft" placeholder="optional" allowEmpty min={1} />

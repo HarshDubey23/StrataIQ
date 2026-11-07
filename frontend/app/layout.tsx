@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable} ${tiro.variable} ${archivo.variable}`}>
       <body className="grain min-h-screen font-sans">
         {children}
-        <VoiceDock />
+        {process.env.NEXT_PUBLIC_VOICE === "1" && <VoiceDock />}
       </body>
     </html>
   );

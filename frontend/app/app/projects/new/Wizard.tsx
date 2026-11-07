@@ -7,7 +7,7 @@ import { useSession } from "@/components/AppShell";
 import { LocationPicker, type PickedPlace } from "@/components/LocationPicker";
 import { Badge, Button, Card, cn, ErrorState, Evidence, Field, Input, Notice, NumberInput, Segmented, Select, Spinner, Textarea } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, OBJECTIVES, pct } from "@/lib/format";
+import { money, num, OBJECTIVES, pct, CUR } from "@/lib/format";
 import type { Archetype, ArchetypeKey, Category, Goal, Objective, Project } from "@/lib/types";
 
 const STEPS = ["Objective", "Business", "Profile", "Finances", "Positioning", "Location", "Review"];
@@ -194,7 +194,7 @@ export function Wizard() {
 
   const money0 = (label: string, v: number | null, set: (v: number | null) => void, hint: string, kind: "user" | "assumption" = "user") => (
     <Field label={label} hint={hint} kind={v === null ? undefined : kind}>
-      <NumberInput value={v} onChange={set} prefix="₹" allowEmpty placeholder="0" />
+      <NumberInput value={v} onChange={set} prefix={CUR} allowEmpty placeholder="0" />
     </Field>
   );
 
@@ -327,7 +327,7 @@ export function Wizard() {
             <p className="text-xs text-ink-400">{arch.period_note}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={arch.price_label} hint="Your planned price. Example figures are fine at this stage." kind="user">
-                <NumberInput value={price} onChange={setPrice} prefix="₹" min={1} allowEmpty placeholder="e.g. 1800" />
+                <NumberInput value={price} onChange={setPrice} prefix={CUR} min={1} allowEmpty placeholder="e.g. 1800" />
               </Field>
               <Field label="Planned operating hours">
                 <Input value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. 6am–10pm, Mon–Sat" />
@@ -343,11 +343,11 @@ export function Wizard() {
                 <div className="text-sm font-medium">Current performance (leave unknown values empty)</div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {[
-                    ["monthly_sales", "Monthly sales (₹)"],
+                    ["monthly_sales", `Monthly sales (${CUR})`],
                     ["monthly_customers", `Monthly ${arch.unit_label}`],
                     ["conversion_rate", "Conversion rate (0–1)"],
                     ["repeat_rate", "Repeat-customer rate (0–1)"],
-                    ["current_marketing", "Current marketing (₹/month)"],
+                    ["current_marketing", `Current marketing (${CUR}/month)`],
                   ].map(([k, l]) => (
                     <Field key={k} label={l} kind={existing[k] !== undefined && existing[k] !== null ? "user" : undefined}>
                       <NumberInput value={existing[k] ?? null} onChange={(v) => setExisting({ ...existing, [k]: v })} allowEmpty />
@@ -375,10 +375,10 @@ export function Wizard() {
               {money0("Other fixed costs per month", otherFixed, setOtherFixed, "Software, maintenance, insurance, accounting.")}
               {money0("Marketing per month", marketing, setMarketing, "Drives awareness of a new business in the model.")}
               <Field label={`Variable cost per ${arch.unit_label.replace(/s$/, "")}`} hint={`Leave empty to assume ${pct(arch.params.variable_cost_ratio?.value)} of price (category default).`} kind={vcu === null ? "assumption" : "user"}>
-                <NumberInput value={vcu} onChange={setVcu} prefix="₹" allowEmpty placeholder="optional" />
+                <NumberInput value={vcu} onChange={setVcu} prefix={CUR} allowEmpty placeholder="optional" />
               </Field>
               <Field label="Typical local price (if known)" hint="What competitors charge. Leave empty if you have not checked yet; it becomes a flagged assumption." kind={refPrice === null ? "unknown" : "user"}>
-                <NumberInput value={refPrice} onChange={setRefPrice} prefix="₹" allowEmpty placeholder="optional" />
+                <NumberInput value={refPrice} onChange={setRefPrice} prefix={CUR} allowEmpty placeholder="optional" />
               </Field>
               <Field label="Desired break-even timeframe (months)">
                 <NumberInput value={breakEvenMonths} onChange={setBreakEvenMonths} allowEmpty suffix="months" />

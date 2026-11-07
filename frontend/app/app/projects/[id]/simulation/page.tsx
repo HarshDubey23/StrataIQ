@@ -9,7 +9,7 @@ import { useProject } from "@/components/ProjectContext";
 import { DataLineage, IncomeMix } from "@/components/RealData";
 import { Badge, Button, Card, CardHeader, cn, Dialog, EmptyState, ErrorState, Evidence, Field, Input, Metric, Notice, NumberInput, Segmented, Select, Spinner, statusToKind, Tip } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct, signed } from "@/lib/format";
+import { money, num, pct, signed, CUR } from "@/lib/format";
 import type { CompareRow, MarketData, Run, Scenario, ScenarioInputs, SimResult } from "@/lib/types";
 
 const ADV_PARAMS = ["participation", "frequency", "beta_price", "distance_decay", "awareness_base", "competitor_price_ratio", "competitor_quality"];
@@ -210,7 +210,7 @@ export default function SimulationLab() {
 
           <Field label={`${arch.price_label}: ${money(draft.price)}`} kind="user">
             <input type="range" min={Math.max(1, Math.round(sel.inputs.price * 0.4))} max={Math.round(sel.inputs.price * 2)} step={Math.max(1, Math.round(sel.inputs.price / 100))} value={draft.price} onChange={(e) => set("price", Number(e.target.value))} className="w-full" aria-label="Price" />
-            <NumberInput value={draft.price} onChange={(v) => v && set("price", v)} prefix="₹" min={1} />
+            <NumberInput value={draft.price} onChange={(v) => v && set("price", v)} prefix={CUR} min={1} />
           </Field>
           <Field label={`Marketing / month: ${money(draft.marketing_spend)}`} kind="user">
             <input type="range" min={0} max={Math.max(100000, sel.inputs.marketing_spend * 3)} step={1000} value={draft.marketing_spend} onChange={(e) => set("marketing_spend", Number(e.target.value))} className="w-full" aria-label="Marketing spend" />
@@ -251,14 +251,14 @@ export default function SimulationLab() {
             <div className="grid grid-cols-2 gap-2 p-3 pt-0">
               {(["rent", "payroll", "utilities", "other_fixed"] as const).map((k) => (
                 <Field key={k} label={k === "other_fixed" ? "Other fixed" : k[0].toUpperCase() + k.slice(1)}>
-                  <NumberInput value={draft[k]} onChange={(v) => set(k, v ?? 0)} prefix="₹" min={0} />
+                  <NumberInput value={draft[k]} onChange={(v) => set(k, v ?? 0)} prefix={CUR} min={0} />
                 </Field>
               ))}
               <Field label="Variable cost / unit" kind={draft.variable_cost_per_unit === null ? "assumption" : "user"}>
-                <NumberInput value={draft.variable_cost_per_unit} onChange={(v) => set("variable_cost_per_unit", v)} prefix="₹" allowEmpty placeholder="default" />
+                <NumberInput value={draft.variable_cost_per_unit} onChange={(v) => set("variable_cost_per_unit", v)} prefix={CUR} allowEmpty placeholder="default" />
               </Field>
               <Field label="Startup cost">
-                <NumberInput value={draft.startup_cost} onChange={(v) => set("startup_cost", v ?? 0)} prefix="₹" min={0} />
+                <NumberInput value={draft.startup_cost} onChange={(v) => set("startup_cost", v ?? 0)} prefix={CUR} min={0} />
               </Field>
             </div>
           </details>
@@ -267,7 +267,7 @@ export default function SimulationLab() {
             <summary className="label-mono cursor-pointer px-3 py-2.5 text-ink-200">Market assumptions (advanced)</summary>
             <div className="space-y-3 p-3 pt-0">
               <Field label="Typical local price" kind={draft.reference_price ? "user" : "unknown"} hint="Leave empty to derive it from competitor prices you entered, or fall back to your baseline price.">
-                <NumberInput value={draft.reference_price} onChange={(v) => set("reference_price", v)} prefix="₹" allowEmpty placeholder="unknown" />
+                <NumberInput value={draft.reference_price} onChange={(v) => set("reference_price", v)} prefix={CUR} allowEmpty placeholder="unknown" />
               </Field>
               {ADV_PARAMS.map((k) => {
                 const pd = arch.params[k];

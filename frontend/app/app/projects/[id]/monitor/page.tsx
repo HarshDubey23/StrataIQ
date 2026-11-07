@@ -6,7 +6,7 @@ import { CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, Respo
 import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Evidence, Field, Input, Notice, NumberInput, Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct, when } from "@/lib/format";
+import { money, num, pct, when, CUR } from "@/lib/format";
 
 interface Monitor {
   forecast: { run_id: string; run_at: string; units: number; revenue: number; costs: number; units_p10: number | null; units_p90: number | null; unit_label: string } | null;
@@ -105,8 +105,8 @@ export default function MonitorPage() {
           <form onSubmit={add} className="space-y-3 p-4">
             <Field label="Month"><Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} required /></Field>
             <Field label={`Actual ${f?.unit_label || "units"}`}><NumberInput value={units} onChange={setUnits} allowEmpty /></Field>
-            <Field label="Revenue"><NumberInput value={revenue} onChange={setRevenue} prefix="₹" allowEmpty /></Field>
-            <Field label="Total costs"><NumberInput value={costs} onChange={setCosts} prefix="₹" allowEmpty /></Field>
+            <Field label="Revenue"><NumberInput value={revenue} onChange={setRevenue} prefix={CUR} allowEmpty /></Field>
+            <Field label="Total costs"><NumberInput value={costs} onChange={setCosts} prefix={CUR} allowEmpty /></Field>
             <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. launch offer running" /></Field>
             <Button type="submit" variant="primary" className="w-full" loading={busy}>Save</Button>
             <p className="text-[11px] text-ink-500">Figures are labelled user-reported and are not independently verified. Saving the same month again overwrites it.</p>

@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+os.environ.setdefault("MARKET", "IN")  # existing fixtures are Indian places; test_market_us.py covers US
+
 
 def pytest_collection_modifyitems(config, items):
     has_db = bool(os.getenv("DATABASE_URL"))

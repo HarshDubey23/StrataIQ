@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/components/ui";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
+import { CUR, LOCALE, US_MARKET } from "@/lib/format";
 
 const HeroMap = dynamic(() => import("./HeroMap"), { ssr: false, loading: () => null });
 
@@ -18,7 +19,7 @@ const CATS = [
   { key: "salon", label: "Salons" },
 ];
 
-const IDEAS = ["A gym in Bandra West, fees ₹2,000", "A café in Indiranagar, coffee at ₹250", "A salon in Sector 18, Noida", "A pharmacy near Connaught Place"];
+const IDEAS = US_MARKET ? ["A gym in South Austin, fees $49 a month", "A café in Wynwood, Miami, coffee at $6", "A salon in Downtown Phoenix", "A dental clinic near Downtown Austin"] : ["A gym in Bandra West, fees ₹2,000", "A café in Indiranagar, coffee at ₹250", "A salon in Sector 18, Noida", "A pharmacy near Connaught Place"];
 
 const CHAPTERS = [
   { title: "Start with the real street.", body: "Every building and road comes from OpenStreetMap. Pick any lane in India — the one you'd actually sign for." },
@@ -568,7 +569,7 @@ function CountUp({ to, run }: { to: number; run: boolean }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [run, to]);
-  return <>{Math.round(v).toLocaleString("en-IN")}</>;
+  return <>{Math.round(v).toLocaleString(LOCALE)}</>;
 }
 
 function Wave() {
@@ -640,7 +641,7 @@ function PhoneMock() {
             <div className="rounded-[10px] border border-black/15 py-2.5 text-center text-[13px] text-black/60">No</div>
           </div>
           <div className="mt-4 text-[13px]">Most you&apos;d pay a month?</div>
-          <div className="mt-2 rounded-[10px] border-2 border-[#2F49FF] px-3 py-2.5 text-[14px] font-semibold">₹1,500<span className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-[#2F49FF] align-middle" /></div>
+          <div className="mt-2 rounded-[10px] border-2 border-[#2F49FF] px-3 py-2.5 text-[14px] font-semibold">{CUR}{US_MARKET ? "49" : "1,500"}<span className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-[#2F49FF] align-middle" /></div>
           <div className="mt-4 text-[13px]">How far do you travel?</div>
           <div className="mt-2 flex gap-1.5">
             {["1 km", "2 km", "3 km", "5 km"].map((t, i) => <span key={t} className={cn("rounded-full border px-2.5 py-1 text-[11px]", i === 1 ? "border-black bg-black text-white" : "border-black/15 text-black/55")}>{t}</span>)}
