@@ -16,6 +16,12 @@ export function money(x: number | null | undefined, opts: { compact?: boolean; s
   return `${prefix}${CUR}${s}`;
 }
 
+/** A distance held in km, shown in the local unit. */
+export function distance(km: number | null | undefined, digits = 1): string {
+  if (km === null || km === undefined || Number.isNaN(km)) return "—";
+  return US_MARKET ? `${(km * 0.621371).toFixed(digits)} mi` : `${km.toFixed(digits)} km`;
+}
+
 export function num(x: number | null | undefined, digits = 0): string {
   if (x === null || x === undefined || Number.isNaN(x)) return "—";
   return x.toLocaleString(LOCALE, { maximumFractionDigits: digits, minimumFractionDigits: 0 });

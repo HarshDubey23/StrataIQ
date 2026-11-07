@@ -8,7 +8,7 @@ import { Check, Crosshair, Footprints, Home, Loader2, MessageSquareText, Minus, 
 import { useEffect, useRef, useState } from "react";
 import { cn, inputCls, NumberInput } from "@/components/ui";
 import type { FieldKind } from "@/lib/types";
-import { CUR } from "@/lib/format";
+import { CUR, distance } from "@/lib/format";
 
 export interface RecordDraft {
   kind: FieldKind;
@@ -180,7 +180,7 @@ function InterviewForm({ category, priceLabel, busy, onSave }: { category: strin
             <Chips label="Visits per month" value={visits} onChange={setVisits} options={[1, 2, 4, 8, 12, 20].map((v) => ({ v, l: v === 20 ? "20+" : String(v) }))} />
           </Q>
           <Q n="03" label="How far do you travel for it?">
-            <Chips label="Travel distance" value={km} onChange={setKm} options={[0.5, 1, 2, 3, 5, 8].map((v) => ({ v, l: v === 8 ? "8+ km" : `${v} km` }))} />
+            <Chips label="Travel distance" value={km} onChange={setKm} options={[0.5, 1, 2, 3, 5, 8].map((v) => ({ v, l: v === 8 ? `${distance(8, 0)}+` : distance(v) }))} />
           </Q>
           <Q n="04" label="How do you usually get there?">
             <Chips label="Travel mode" value={mode} onChange={setMode} options={[{ v: "walk", l: "Walk" }, { v: "two_wheeler", l: "Two-wheeler" }, { v: "auto", l: "Auto" }, { v: "bus_metro", l: "Bus / metro" }, { v: "car", l: "Car" }]} />

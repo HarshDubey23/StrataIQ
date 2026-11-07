@@ -7,7 +7,7 @@ import { useSession } from "@/components/AppShell";
 import { LocationPicker, type PickedPlace } from "@/components/LocationPicker";
 import { Badge, Button, Card, cn, ErrorState, Evidence, Field, Input, Notice, NumberInput, Segmented, Select, Spinner, Textarea } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, OBJECTIVES, pct, CUR } from "@/lib/format";
+import { money, num, OBJECTIVES, pct, CUR, distance } from "@/lib/format";
 import type { Archetype, ArchetypeKey, Category, Goal, Objective, Project } from "@/lib/types";
 
 const STEPS = ["Objective", "Business", "Profile", "Finances", "Positioning", "Location", "Review"];
@@ -424,7 +424,7 @@ export function Wizard() {
                 />
               </Field>
               {catchMode === "radius" ? (
-                <Field label={`Radius: ${radius.toFixed(1)} km`} hint={`Default for ${arch.label.toLowerCase()}: ${arch.default_catchment_km} km`}>
+                <Field label={`Radius: ${distance(radius)}`} hint={`Default for ${arch.label.toLowerCase()}: ${distance(arch.default_catchment_km)}`}>
                   <input type="range" min={0.5} max={6} step={0.1} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" aria-label="Catchment radius" />
                 </Field>
               ) : (
@@ -466,7 +466,7 @@ export function Wizard() {
                 <div className="num">{money((rent || 0) + (payroll || 0) + (utilities || 0) + (otherFixed || 0) + (marketing || 0))} fixed</div>
                 <div className="text-ink-300">Startup: <span className="num">{money(startup)}</span></div>
                 <div className="text-ink-300">Location: {place?.address}</div>
-                <div className="text-ink-300">Catchment: {catchMode === "radius" ? `${radius.toFixed(1)} km radius` : `${minutes} min ${profile}`}</div>
+                <div className="text-ink-300">Catchment: {catchMode === "radius" ? `${distance(radius)} radius` : `${minutes} min ${profile}`}</div>
               </div>
             </div>
             <div>

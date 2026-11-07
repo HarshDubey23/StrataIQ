@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import type { MapOpportunity } from "@/components/MapView";
 import { Button, cn, Notice } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct } from "@/lib/format";
+import { money, num, pct, distance, US_MARKET } from "@/lib/format";
 import { sendStrategy } from "@/lib/screen";
 
 export interface Site {
@@ -123,7 +123,7 @@ export function BestSites({ projectId, scenarioId, locationKey, onData, onFocus 
       </div>
       <SiteRow title={`Your site · ${data.location.label}`} s={c} unit={data.unit} base={c} current onFocus={() => onFocus(c.lat, c.lng)} />
       {data.top.map((s, i) => (
-        <SiteRow key={`${s.lat},${s.lng}`} title={`#${i + 1} · ${s.from_current_km} km away`} s={s} unit={data.unit} base={c} onFocus={() => onFocus(s.lat, s.lng)}
+        <SiteRow key={`${s.lat},${s.lng}`} title={`#${i + 1} · ${distance(s.from_current_km)} away`} s={s} unit={data.unit} base={c} onFocus={() => onFocus(s.lat, s.lng)}
           action={<Button size="sm" variant={i === 0 ? "primary" : "secondary"} loading={busy === i} disabled={busy !== null} onClick={() => adopt(i, s)}>
             <Sparkles className="h-3 w-3" /> {busy === i ? "Loading live data there…" : "Open this site & simulate"}
           </Button>} />
@@ -145,8 +145,8 @@ function SiteRow({ title, s, unit, base, current, onFocus, action }: { title: st
       <div className="grid grid-cols-3 gap-2">
         <Stat l="Profit / month" v={money(s.profit, { compact: true })} d={current ? undefined : d} />
         <Stat l={`Demand (${unit})`} v={num(s.demand)} />
-        <Stat l="People ≤1 km" v={num(s.people_within_1km)} />
-        <Stat l="Rivals ≤500 m" v={String(s.competitors_within_500m)} />
+        <Stat l={US_MARKET ? "People within 0.6 mi" : "People ≤1 km"} v={num(s.people_within_1km)} />
+        <Stat l={US_MARKET ? "Rivals within 0.3 mi" : "Rivals ≤500 m"} v={String(s.competitors_within_500m)} />
         <Stat l="Nearest rival" v={s.nearest_competitor_km !== null ? `${num(s.nearest_competitor_km * 1000)} m` : "—"} />
         {s.risk ? <Stat l="Loss chance" v={pct(s.risk.prob_loss)} icon /> : <Stat l="Payback" v={s.payback_months ? `${s.payback_months} mo` : "—"} />}
       </div>

@@ -28,9 +28,30 @@ US demand starts from real spending per person: industry payroll per resident fr
 
 ## What this does not show
 
-- It scores county market size, not one store's revenue. Revenue at a single site has not been tested against real results.
+- It scores county market size, not one store's revenue. See the single-store test below.
 - High elasticities also capture what comes with wealthy counties, such as visitors and commuters, so they are not a pure income effect.
 - Payroll is not sales, and businesses with no employees are not counted.
 - The relationship is used inside a tract with limits, because it was fitted across whole counties.
 
-The next test needs real outcomes: SBA loan results by location, or revenue from real owners.
+## Single-store test: Texas
+
+`backend/scripts/validate_site_sales.py` forecasts real Texas bars and restaurants and compares them with 12 months of mixed beverage gross receipts from the Texas Comptroller (October 2025 to September 2026). The engine saw only the location, Census tract data and nearby permit holders. One scale factor was set on half the cities, and every score below comes from the other half: 2,959 locations in 205 cities, out of 5,546 forecast.
+
+| Forecast | Median error | Within 2x | Rank correlation | Log R² |
+|---|---:|---:|---:|---:|
+| StrataIQ | 85% | 32% | 0.15 | -0.44 |
+| The same number for every venue | 75% | 35% | none | 0.00 |
+| People per rival | 94% | 25% | -0.21 | -1.28 |
+
+The model did not beat a single fixed number. It does sort broadly: its top quarter of sites sold a median of $33,939 a month and its bottom quarter $17,629. Inside a city that signal is weak and unreliable: rank correlation was 0.25 in Houston, 0.12 in Dallas, -0.11 in Austin and -0.12 in San Antonio.
+
+Refitting did not rescue it. On the held-out cities, a calibrated model reached an R² of 0.006, and adding people and rivals reached 0.026. No parameters were changed, because a fit this weak would only learn noise.
+
+Two findings to carry forward:
+
+- Sales at the 90th percentile are about 50 times those at the 10th. Location data explains little of that spread, which comes from concept, size and operation.
+- Sites with more rivals nearby sold more, not less (rank correlation 0.19 overall, 0.10 to 0.30 by city). The engine treats a rival mainly as lost share, so it misses the pull of a busy district.
+
+Limits of this test: receipts cover alcohol only, permit holders mix bars, restaurants, hotels and venues, every forecast used the same price and quality, and it says nothing direct about other business types. A founder's own costs and plan are also not part of it.
+
+What this means for the product: treat a single-store sales figure as a planning estimate, not a prediction. The next test needs revenue from real owners, or SBA loan results by location.

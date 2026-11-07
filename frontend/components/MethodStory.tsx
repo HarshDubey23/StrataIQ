@@ -71,7 +71,7 @@ export function MethodStory() {
       <div className="lg:grid lg:grid-cols-[minmax(0,46fr)_minmax(0,54fr)]">
         <div className="sticky top-0 z-0 order-2 h-[30svh] overflow-hidden bg-night lg:h-svh">
           <HeroMap spot={SPOTS[0]} comps={[]} scene={scene} progress={progress} />
-          <p className="pointer-events-none absolute bottom-8 left-5 bg-night px-4 py-2 font-display text-[clamp(1.125rem,0.9rem+1vw,1.75rem)] font-medium tracking-[-0.02em] text-white md:left-8">{SCENES[scene] ?? SCENES[0]}</p>
+          <p className="pointer-events-none absolute bottom-6 left-5 bg-night px-4 py-2 font-display text-[clamp(1.125rem,0.9rem+1vw,1.75rem)] font-medium tracking-[-0.02em] text-white md:left-8">{SCENES[scene] ?? SCENES[0]}</p>
         </div>
         <main className="relative z-10 order-1 bg-paper px-5 md:px-10 lg:px-14">
           <header className="flex items-center justify-between py-6">
@@ -111,7 +111,8 @@ export function MethodStory() {
               </Reveal>
             ))}
           </div>
-          <Reveal><p className="mt-10 max-w-[70ch] text-[16px] leading-[1.5]">Figures are median error on county market size, using payroll as a stand-in for spending. Revenue for a single store is the next thing we are testing against real results.</p></Reveal>
+          <Reveal><p className="mt-10 max-w-[70ch] text-[16px] leading-[1.5]">Figures are median error on county market size, using payroll as a stand-in for spending.</p></Reveal>
+          <Reveal><p className="mt-4 max-w-[70ch] text-[16px] leading-[1.5]">We also checked single-store forecasts against a year of reported alcohol sales at 5,546 Texas bars and restaurants. Location data explained under 3% of why one venue outsells another in cities held out of the test. Concept, size and the operator matter far more, so use a forecast to test your plan and see what has to be true, not as a promise of one store&apos;s sales.</p></Reveal>
         </div>
       </section>
 

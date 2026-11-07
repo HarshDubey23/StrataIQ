@@ -670,5 +670,5 @@ async def ask(project_id: str, body: Ask, user: User = Depends(current_user), db
             t = "".join(b.get("text", "") for b in resp.get("content", []) if b.get("type") == "text").strip()
             if t and ai.grounded(t, f):
                 return {"answer": t, "intent": "llm", "actions": actions, "grounded": True}
-    return {"answer": ("Main competitors, profit, break-even, risk, pricing, customers aur population ke baare me bata sakta hoon, "
-                       "ya what-if chala sakta hoon — bolo 'price 1500 karke dekho'."), "intent": "help", "actions": actions, "grounded": True}
+    return {"answer": ("I can tell you about competitors, profit, break-even, risk, pricing, customers and population, "
+                       "or run a what-if. Try 'what if the price is 30'."), "intent": "help", "actions": actions, "grounded": True}

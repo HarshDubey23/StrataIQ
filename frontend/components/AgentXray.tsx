@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge, ErrorState, Spinner, cn } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { CHANNEL_LABEL, MECH_LABEL, ORIGIN_LABEL, fmtParam, getRegistry, pctColor } from "@/lib/genome";
-import { money, CUR, LOCALE, US_MARKET } from "@/lib/format";
+import { money, CUR, LOCALE, US_MARKET, distance } from "@/lib/format";
 import type { AgentXray as Xray, GenomeRegistry } from "@/lib/types";
 
 const MODE_LABEL: Record<string, string> = { walk: "walks", two_wheeler: "motorcycle", car: "car", auto: "taxi", bus: "bus", metro: "rail", cycle: "bicycle" };
@@ -86,7 +86,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
               <Badge>{Math.round(s.age)} yrs · {s.female ? "female" : "male"}</Badge>
               <Badge>{x.segment}</Badge>
               <Badge>{MODE_LABEL[x.mode] || x.mode}</Badge>
-              <Badge>{s.dist_km} km from you</Badge>
+              <Badge>{distance(s.dist_km)} from you</Badge>
               {x.occupation && <Badge>{x.occupation}</Badge>}
               {typeof s.mpce === "number" && <Badge>{US_MARKET ? "income" : "spends"} {CUR}{Math.round(s.mpce).toLocaleString(LOCALE)}/month per person</Badge>}
               {typeof s.friends_customers === "number" && s.friends_customers > 0 && <Badge>{s.friends_customers} friend{s.friends_customers > 1 ? "s" : ""} or family are your customers</Badge>}

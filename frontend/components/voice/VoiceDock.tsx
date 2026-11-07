@@ -87,8 +87,8 @@ const SUGGESTIONS = US_MARKET ? {
   project: ["What's on this screen?", "Where's the best location?", "Set rent to 8,000", "How can profit grow?"],
   general: ["I want to open a cafe in Austin", "Show me a live demo", "Open my projects", "What does StrataIQ do?"],
 } : {
-  project: ["Screen pe kya dikh raha hai?", "Best location kahan hai?", "Rent 80 hazaar kar do", "Field researcher bhejo", "Profit kaise badhega?", "Report bana do"],
-  general: ["Mujhe Indiranagar me café kholna hai", "Live demo dikhao", "Mere projects kholo", "StrataIQ kya karta hai?"],
+  project: ["What is on this screen?", "What is the best location?", "Set rent to 8000", "Request a field researcher", "How do I raise profit?", "Make the report"],
+  general: ["I want to open a cafe in South Austin", "Show the live demo", "Show my projects", "What does StrataIQ do?"],
 };
 
 function VoiceDockInner() {
@@ -426,7 +426,7 @@ function VoiceDockInner() {
     },
     onDisconnect: () => {
       const refused = wantRealtime.current && !agentSpoke.current && (!connectedAt.current || Date.now() - connectedAt.current < 10_000);
-      if (refused) fallbackRef.current("Realtime voice abhi available nahi hai (ElevenLabs credits/limit), isliye browser voice pe chal raha hoon.");
+      if (refused) fallbackRef.current("Live voice is unavailable right now, so I am using your browser's voice.");
       else setPhase("idle");
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -671,7 +671,7 @@ function VoiceDockInner() {
           h.push({ role: "tool", content: String(out).slice(0, 6000), toolCallId: tc.id, ...(isError ? { isError: true } : {}) });
         }
       }
-      return "Ye kaam thoda lamba ho gaya. Ek baar phir bolo, main wahin se continue karta hoon.";
+      return "That took longer than expected. Ask once more and I will pick up where I left off.";
     },
     [push, speak, tools],
   );
@@ -873,7 +873,7 @@ function VoiceDockInner() {
         } catch (e) {
           console.warn("realtime voice failed, falling back to browser voice", e);
           wantRealtime.current = false;
-          setErr("Realtime voice abhi available nahi hai, isliye browser voice pe chal raha hoon.");
+          setErr("Live voice is unavailable right now, so I am using your browser's voice.");
         }
       }
       setEngine("browser");
@@ -1059,12 +1059,12 @@ function VoiceDockInner() {
         onClick={() => (open ? (active ? void stop() : void start()) : (setOpen(true), void start()))}
         className="group pointer-events-auto flex items-center rounded-full border border-black/[0.08] bg-white/90 p-1.5 shadow-[0_1px_2px_rgba(13,16,40,.05),0_18px_40px_-16px_rgba(13,16,40,.35)] backdrop-blur-xl transition-[border-color,transform] duration-500 hover:-translate-y-0.5 hover:border-accent/40"
         aria-label={active ? "Stop voice analyst" : "Talk to Strata, the voice analyst"}
-        title="Strata se baat karo · press V"
+        title="Talk to Strata · press V"
       >
         <Orb level={level} phase={phase} size={40} />
         {/* compact by default so it never covers page actions; the label slides out on hover or while talking */}
         <span className={cn("overflow-hidden whitespace-nowrap text-left transition-[max-width,padding] duration-500", active ? "max-w-60 pl-3 pr-3" : "max-w-0 group-hover:max-w-60 group-hover:pl-3 group-hover:pr-3")}>
-          <span className="block text-[13px] font-medium text-ink-100">{active ? statusText[phase] : "Strata se baat karo"}</span>
+          <span className="block text-[13px] font-medium text-ink-100">{active ? statusText[phase] : "Talk to Strata"}</span>
           <span className="block text-[11px] text-ink-400">{active ? "tap to stop" : (US_MARKET ? "press V to talk" : "press V · Hinglish")}</span>
         </span>
       </button>

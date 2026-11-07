@@ -12,7 +12,7 @@ import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, cn, Dialog, EmptyState, ErrorState, Evidence, Field, Input, Notice, NumberInput, Segmented, Select, Spinner } from "@/components/ui";
 import { IncomeMix } from "@/components/RealData";
 import { api, ApiError } from "@/lib/api";
-import { ago, money, num, pct, when, CUR } from "@/lib/format";
+import { ago, money, num, pct, when, CUR, distance } from "@/lib/format";
 import { refreshLocation, waitForSnapshot } from "@/lib/market";
 import type { CompetitorRec, MarketData, Run, SimResult } from "@/lib/types";
 
@@ -323,7 +323,7 @@ export default function MarketPage() {
                       <>
                         <div className="num text-2xl font-semibold">{num(snap.population.total)}</div>
                         <div className="mt-1 text-xs text-ink-400">
-                          {snap.catchment_method === "isochrone" ? "Travel-time catchment" : `${snap.population.radius_km?.toFixed(1)} km radius (straight-line)`} · {snap.population.zones} zones of ~{num((snap.population.spacing_km || 0) * 1000)} m ·{" "}
+                          {snap.catchment_method === "isochrone" ? "Travel-time catchment" : `${distance(snap.population.radius_km)} radius (straight-line)`} · {snap.population.zones} zones of ~{distance(snap.population.spacing_km, 2)} ·{" "}
                           {snap.population.method === "dasymetric_buildings" ? `placed using ${num(snap.population.buildings_used)} mapped buildings` : snap.population.method === "uniform" ? "spread evenly (few buildings mapped)" : snap.population.method}
                         </div>
                         {snap.population.source === "estimate_buildings" && <div className="mt-3"><PopulationFallback projectId={p.id} locationId={locId!} onSaved={refresh} /></div>}
@@ -407,7 +407,7 @@ export default function MarketPage() {
                         <button onClick={() => setSel(c.id)} className={cn("flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-ink-850", !c.active && "opacity-50")}>
                           <span className="min-w-0">
                             <span className="block truncate">{c.name}</span>
-                            <span className="block text-[11px] text-ink-400">{num(c.distance_km, 2)} km · {c.price ? money(c.price) : "price unknown"}</span>
+                            <span className="block text-[11px] text-ink-400">{distance(c.distance_km)} · {c.price ? money(c.price) : "price unknown"}</span>
                           </span>
                           <Evidence kind={c.source === "user" ? "user" : c.source === "demo" ? "demo" : c.source === "field" ? "field" : "observed"} label={c.is_hypothetical ? "Hypothetical" : undefined} />
                         </button>
@@ -517,7 +517,7 @@ function CompetitorPanel({
       <section className="space-y-1.5 rounded-md border border-black/[0.07] p-3 text-xs">
         <div className="mb-1 font-medium text-ink-200">Observed information</div>
         <Row k="Location" v={`${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`} />
-        <Row k="Distance from site" v={`${num(c.distance_km, 2)} km (straight line)`} />
+        <Row k="Distance from site" v={`${distance(c.distance_km, 2)} (straight line)`} />
         {c.category_tag && <Row k="Map category" v={c.category_tag} />}
         {attrs.map(([k, v]) => <Row key={k} k={k} v={v} />)}
         <Row k="Source" v={c.source === "osm" ? "OpenStreetMap" : c.source === "foursquare" ? "Foursquare Places" : c.source === "user" ? "Entered by you" : "Demo dataset"} />
@@ -669,14 +669,14 @@ function LocationsPanel({ currentId, onSelect, onChanged }: { currentId?: string
             <button onClick={() => onSelect(l.id)} className={cn("w-full rounded-md border p-3 text-left text-sm", l.id === currentId ? "border-accent bg-accent/5" : "border-black/[0.07] hover:border-ink-500")}>
               <div className="font-medium">{l.label}</div>
               <div className="truncate text-xs text-ink-400">{l.address}</div>
-              <div className="mt-1 text-[11px] text-ink-500">{l.catchment.mode === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${l.catchment.radius_km} km radius`}{l.manual_population ? ` · population ${num(l.manual_population)} (user)` : ""}</div>
+              <div className="mt-1 text-[11px] text-ink-500">{l.catchment.mode === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${distance(l.catchment.radius_km)} radius`}{l.manual_population ? ` · population ${num(l.manual_population)} (user)` : ""}</div>
             </button>
           </li>
         ))}
       </ul>
       {cur && cur.catchment.mode === "radius" && (
         <div className="space-y-2 rounded-md border border-black/[0.07] p-3">
-          <Field label={`Catchment radius for ${cur.label}: ${editRadius.toFixed(1)} km`}>
+          <Field label={`Catchment radius for ${cur.label}: ${distance(editRadius)}`}>
             <input type="range" min={0.5} max={6} step={0.1} value={editRadius} onChange={(e) => setEditRadius(Number(e.target.value))} className="w-full" aria-label="Catchment radius" />
           </Field>
           <Button
@@ -700,7 +700,7 @@ function LocationsPanel({ currentId, onSelect, onChanged }: { currentId?: string
         <div className="space-y-3 rounded-md border border-black/[0.07] p-3">
           <div className="text-sm font-medium">New candidate location</div>
           <LocationPicker value={place} onChange={setPlace} radiusKm={radius} height="h-56" />
-          <Field label={`Radius ${radius.toFixed(1)} km`}>
+          <Field label={`Radius ${distance(radius)}`}>
             <input type="range" min={0.5} max={6} step={0.1} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" aria-label="New location radius" />
           </Field>
           {err && <ErrorState message={err} />}

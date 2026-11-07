@@ -20,7 +20,7 @@ const EXAMPLES = US_MARKET ? [
 ] : [
   "A café in Indiranagar, Bengaluru, coffee at ₹250",
   "Gym in Bandra West Mumbai, fees ₹2,000 a month, budget 30 lakh",
-  "Mujhe Koramangala mein pizza shop kholna hai",
+  "A pizza shop in Koramangala, Bengaluru",
   "Dental clinic near Saket, Delhi",
 ];
 

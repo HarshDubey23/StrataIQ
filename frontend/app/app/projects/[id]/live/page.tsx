@@ -13,7 +13,7 @@ import { BestStrategy } from "@/components/BestStrategy";
 import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, EmptyState, ErrorState, Evidence, Notice, Segmented, Select, Spinner } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct } from "@/lib/format";
+import { money, num, pct, distance } from "@/lib/format";
 import type { MarketData, Run, SimResult } from "@/lib/types";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => <div className="absolute inset-0 flex items-center justify-center bg-ink-950 text-sm text-ink-400">Loading live market…</div> });
@@ -339,7 +339,7 @@ export default function LiveMarket() {
                 ["Awareness (wk 12)", pct(abm.metrics.aware_final)],
                 ["Trial rate", pct(abm.metrics.trial_rate)],
                 ["Repeat share", pct(abm.metrics.repeat_share)],
-                ["Mean trip", `${num(abm.metrics.mean_trip_km, 2)} km`],
+                ["Mean trip", distance(abm.metrics.mean_trip_km, 2)],
                 ["Can afford you", pct(abm.metrics.afford_share)],
                 ["Ramp-up", abm.ramp_up_week ? `${abm.ramp_up_week} wk` : "—"],
               ].map(([l, v]) => (

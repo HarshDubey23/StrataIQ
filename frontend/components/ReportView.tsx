@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MarketingCurve, PriceCurve, ProfitHistogram, RampChart, Tornado } from "@/components/charts";
 import { IncomeMix } from "@/components/RealData";
-import { money, num, pct, when } from "@/lib/format";
+import { money, num, pct, when, distance } from "@/lib/format";
 import type { CompetitorRec, Decision, Scenario, SimResult, Snapshot, Location, Archetype, Category } from "@/lib/types";
 
 export interface ReportContent {
@@ -102,6 +102,9 @@ function Executive({ c }: { c: ReportContent }) {
   const unit = r.unit_label ?? c.archetype.unit_label;
   const membership = c.archetype.key === "membership";
   const verdict = VERDICT[d.verdict];
+  // The chart shows the pace of growth from the simulated customers, on the same scale as the forecast above.
+  const last = abm?.weekly?.[abm.weekly.length - 1]?.units || 1;
+  const ramp = (abm?.weekly || []).map((w: any) => ({ ...w, units: (w.units / last) * (r.summary.modeled_demand_units / (membership ? 1 : 30 / 7)) }));
   return (
     <>
       <div className={`mt-6 p-5 text-white ${verdict?.tone ?? "bg-night"}`}>
@@ -117,7 +120,7 @@ function Executive({ c }: { c: ReportContent }) {
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {mc?.histogram && <ChartCard title="Range of monthly profit" note="Each bar is how often a profit level came up across market scenarios."><ProfitHistogram mc={mc} /></ChartCard>}
         {r.sensitivity?.price_curve?.length > 0 && <ChartCard title="Price test" note="Profit and sales at each price, using this neighborhood's customers."><PriceCurve data={r.sensitivity.price_curve} current={r.summary.price} unit={unit} /></ChartCard>}
-        {abm?.weekly?.length > 0 && <ChartCard title="First months after opening" note={`${num(abm.n_agents)} simulated customers over ${abm.days} days: sales and how many have heard of you.`}><RampChart data={abm.weekly} unit={unit} /></ChartCard>}
+        {abm?.weekly?.length > 0 && <ChartCard title="First months after opening" note="How quickly sales and awareness build toward the forecast."><RampChart data={ramp} unit={unit} /></ChartCard>}
         {r.sensitivity?.tornado?.length > 0 && <ChartCard title="What moves your profit most" note="Check the longest bars first. These assumptions matter most."><Tornado data={r.sensitivity.tornado} base={f.operating_profit} /></ChartCard>}
         {r.sensitivity?.marketing_curve?.length > 0 && <ChartCard title="Marketing test" note="Profit at each monthly marketing budget."><MarketingCurve data={r.sensitivity.marketing_curve} current={Number((best?.scenario as any)?.inputs?.marketing_spend ?? 0)} /></ChartCard>}
         {abm?.metrics?.customer_modes && <ChartCard title="How customers reach you" note="From commute data for these neighborhoods."><ShareBars data={abm.metrics.customer_modes} /></ChartCard>}
@@ -186,7 +189,7 @@ export function ReportView({ c }: { c: ReportContent }) {
             <div className="space-y-1">
               <div className="font-medium text-ink-100">{l.label}</div>
               <div className="text-xs text-ink-300">{l.address}</div>
-              <div className="text-xs">Catchment: {s?.catchment_method === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${l.catchment.radius_km} km straight-line radius`}</div>
+              <div className="text-xs">Catchment: {s?.catchment_method === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${distance(l.catchment.radius_km)} straight-line radius`}</div>
               {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "user-entered" : s.population.source}; placement: {s.population.method})</div> : <div className="text-xs text-amber-700">Population unavailable</div>}
               {s && <div className="text-xs">Data coverage: {s.coverage.level} — {s.coverage.note}</div>}
             </div>
@@ -263,6 +266,7 @@ export function ReportView({ c }: { c: ReportContent }) {
       )}
 
       <H n={12}>Methodology and limitations</H>
+      <p>The demand figure is a planning estimate. In a test against a year of reported alcohol sales at 5,546 Texas bars and restaurants, location data explained under 3% of the difference between individual venues, so your concept, size and operation can move real sales far from this figure.</p>
       <p>Demand is estimated with a multinomial-logit customer-choice model over synthetic customer segments placed on a population grid, with an outside option, lognormal affordability, distance decay and capacity limits. Uncertainty is propagated by Monte Carlo over documented parameter ranges. Default behaviour parameters are not calibrated against observed sales; no accuracy figure is claimed. See /methodology for formulas.</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-ink-300">{(ran[0]?.result?.limitations || []).map((l) => <li key={l}>{l}</li>)}</ul>
       <BottomLine c={c} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { US_MARKET } from "@/lib/format";
 import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { attachDeck, C, enhanceMap, metersPerZoneRadius, pickStyle, popColor, type DeckHandle } from "@/lib/mapkit";
@@ -119,7 +120,7 @@ export default function MapView(props: Props) {
       }
       map.current = m;
       m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
-      m.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+      m.addControl(new maplibregl.ScaleControl({ unit: US_MARKET ? "imperial" : "metric" }), "bottom-left");
       m.on("error", (e) => {
         const msg = String((e as { error?: { message?: string } }).error?.message || "");
         if (msg.includes("style")) setStyleNote("Base map tiles could not be loaded. Data layers still work.");

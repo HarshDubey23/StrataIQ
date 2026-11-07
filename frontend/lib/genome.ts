@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { GenomeParam, GenomeRegistry } from "@/lib/types";
-import { CUR, LOCALE } from "@/lib/format";
+import { CUR, LOCALE, distance } from "@/lib/format";
 
 let registryPromise: Promise<GenomeRegistry> | null = null;
 
@@ -88,7 +88,7 @@ export function fmtParam(p: GenomeParam | undefined, v: number | null | undefine
   if (p.unit === "0-1" || p.unit === "share") return `${Math.round(v * 100)}%`;
   if (p.unit === "z") return (v >= 0 ? "+" : "") + v.toFixed(2) + "σ";
   if (p.unit === "×") return v.toFixed(2) + "×";
-  if (p.unit === "km") return v.toFixed(2) + " km";
+  if (p.unit === "km") return distance(v, 2);
   if (p.unit === "min") return v.toFixed(1) + " min";
   if (p.unit === "years") return Math.round(v) + " yrs";
   if (p.unit.startsWith(CUR)) return CUR + Math.round(v).toLocaleString(LOCALE) + p.unit.slice(1);

@@ -4,7 +4,7 @@
  * result in Hinglish. Every number in a reply comes from a tool result (simulation, live data, the page itself).
  * Returns null when it doesn't recognise the request, so the caller can fall back to the backend fact router.
  */
-import { US_MARKET } from "@/lib/format";
+import { distance, US_MARKET } from "@/lib/format";
 import { readPage } from "@/lib/screen";
 
 type Tool = (args?: never) => Promise<string>;
@@ -68,14 +68,14 @@ export function inr(x: unknown): string {
     if (x === null || x === undefined || !Number.isFinite(v)) return "unknown";
     return `${v < 0 ? "a loss of " : ""}$${Math.round(Math.abs(v)).toLocaleString("en-US")}`;
   }
-  if (x === null || x === undefined || !Number.isFinite(v)) return "pata nahi";
+  if (x === null || x === undefined || !Number.isFinite(v)) return "unknown";
   const a = Math.abs(v);
   const s = a >= 1e7 ? `₹${(a / 1e7).toFixed(a >= 1e8 ? 0 : 1)} crore` : a >= 1e5 ? `₹${(a / 1e5).toFixed(a >= 1e6 ? 0 : 1)} lakh` : `₹${Math.round(a).toLocaleString("en-IN")}`;
-  return v < 0 ? `${s} ka loss` : s;
+  return v < 0 ? `a loss of ${s}` : s;
 }
 /** "₹40,000 profit har mahine" or "₹12,000 ka loss har mahine" */
-const pm = (x: unknown) => US_MARKET ? `${inr(x)} a month` : (Number(x) < 0 ? `${inr(-Number(x))} ka loss har mahine` : `${inr(x)} profit har mahine`);
-const num = (x: unknown) => (Number.isFinite(Number(x)) ? Math.round(Number(x)).toLocaleString("en-IN") : "?");
+const pm = (x: unknown) => (Number(x) < 0 ? `${inr(x)} a month` : `${inr(x)} profit a month`);
+const num = (x: unknown) => (Number.isFinite(Number(x)) ? Math.round(Number(x)).toLocaleString(US_MARKET ? "en-US" : "en-IN") : "?");
 const pct = (x: unknown) => (Number.isFinite(Number(x)) ? `${Math.round(Number(x) * 100)}%` : "?");
 const parse = (s: string) => {
   try {
@@ -112,7 +112,7 @@ const TRY = /\b(try|test|dekho|dekh|check|what if|kya hoga|simulate karke|karke 
 function pageNameFromPath(p: string) {
   const seg = p.split("/").filter(Boolean);
   if (seg[0] !== "app") return p === "/" ? "home page" : p.replace("/", "");
-  if (seg.length === 1) return "dashboard (aapke projects)";
+  if (seg.length === 1) return "your dashboard";
   if (seg[1] === "projects" && seg[2] === "new") return "new analysis form";
   if (seg[1] === "projects") return PAGE_NAME[seg[3] || ""] || "project overview";
   return seg[1];
@@ -121,22 +121,22 @@ function pageNameFromPath(p: string) {
 /** What is on the page, in two or three spoken sentences. */
 function describePage(): string {
   const pg = readPage();
-  if (!pg) return "Screen padh nahi paaya.";
+  if (!pg) return "I could not read the screen.";
   const name = pageNameFromPath(pg.path);
   const heads = pg.headings.filter((h) => h.length < 80).slice(0, 4);
   const n = (pg.numbers || {}) as Record<string, unknown>;
   const facts: string[] = [];
   if (n.day !== undefined) facts.push(`simulation day ${num(n.day)}`);
-  if (n.orders_today !== undefined) facts.push(`aaj ${num(n.orders_today)} orders`);
-  if (n.competitors !== undefined) facts.push(`${num(n.competitors)} competitors map pe`);
+  if (n.orders_today !== undefined) facts.push(`${num(n.orders_today)} orders today`);
+  if (n.competitors !== undefined) facts.push(`${num(n.competitors)} competitors on the map`);
   if (n.profit_per_month !== undefined) facts.push(pm(n.profit_per_month));
   // a few short lines that carry money or percentages: the figures a person would read first
   const keyLines = pg.visible_text.split("\n").map((l) => l.trim())
-    .filter((l) => l.length > 3 && l.length < 70 && /₹|%|\blakh\b|\bcrore\b/i.test(l)).slice(0, 3);
-  let s = `Aap ${name} pe ho.`;
-  if (heads.length) s += ` Yahan dikh raha hai: ${heads.join("; ")}.`;
+    .filter((l) => l.length > 3 && l.length < 70 && /\$|₹|%|\blakh\b|\bcrore\b/i.test(l)).slice(0, 3);
+  let s = `You are on ${name}.`;
+  if (heads.length) s += ` It shows ${heads.join("; ")}.`;
   if (facts.length) s += ` Numbers: ${facts.join(", ")}.`;
-  else if (keyLines.length) s += ` Main numbers: ${keyLines.join("; ")}.`;
+  else if (keyLines.length) s += ` Key numbers: ${keyLines.join("; ")}.`;
   return s;
 }
 
@@ -145,11 +145,11 @@ function runSentence(o: Record<string, unknown>): string {
   const b = o.before as Record<string, number> | null;
   if (!a) return "";
   const unit = (a as unknown as { unit?: string }).unit || "customers";
-  let s = ` Ab ${pm(a.profit_per_month)}`;
-  if (b && b.profit_per_month !== undefined) s += ` (pehle ${pm(b.profit_per_month)})`;
-  s += `, lagbhag ${num(a.units_per_month)} ${unit} mahine me`;
-  if (a.break_even_units) s += `, break-even ${num(a.break_even_units)} ${unit} pe`;
-  if (a.chance_of_loss !== undefined && a.chance_of_loss !== null) s += `, aur loss wale mahine ka chance ${pct(a.chance_of_loss)}`;
+  let s = ` Now ${pm(a.profit_per_month)}`;
+  if (b && b.profit_per_month !== undefined) s += ` (was ${pm(b.profit_per_month)})`;
+  s += `, about ${num(a.units_per_month)} ${unit} a month`;
+  if (a.break_even_units) s += `, break-even at ${num(a.break_even_units)} ${unit}`;
+  if (a.chance_of_loss !== undefined && a.chance_of_loss !== null) s += `, and a ${pct(a.chance_of_loss)} chance of a losing month`;
   return s + ".";
 }
 
@@ -160,15 +160,15 @@ let lastSuggestion: Record<string, number> | null = null;
 export async function route(qRaw: string, t: Tools, ctx: { projectOpen: boolean; say: (s: string) => void }): Promise<string | null> {
   const q = qRaw.trim();
   const call = async (name: string, args?: Record<string, unknown>) => parse(await (t[name] as (a?: Record<string, unknown>) => Promise<string>)(args));
-  const needProject = "Iske liye pehle ek project kholo — bolo 'mere projects dikhao' ya apna idea batao, jaise 'Indiranagar me café kholna hai'.";
+  const needProject = "Open a project first. Say 'show my projects', or tell me your idea, like 'I want to open a cafe in South Austin'.";
 
   // 1. a new business idea
   if (/\b(kholna|kholni|kholunga|start karna|shuru karna|open karna|i want to (open|start)|want to start|planning to open)\b/i.test(q) && !/\bproject\b/i.test(q)) {
-    ctx.say("Theek hai, project bana raha hoon aur live market dhoondh raha hoon.");
+    ctx.say("Okay, creating the project and finding the live market.");
     const o = await call("start_new_idea", { description: q });
     return o.created
-      ? `Project ban gaya: ${o.business}${o.place ? `, ${String(o.place).split(",").slice(0, 2).join(",")}` : ""}. Market map pe live competitors aur population load ho rahe hain, ek minute me baseline simulation apne aap chalega.`
-      : "Place samajh nahi aaya, isliye form khol diya hai — bas jagah select kar do.";
+      ? `Project created: ${o.business}${o.place ? `, ${String(o.place).split(",").slice(0, 2).join(",")}` : ""}. Live competitors and population are loading on the market map, and the first simulation will run on its own in about a minute.`
+      : "I did not catch the place, so I opened the form. Just pick the address.";
   }
 
   // 2. change the plan (permanent) or test a what-if
@@ -177,86 +177,86 @@ export async function route(qRaw: string, t: Tools, ctx: { projectOpen: boolean;
     if (!ctx.projectOpen) return needProject;
     const what = Object.entries(changes).map(([k, v]) => `${label(k)} ${inr(v)}`).join(", ");
     if (TRY.test(q) && !/\b(kar do|kardo|set|save|update)\b/i.test(q)) {
-      ctx.say(`${what} pe simulation chala raha hoon.`);
+      ctx.say(`Running a simulation with ${what}.`);
       if (Object.keys(changes).length === 1 && changes.price) {
         const o = await call("test_price", { price: changes.price });
-        if (o.error) return `Simulation nahi chal payi: ${o.error}`;
+        if (o.error) return `The simulation could not run: ${o.error}`;
         const w = (o.what_if || {}) as Record<string, number>;
         const b = (o.baseline || {}) as Record<string, number>;
-        return `Price ${inr(changes.price)} pe ${pm(w.operating_profit_per_month)}, jabki abhi ${pm(b.operating_profit_per_month)}. ` +
+        return `At a price of ${inr(changes.price)}: ${pm(w.operating_profit_per_month)}, compared with ${pm(b.operating_profit_per_month)} now. ` +
           `Customers ${num(w.customers_or_units_per_month)} vs ${num(b.customers_or_units_per_month)}` +
-          (w.probability_of_loss != null ? `, loss ka chance ${pct(w.probability_of_loss)}` : "") +
-          `. Ye sirf what-if hai, plan nahi badla — save karna ho to bolo 'price ${num(changes.price)} kar do'.`;
+          (w.probability_of_loss != null ? `, ${pct(w.probability_of_loss)} chance of a loss` : "") +
+          `. This was only a test, so your plan has not changed. To save it, say 'set price to ${num(changes.price)}'.`;
       }
       const o = await call("test_strategy", changes);
-      if (o.error) return `Simulation nahi chal payi: ${o.error}`;
-      return `${what} wala strategy live map pe chala diya. ${o.spoken || ""}`.trim();
+      if (o.error) return `The simulation could not run: ${o.error}`;
+      return `I ran the plan with ${what} on the live map. ${o.spoken || ""}`.trim();
     }
-    ctx.say(`${what} set kar raha hoon aur dobara simulate kar raha hoon.`);
+    ctx.say(`Setting ${what} and running the simulation again.`);
     const o = await call("update_plan", changes);
-    if (o.error) return `Plan update nahi hua: ${o.error}`;
-    return `${what} kar diya aur dobara simulate kiya.${runSentence(o)}`;
+    if (o.error) return `The plan could not be updated: ${o.error}`;
+    return `Set ${what} and ran the simulation again.${runSentence(o)}`;
   }
 
   // 2b. run the strategy we just suggested
   if (lastSuggestion && /\b(ye|yeh|isko|isse|wo|woh|this|it|that|suggestion)\b.*\b(test|try|chalao|apply|lagao|run)\b|\b(test|try|apply|run|chalao)\s+(it|this|that|ye|yeh|karo)\b|^(haan|ha|yes|ok|okay)\b.*\b(test|karo|chalao)\b/i.test(q)) {
     if (!ctx.projectOpen) return needProject;
-    ctx.say("Theek hai, ye strategy das hazaar agents pe chala raha hoon.");
+    ctx.say("Okay, running this plan with 10,000 simulated customers.");
     const o = await call("test_strategy", lastSuggestion);
-    if (o.error) return `Simulation nahi chal payi: ${o.error}`;
-    return `Live map pe chala diya. ${o.spoken || ""}`.trim();
+    if (o.error) return `The simulation could not run: ${o.error}`;
+    return `It is running on the live map. ${o.spoken || ""}`.trim();
   }
 
   // 3. report
   if (/\b(report|pdf)\b/i.test(q) && /\b(bana|banao|bana do|make|create|generate|naya|nayi|chahiye)\b/i.test(q)) {
     if (!ctx.projectOpen) return needProject;
-    ctx.say("Report bana raha hoon.");
+    ctx.say("Building your report.");
     const o = await call("make_report");
-    return o.error ? `Report nahi ban payi: ${o.error}` : "Feasibility report bana di aur khol di. Wahin se print ya share kar sakte ho.";
+    return o.error ? `The report could not be built: ${o.error}` : "Your report is ready and open. You can print or share it from there.";
   }
 
   // 4. best location
   if (/\b(best|sabse (acchi|achhi|badhiya)|better|ideal|top|right)\s+(location|locatin|locaton|site|jagah|spot|area|place)\b|kahan khol|konsi jagah|kaun si jagah|where should i open|location (batao|dikhao|suggest)/i.test(q)) {
     if (!ctx.projectOpen) return needProject;
-    ctx.say("Aapka plan har populated jagah pe test kar raha hoon.");
+    ctx.say("Testing your plan across the area.");
     const o = await call("find_best_location");
-    if (o.error) return `Location scan nahi ho paya: ${o.error}`;
+    if (o.error) return `The location search could not finish: ${o.error}`;
     const cur = o.current_site || {};
     const best = (o.best_sites || [])[0];
-    if (!best) return "Is catchment me compare karne layak dusri jagah nahi mili.";
+    if (!best) return "I did not find another spot in this area worth comparing.";
     if (Number(best.profit_per_month) <= Number(cur.profit_per_month))
-      return `Aapki current site hi is area me best hai: ${pm(cur.profit_per_month)}. Agli best jagah pe ${pm(best.profit_per_month)}.`;
+      return `Your current site is the best in this area: ${pm(cur.profit_per_month)}. The next best spot makes ${pm(best.profit_per_month)}.`;
     // both still losing: moving alone won't fix it, say so
     const stillLoss = Number(best.profit_per_month) < 0
-      ? " Lekin dhyaan do, wahan bhi loss hai — sirf jagah badalne se kaam nahi banega; rent, price ya setup ka size bhi badalna padega. Bolo 'profit kaise badhega' to main best combination nikalta hoon."
+      ? " That spot still loses money, so moving alone will not fix this. Rent, price or size has to change too. Say 'how do I raise profit' and I will find the best combination."
       : "";
-    return `Sabse acchi jagah aapki site se ${best.from_current_km} km door hai. Wahan same plan se ${pm(best.profit_per_month)}, jabki abhi ${pm(cur.profit_per_month)}. ` +
-      `Ek km me ${num(best.people_within_1km)} log aur 500 m me ${num(best.competitors_within_500m)} competitors. Map pe green pillars me dikha diya. Rent wahan same maana hai, isliye local rent check kar lena.${stillLoss}`;
+    return `The best spot is ${distance(best.from_current_km)} from your site. The same plan there makes ${pm(best.profit_per_month)}, compared with ${pm(cur.profit_per_month)} now. ` +
+      `It has ${num(best.people_within_1km)} people within ${distance(1)} and ${num(best.competitors_within_500m)} competitors within ${distance(0.5)}. I marked it on the map. This assumes the same rent, so check the local rent there.${stillLoss}`;
   }
 
   // 5. best strategy / how to increase profit
   if (/\b(best|optimal|sabse (zyada|jyada|accha))\s+(strategy|price|plan|pricing)|optimi[sz]e|maximi[sz]e|profit (kaise|kese) badh|zyada profit|munafa (kaise|badh)/i.test(q)) {
     if (!ctx.projectOpen) return needProject;
-    ctx.say("Price, marketing aur capacity ke sainkdon combinations test kar raha hoon.");
+    ctx.say("Testing hundreds of combinations of price, marketing and capacity.");
     const o = await call("optimize_strategy");
-    if (o.error) return `Optimizer nahi chal paya: ${o.error}`;
+    if (o.error) return `The plan search could not run: ${o.error}`;
     const b = o.best || {};
     const c = o.current || {};
     lastSuggestion = Object.fromEntries(
       (["price", "marketing_spend", "capacity_scale"] as const).filter((k) => b[k] !== undefined && b[k] !== c[k]).map((k) => [k, Number(b[k])]),
     );
     if (!Object.keys(lastSuggestion).length) lastSuggestion = null;
-    return `${num(o.combinations_tested)} combinations me sabse zyada profit: price ${inr(b.price)}, marketing ${inr(b.marketing_spend)} mahina` +
-      (b.capacity_scale && b.capacity_scale !== 1 ? `, capacity ${Math.round((b.capacity_scale - 1) * 100)}% zyada` : "") +
-      `. Isse ${pm(b.profit_per_month)}, jabki abhi ${pm(c.profit_per_month)}. Bolo 'ye test karo' to main isse das hazaar agents pe chala ke verify karta hoon.`;
+    return `The most profitable of ${num(o.combinations_tested)} combinations: price ${inr(b.price)}, marketing ${inr(b.marketing_spend)} a month` +
+      (b.capacity_scale && b.capacity_scale !== 1 ? `, ${Math.round((b.capacity_scale - 1) * 100)}% more capacity` : "") +
+      `. That makes ${pm(b.profit_per_month)}, compared with ${pm(c.profit_per_month)} now. Say 'test it' and I will check it with 10,000 simulated customers.`;
   }
 
   // 6. analysis / insights
   if (/\b(analy[sz]\w*|insight|suggest\w*|advice|sujhav|kya galat|problem|improve|kaise badhe|kya karu|what should i (do|change))\b/i.test(q)) {
     if (!ctx.projectOpen) return needProject;
     const o = await call("get_insights");
-    if (o.error) return `Analysis abhi nahi ho paya: ${o.error}. Pehle simulation chalao — bolo 'data load karo'.`;
-    return String(o.spoken || o.summary || o.text || "Is run ke liye insights nahi mile.");
+    if (o.error) return `The analysis could not run: ${o.error}. Run the simulation first by saying 'load the data'.`;
+    return String(o.spoken || o.summary || o.text || "I found no insights for this run.");
   }
 
   // 7. what is on screen
@@ -270,52 +270,52 @@ export async function route(qRaw: string, t: Tools, ctx: { projectOpen: boolean;
     if (/\b(status|kitne|kya hua|progress|update)\b/i.test(q)) {
       const o = await call("get_field_status");
       const c = (o.summary?.counts || {}) as Record<string, number>;
-      return o.request ? `Field research chal raha hai: ${num(c.interview || 0)} interviews, ${num(c.competitor || 0)} competitor visits, ${num(c.footfall || 0)} footfall counts aur ${num(c.rent || 0)} rent quotes save hue hain.`
-        : "Abhi tak koi field researcher request nahi hua. Bolo 'researcher bhejo'.";
+      return o.request ? `Field research is underway: ${num(c.interview || 0)} interviews, ${num(c.competitor || 0)} competitor visits, ${num(c.footfall || 0)} foot traffic counts and ${num(c.rent || 0)} rent quotes saved.`
+        : "No field researcher has been requested yet. Say 'request a researcher'.";
     }
     const o = await call("request_field_researcher", { brief: q });
-    return o.error ? `Request nahi ho paya: ${o.error}` : `${o.specialty} request ho gaya. Field data page khol diya — wahan ka link WhatsApp pe researcher ko bhej do; wo phone se interviews, rivals ke daam, footfall aur rent bharega.`;
+    return o.error ? `The request could not be made: ${o.error}` : `${o.specialty} requested. I opened the Field data page. Send its link to your researcher, who can enter interviews, rival prices, foot traffic and rent by phone.`;
   }
 
   // 9. load live data and run
   if (/\b(load|refresh|reload|update)\b.*\b(data|market)\b|\bdata load\b|simulation chalao|run (the )?simulation|baseline chalao/i.test(q)) {
     if (!ctx.projectOpen) return needProject;
-    ctx.say("Live market data load kar raha hoon, isme ek-do minute lag sakte hain.");
+    ctx.say("Loading live market data. This can take a minute or two.");
     const o = await call("load_market_and_simulate");
-    if (o.error) return `Load nahi ho paya: ${o.error}`;
-    if (o.status === "still_loading") return "Data abhi bhi load ho raha hai, background me chalta rahega. Thodi der me poochna.";
-    if (o.status === "failed") return "Live data abhi load nahi ho paya — OpenStreetMap busy ho sakta hai. Thodi der baad try karo.";
+    if (o.error) return `The data could not load: ${o.error}`;
+    if (o.status === "still_loading") return "The data is still loading in the background. Ask me again shortly.";
+    if (o.status === "failed") return "Live data could not load right now. The map service may be busy, so try again shortly.";
     const s = o.simulation || {};
-    return `Live data aa gaya aur simulation chal gayi: lagbhag ${num(s.units_per_month)} ${s.unit || "customers"} mahina, ${pm(s.profit_per_month)}${s.chance_of_loss !== undefined ? `, loss ka chance ${pct(s.chance_of_loss)}` : ""}.`;
+    return `The data is in and the simulation has run: about ${num(s.units_per_month)} ${s.unit || "customers"} a month, ${pm(s.profit_per_month)}${s.chance_of_loss !== undefined ? `, ${pct(s.chance_of_loss)} chance of a loss` : ""}.`;
   }
 
   // 10. projects
   if (/\b(mere|my|saare|all)\s+projects?\b|projects? (dikhao|list|batao)/i.test(q)) {
     const o = await call("list_projects");
-    if (!Array.isArray(o)) return "Projects dekhne ke liye sign in karna hoga.";
-    if (!o.length) return "Abhi koi project nahi hai. Apna idea batao, main bana deta hoon.";
+    if (!Array.isArray(o)) return "Sign in to see your projects.";
+    if (!o.length) return "You have no projects yet. Tell me your idea and I will create one.";
     await call("navigate", { page: "dashboard" });
-    return `Aapke ${o.length} projects hain: ${o.slice(0, 5).map((p: { name: string }) => p.name).join(", ")}. Kaunsa kholu?`;
+    return `You have ${o.length} projects: ${o.slice(0, 5).map((p: { name: string }) => p.name).join(", ")}. Which one should I open?`;
   }
   const projName = q.match(/^(.+?)\s+(wala\s+)?project\s+(kholo|khol do|open)/i) || q.match(/\bopen\s+(the\s+)?(.+?)\s+project\b/i);
   if (projName) {
     const name = (projName[2] && projName[2] !== "the " ? projName[2] : projName[1]).trim();
     const o = await call("open_project", { name });
-    return o.opened ? `${o.opened} khol diya.` : `"${name}" naam ka project nahi mila. Aapke projects: ${(o.projects || []).slice(0, 5).join(", ")}.`;
+    return o.opened ? `Opened ${o.opened}.` : `I could not find a project called "${name}". Your projects: ${(o.projects || []).slice(0, 5).join(", ")}.`;
   }
 
   // 11. demo, guide, goal
   if (/\bdemo\b/i.test(q)) {
-    ctx.say("Live demo khol raha hoon.");
-    return String((await (t.start_demo as () => Promise<string>)()) || "Demo khol diya.");
+    ctx.say("Opening the live demo.");
+    return String((await (t.start_demo as () => Promise<string>)()) || "The demo is open.");
   }
   if (/\b(guide|tour|how it works|kaise (use|chalaye|chalate)|walk me through)\b/i.test(q)) {
     await call("open_guide");
-    return "Screen pe 'How it works' guide khol diya — paanch steps me poora app samjha deta hai.";
+    return "I opened the How it works guide. It explains the app in five steps.";
   }
   if (/\b(risk kam|low risk|safe (rehna|chahiye))\b/i.test(q)) {
     await call("set_goal", { goal: "low_risk" });
-    return "Theek hai, ab recommendations sabse kam risk ke hisaab se aayengi.";
+    return "Okay, recommendations will now favor the lowest risk.";
   }
 
   // 12. navigation
@@ -327,7 +327,7 @@ export async function route(qRaw: string, t: Tools, ctx: { projectOpen: boolean;
       if (projectPage && !ctx.projectOpen) return needProject;
       await call("navigate", { page });
       await new Promise((r) => setTimeout(r, 1800)); // let the new page render before reading it
-      return `${name} khol diya. ${describePage()}`;
+      return `Opened ${name}. ${describePage()}`;
     }
   }
 

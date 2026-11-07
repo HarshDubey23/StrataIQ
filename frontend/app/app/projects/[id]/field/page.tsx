@@ -8,7 +8,7 @@ import { FieldRecorder, KIND_META, type RecordDraft } from "@/components/field/F
 import { useProject } from "@/components/ProjectContext";
 import { Button, Card, CardHeader, cn, ErrorState, Evidence, inputCls, Skeleton, Textarea } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { ago, money, num, pct } from "@/lib/format";
+import { ago, money, num, pct, distance } from "@/lib/format";
 import type { FieldPayload, FieldStatus, Run } from "@/lib/types";
 
 const PARAM_LABEL: Record<string, { t: string; fmt: (v: number) => string; d: string }> = {
@@ -344,7 +344,7 @@ function describe(kind: string, d: Record<string, unknown>): string {
   if (kind === "interview") {
     const parts = [d.uses_category ? "Uses it" : "Doesn't use it"];
     if (n(d.visits_per_month)) parts.push(`${d.visits_per_month}×/mo`);
-    if (n(d.travel_km)) parts.push(`${d.travel_km} km`);
+    if (n(d.travel_km)) parts.push(distance(d.travel_km as number));
     if (n(d.max_price)) parts.push(`max ${money(d.max_price as number)}`);
     return parts.join(" · ");
   }

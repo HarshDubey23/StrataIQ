@@ -220,7 +220,7 @@ export default function Landing() {
   return (
     <div className="lp2 relative text-night">
       {/* The fixed half: the real street, changing with the story beside it */}
-      <div className="fixed inset-0 z-0 overflow-hidden bg-night bg-cover bg-center" style={{ backgroundImage: "url(/product/city.jpg)" }}>
+      <div className="fixed inset-0 z-0 overflow-hidden bg-night">
         <HeroMap spot={spot} comps={comps} scene={scene} progress={progress} />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-night/35" />
         <ScrollBar />
@@ -242,21 +242,22 @@ export default function Landing() {
           </nav>
         </header>
 
-        <section data-scene className="flex min-h-svh flex-col justify-end px-5 pb-8 pt-24 text-white md:px-10 md:pb-10">
-          <WordsIn as="h1" text="See if your location wins before you sign." className="max-w-[15ch] font-display text-[clamp(3.25rem,1.6rem+6.4vw,8.5rem)] font-medium leading-[0.92] tracking-[-0.045em]" />
+        <section data-scene className="relative flex min-h-svh flex-col justify-end px-5 pb-8 pt-24 text-white md:px-10 md:pb-10">
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-night from-25% via-night/80 via-55% to-night/10" />
+          <WordsIn as="h1" text="Know your numbers before you sign the lease." className="max-w-[15ch] font-display text-[clamp(3rem,1.4rem+4.4vw,6.25rem)] font-medium leading-[0.95] tracking-[-0.04em]" />
           <Reveal delay={0.25}>
             <p className="mt-6 max-w-[58ch] text-[clamp(1.125rem,1rem+0.4vw,1.375rem)] leading-[1.35]">
               StrataIQ puts 10,000 simulated customers on the real streets around your address, then shows your rivals, your break-even and your profit range in minutes.
             </p>
           </Reveal>
           <Reveal delay={0.35}>
-            <form className="mt-7 max-w-3xl" onSubmit={(e) => { e.preventDefault(); void simulate(idea); }}>
+            <form className="mt-7 max-w-3xl" onSubmit={(e) => { e.preventDefault(); if (idea.trim().length < 3) document.getElementById("idea")?.focus(); else void simulate(idea); }}>
               <label htmlFor="idea" className="sr-only">Your business idea</label>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input id="idea" aria-label="Your business idea" value={idea} onChange={(e) => setIdea(e.target.value)} placeholder={placeholder}
                   className="min-h-14 min-w-0 flex-1 bg-white px-4 text-[18px] text-night outline-offset-2 placeholder:text-night/60 focus:outline-2 focus:outline-white" />
                 <Magnetic>
-                  <button type="submit" disabled={busy !== null || idea.trim().length < 3} className={action}>
+                  <button type="submit" disabled={busy !== null} className={action}>
                     {busy === "idea" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Test my location free
                   </button>
                 </Magnetic>
@@ -336,7 +337,7 @@ export default function Landing() {
               <Tilt3D>
                 <Link href="/sample-report" aria-label="Open the sample report">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/product/report.png" alt="The first page of a StrataIQ report for a cafe in Downtown Austin, with the verdict, key numbers and profit charts" width={1440} height={1100} loading="lazy" className="w-full bg-paper" />
+                  <img src="/product/report.png" alt="The first page of a StrataIQ report for a gym in South Austin, with the verdict, key numbers and charts" width={1440} height={1100} loading="lazy" className="w-full bg-paper" />
                 </Link>
               </Tilt3D>
             </ScrollOut>
