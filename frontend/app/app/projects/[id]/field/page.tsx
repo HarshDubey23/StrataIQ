@@ -145,7 +145,7 @@ export default function FieldResearch() {
                 <span className="inline-flex items-center gap-2 rounded-md border border-field/40 bg-field/10 px-2 py-1 text-[11px] font-medium text-field">
                   <UserRoundCheck className="h-3.5 w-3.5" /> Matched specialty
                 </span>
-                <h3 className="font-display mt-3 text-2xl font-medium tracking-tight">Send a {f.specialty.toLowerCase()} to {loc?.address?.split(",")[0] || "your site"}</h3>
+                <h3 className="font-display mt-3 text-2xl font-medium ">Send a {f.specialty.toLowerCase()} to {loc?.address?.split(",")[0] || "your site"}</h3>
                 <p className="mt-2 max-w-xl text-sm text-ink-300">They get a link that opens a field app on their phone — no login. Everything they record lands here and in the simulation.</p>
               </div>
               <ol className="grid gap-px bg-black/[0.06] sm:grid-cols-2">
@@ -181,7 +181,7 @@ export default function FieldResearch() {
               <div className="flex flex-wrap items-start justify-between gap-4 p-6">
                 <div>
                   <p className="idx">ASSIGNMENT</p>
-                  <h3 className="font-display mt-1.5 text-xl font-medium tracking-tight">{f.request.researcher_name || "Field researcher"} · <span className="text-ink-300">{f.request.specialty}</span></h3>
+                  <h3 className="font-display mt-1.5 text-xl font-medium ">{f.request.researcher_name || "Field researcher"} · <span className="text-ink-300">{f.request.specialty}</span></h3>
                   <p className="mt-1 text-xs text-ink-400">Requested {ago(f.request.created_at)}{f.request.due_date ? ` · needed by ${f.request.due_date}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -299,7 +299,7 @@ export default function FieldResearch() {
                     <KindIcon kind={r.kind} />
                     <span className="min-w-0 flex-1 truncate text-ink-200">{describe(r.kind, r.data)}</span>
                     <span className="hidden text-xs text-ink-500 sm:inline">{r.collected_by} · {ago(r.created_at)}</span>
-                    <button onClick={() => remove(r.id)} aria-label="Delete record" className="rounded-md p-1.5 text-ink-500 hover:bg-black/5 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => remove(r.id)} aria-label="Delete record" className="rounded-md p-1.5 text-ink-500 hover:bg-black/5 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
                   </li>
                 ))}
               </ul>
@@ -313,7 +313,7 @@ export default function FieldResearch() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="idx">RECORD</p>
-                <h3 className="font-display mt-1 text-lg font-medium tracking-tight">Add ground data yourself</h3>
+                <h3 className="font-display mt-1 text-lg font-medium ">Add ground data yourself</h3>
               </div>
               {loc && <Link href={`/app/projects/${p.id}/market`} className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-ink-100"><MapPin className="h-3.5 w-3.5" /> map</Link>}
             </div>
@@ -328,7 +328,7 @@ export default function FieldResearch() {
 function Stat({ n, l, accent }: { n: number; l: string; accent?: boolean }) {
   return (
     <div>
-      <div className={cn("num font-display text-3xl font-medium tracking-tight", accent && "text-field")}>{n}</div>
+      <div className={cn("num font-display text-3xl font-medium ", accent && "text-field")}>{n}</div>
       <div className="text-[11px] text-ink-400">{l}</div>
     </div>
   );

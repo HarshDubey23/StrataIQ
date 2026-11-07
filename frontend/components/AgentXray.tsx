@@ -65,7 +65,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
   const channels = Object.keys(CHANNEL_LABEL);
 
   return (
-    <div className={cn("flex flex-col overflow-hidden rounded-xl border border-accent/40 bg-ink-950/95 shadow-2xl shadow-black/60 backdrop-blur", className)}>
+    <div className={cn("flex flex-col overflow-hidden rounded-xl border border-accent/40 bg-ink-950/95 shadow-2xl shadow-black/60 ", className)}>
       <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
           <Dna className="h-4 w-4 text-agent" />

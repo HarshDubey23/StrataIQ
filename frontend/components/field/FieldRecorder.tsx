@@ -126,7 +126,7 @@ export function FieldRecorder({
       </div>
       <div aria-live="polite" className="mt-3 min-h-5 text-sm">
         {flash && <span className="rise inline-flex items-center gap-1.5 text-field"><Check className="h-4 w-4" /> {flash}</span>}
-        {err && <span className="text-red-700">{err}</span>}
+        {err && <span className="text-danger">{err}</span>}
       </div>
     </div>
   );

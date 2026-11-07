@@ -64,7 +64,7 @@ export default function MarketGlance({ project: p }: { project: Project }) {
         {stats.map(([l, v, k]) => (
           <div key={l} className="rounded-xl border border-black/[0.07] bg-black/[0.025] p-4">
             <div className="flex items-center justify-between gap-2 text-[11.5px] text-ink-400">{l}<Evidence kind={k} className="scale-90" /></div>
-            <div className="num font-display mt-2 text-[26px] font-medium leading-none tracking-tight">{v}</div>
+            <div className="num font-display mt-2 text-[26px] font-medium leading-none ">{v}</div>
           </div>
         ))}
       </div>

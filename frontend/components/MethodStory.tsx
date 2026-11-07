@@ -7,10 +7,11 @@ import { FactItem, Marquee, Reveal, RollLink, WordsIn, type Fact } from "@/compo
 import { SiteFooter } from "@/components/SiteFooter";
 import { useLenis, useStoryProgress } from "@/components/landing/Landing";
 import { SPOTS } from "@/components/landing/spots";
+import { Logo } from "@/components/brand";
 
 const HeroMap = dynamic(() => import("@/components/landing/HeroMap"), { ssr: false, loading: () => null });
 
-const HEAD = "font-display text-[clamp(2.25rem,1.4rem+2.6vw,3.75rem)] font-medium leading-[0.98] tracking-[-0.03em]";
+const HEAD = "font-display text-[clamp(2.5rem,1.6rem+2.4vw,4rem)] leading-[1.02]";
 const SCENES = ["Your street, in 3D", "Your rivals, live", "Your neighborhood", "Your customers deciding", "Your numbers"];
 
 const STEPS: { title: string; body: string; facts: Fact[] }[] = [
@@ -69,13 +70,13 @@ export function MethodStory() {
   return (
     <div className="bg-paper text-night">
       <div className="lg:grid lg:grid-cols-[minmax(0,46fr)_minmax(0,54fr)]">
-        <div className="sticky top-0 z-0 order-2 h-[30svh] overflow-hidden bg-night lg:h-svh">
+        <div className="sticky top-0 z-0 order-2 h-[30svh] overflow-hidden bg-atlas lg:h-svh">
           <HeroMap spot={SPOTS[0]} comps={[]} scene={scene} progress={progress} />
-          <p className="pointer-events-none absolute bottom-6 left-5 bg-night px-4 py-2 font-display text-[clamp(1.125rem,0.9rem+1vw,1.75rem)] font-medium tracking-[-0.02em] text-white md:left-8">{SCENES[scene] ?? SCENES[0]}</p>
+          <p className="pointer-events-none absolute sheet bottom-6 left-5 px-4 py-2 font-display text-[clamp(1.125rem,0.9rem+1vw,1.75rem)] md:left-8">{SCENES[scene] ?? SCENES[0]}</p>
         </div>
         <main className="relative z-10 order-1 bg-paper px-5 md:px-10 lg:px-14">
           <header className="flex items-center justify-between py-6">
-            <Link href="/" className="font-display text-2xl font-medium tracking-tight">StrataIQ</Link>
+            <Logo />
             <nav className="flex items-center gap-5 text-[16px]">
               <RollLink href="/sample-report">Sample report</RollLink>
               <RollLink href="/sign-in">Sign in</RollLink>
@@ -94,7 +95,7 @@ export function MethodStory() {
         </main>
       </div>
 
-      <section className="relative z-10 bg-night px-5 py-24 text-white md:px-10 lg:px-14">
+      <section className="relative z-10 border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
         <div className="mx-auto max-w-6xl">
           <WordsIn text="Tested against real markets." className={HEAD} />
           <Reveal delay={0.15}>
@@ -105,7 +106,7 @@ export function MethodStory() {
               <Reveal key={name} delay={i * 0.04}>
                 <h3 className="mb-2 text-[18px] font-medium">{name}</h3>
                 <div className="space-y-1.5 text-[14px]">
-                  <div className="grid grid-cols-[6.5rem_1fr] items-center gap-2"><span>StrataIQ</span><Bar value={ours} tone="bg-accent" delay={0.1} /></div>
+                  <div className="grid grid-cols-[6.5rem_1fr] items-center gap-2"><span>StrataIQ</span><Bar value={ours} tone="bg-you" delay={0.1} /></div>
                   <div className="grid grid-cols-[6.5rem_1fr] items-center gap-2"><span>Population</span><Bar value={base} tone="bg-white/60" delay={0.2} /></div>
                 </div>
               </Reveal>
@@ -116,12 +117,12 @@ export function MethodStory() {
         </div>
       </section>
 
-      <section className="relative z-10 overflow-hidden bg-paper py-16">
+      <section className="relative z-10 overflow-hidden border-t border-night bg-paper py-16">
         <p className="mb-8 px-5 text-[18px] font-medium md:px-10 lg:px-14">Built on public data</p>
         <Marquee items={SOURCES} />
       </section>
 
-      <section className="relative z-10 bg-white px-5 py-20 md:px-10 lg:px-14">
+      <section className="relative z-10 border-t border-night bg-white px-5 py-20 md:px-10 lg:px-14">
         <div className="mx-auto max-w-6xl md:grid md:grid-cols-2 md:gap-14">
           <WordsIn text="Measured, and estimated." className={HEAD} />
           <Reveal delay={0.15}>
@@ -131,13 +132,13 @@ export function MethodStory() {
         </div>
       </section>
 
-      <section className="relative z-10 bg-accent px-5 py-20 text-white md:px-10 lg:px-14">
+      <section className="relative z-10 border-t border-night bg-you px-5 py-20 text-night md:px-10 lg:px-14">
         <div className="mx-auto max-w-6xl">
           <WordsIn text="Now test your street." className={HEAD} />
-          <Reveal delay={0.15}><Link href="/" className="mt-7 inline-flex min-h-14 items-center bg-white px-7 text-[18px] font-medium text-night transition-transform hover:-translate-y-0.5 motion-reduce:transform-none">Test it free</Link></Reveal>
+          <Reveal delay={0.15}><Link href="/" className="mt-7 inline-flex min-h-14 items-center bg-night px-7 text-[18px] font-semibold text-white transition-colors hover:bg-atlas">Test it free</Link></Reveal>
         </div>
       </section>
-      <div className="relative z-10 bg-paper px-5 md:px-10 lg:px-14"><SiteFooter /></div>
+      <div className="relative z-10 border-t border-night bg-paper px-5 md:px-10 lg:px-14"><SiteFooter /></div>
     </div>
   );
 }

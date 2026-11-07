@@ -1,25 +1,23 @@
 "use client";
 
-import { ArrowRight, FlaskConical, GitCompareArrows, MapPinned, Rocket, Trash2, TrendingUp } from "lucide-react";
+import { ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useSession } from "@/components/AppShell";
+import { BlockPlan } from "@/components/brand";
 import { QuickStart } from "@/components/QuickStart";
-import { Badge, Button, ButtonLink, Dialog, EmptyState, ErrorState, Evidence, Skeleton } from "@/components/ui";
+import { Button, ButtonLink, Dialog, ErrorState, Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { ago, money, num, OBJECTIVES, pct } from "@/lib/format";
+import { ago, money, num, pct } from "@/lib/format";
 import type { Project } from "@/lib/types";
 
 const actions = [
-  { href: "/app/projects/new?objective=start_new", t: "Start a business", d: "Test a new idea at a location", i: Rocket },
-  { href: "/app/projects/new?objective=improve_existing", t: "Grow my business", d: "Diagnose and improve with your figures", i: TrendingUp },
-  { href: "/app/projects/new?objective=compare_locations", t: "Compare locations", d: "Rank candidate sites side by side", i: MapPinned },
-  { href: "/app/projects/new?objective=test_strategy", t: "Optimize my strategy", d: "Price, marketing and capacity tests", i: GitCompareArrows },
+  { href: "/app/projects/new?objective=improve_existing", t: "Grow a business I already run" },
+  { href: "/app/projects/new?objective=compare_locations", t: "Compare several locations" },
+  { href: "/app/projects/new?objective=test_strategy", t: "Test a pricing or marketing plan" },
 ];
 
 export default function Dashboard() {
-  const { user } = useSession();
   const router = useRouter();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,112 +61,57 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
-      <div className="rise bg-night text-white">
-        <div className="relative flex flex-col justify-between gap-8 p-6 md:flex-row md:items-end md:p-10">
-          <div>
-            <h1 className="font-display max-w-3xl text-[clamp(2.25rem,1.5rem+2.4vw,3.75rem)] font-medium leading-[1] tracking-[-0.03em]">Which location are you considering?</h1>
-            <p className="mt-5 max-w-xl text-[17px] leading-snug text-white">Describe your business and pick a street. We load the competition and the neighborhood, then test your plan.</p>
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
+      <h1 className="font-display text-[40px] leading-[1.05]">Which location are you considering?</h1>
+      <p className="mt-2 max-w-[60ch] text-[16px] text-ink-300">Describe your business and pick a street. We load the competition and the neighborhood, then test your plan.</p>
+
+      <div className="mt-6"><QuickStart /></div>
+
+      <nav aria-label="Other ways to start" className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-[14px]">
+        {actions.map((a) => <Link key={a.t} href={a.href} className="text-atlas underline underline-offset-4 hover:text-night">{a.t}</Link>)}
+        <button onClick={liveDemo} disabled={liveBusy} className="text-atlas underline underline-offset-4 hover:text-night disabled:opacity-60">{liveBusy ? "Opening…" : "See an example"}</button>
+      </nav>
+
+      <div className="mt-12 flex items-baseline justify-between border-b border-night pb-2">
+        <h2 className="font-display text-[26px]">Your locations{projects && projects.length > 0 && <span className="num ml-2 text-[18px] font-medium text-ink-400">{projects.length}</span>}</h2>
+        <Button size="sm" variant="ghost" onClick={demo} loading={busy}>Open a sample project</Button>
+      </div>
+
+      {error && <div className="mt-4"><ErrorState message={error} onRetry={load} /></div>}
+      {!projects && !error && <div className="mt-4 space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16" />)}</div>}
+      {projects && projects.length === 0 && (
+        <div className="mt-4 grid border border-night bg-white md:grid-cols-[1fr_1.1fr]">
+          <div className="p-7">
+            <h3 className="font-display text-[28px] leading-tight">Your first sheet is blank.</h3>
+            <p className="mt-2 max-w-[44ch] text-[15px] text-ink-300">Name a business and a place above, and StrataIQ will draw the block, load the rivals and test your plan.</p>
+            <ButtonLink href="/app/projects/new" variant="secondary" className="mt-5">Use the full form</ButtonLink>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={liveDemo} loading={liveBusy}>
-              See an example
-            </Button>
-            <Link href="/app/projects/new" className="inline-flex h-10 items-center gap-2 whitespace-nowrap bg-accent px-4.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 motion-reduce:transform-none">New analysis <ArrowRight className="h-4 w-4" /></Link>
-          </div>
+          <div className="h-48 overflow-hidden border-t border-night bg-atlas md:h-auto md:border-l md:border-t-0"><BlockPlan seed={23} className="h-full w-full" /></div>
         </div>
-      </div>
-
-      <div className="rise rise-1 mt-8">
-        <QuickStart />
-      </div>
-
-      <div className="rise rise-2 mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {actions.map((a) => (
-          <Link key={a.t} href={a.href} className="group relative bg-white p-5 transition-colors duration-300 hover:bg-night hover:text-white">
-            <div>
-              <a.i className="h-4.5 w-4.5 text-ink-400 transition-colors group-hover:text-accent" />
-            </div>
-            <div className="font-display mt-8 text-[17px] tracking-tight">{a.t}</div>
-            <div className="mt-1 flex items-center justify-between text-[13px] text-ink-400 group-hover:text-white/60">
-              {a.d}
-              <ArrowRight className="h-4 w-4 -translate-x-1 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-14 flex items-end justify-between border-b border-ink-100 pb-3">
-        <h2 className="font-display text-2xl tracking-tight">Your simulations {projects && projects.length > 0 && <span className="num ml-1 text-sm text-ink-400">{projects.length}</span>}</h2>
-        <Button size="sm" variant="ghost" onClick={demo} loading={busy}>
-          <FlaskConical className="h-3.5 w-3.5" /> Open a sample project
-        </Button>
-      </div>
-
-      <div className="mt-4">
-        {error && <ErrorState message={error} onRetry={load} />}
-        {!projects && !error && (
-          <div className="grid gap-3 md:grid-cols-2">
-            {[0, 1].map((i) => <Skeleton key={i} className="h-36" />)}
-          </div>
-        )}
-        {projects && projects.length === 0 && (
-          <EmptyState
-            icon={<MapPinned className="h-6 w-6" />}
-            title="No simulations yet"
-            body="Describe a business, pick a place, and StrataIQ will load live market evidence and simulate customer choices."
-            action={<ButtonLink href="/app/projects/new" variant="primary">Build your first market simulation</ButtonLink>}
-          />
-        )}
-        {projects && projects.length > 0 && (
-          <div className="grid gap-3 md:grid-cols-2">
-            {projects.map((p) => (
-              <div key={p.id} className="lift group flex flex-col rounded-md border border-ink-100/[0.12] bg-white p-5 hover:border-ink-100">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <Link href={`/app/projects/${p.id}`} className="font-display block truncate text-lg tracking-tight group-hover:text-accent">{p.name}</Link>
-                    <div className="mt-0.5 truncate text-xs text-ink-400">
-                      {p.category.label} · {p.locations[0]?.address || `${p.locations[0]?.lat.toFixed(4)}, ${p.locations[0]?.lng.toFixed(4)}`}
-                    </div>
-                  </div>
-                  <button aria-label={`Delete ${p.name}`} onClick={() => setDel(p)} className="rounded-md p-1 text-ink-500 opacity-0 transition-opacity hover:text-red-700 focus:opacity-100 group-hover:opacity-100">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {p.is_demo && <Evidence kind="demo" />}
-                  {p.data_kinds?.connected_sources && !p.is_demo && <Evidence kind="observed" label="Live sources" />}
-                  <Badge>{OBJECTIVES[p.objective]}</Badge>
-                </div>
-                <div className="mt-5 flex-1 text-sm">
-                  {p.summary ? (
-                    <div className="grid grid-cols-3 gap-2 border-t border-black/[0.06] pt-4">
-                      <div>
-                        <div className="label-mono text-[10px] text-ink-400">{p.summary.unit_label}</div>
-                        <div className="num font-display mt-1 text-lg">{num(p.summary.units_sold)}</div>
-                      </div>
-                      <div>
-                        <div className="label-mono text-[10px] text-ink-400">Profit / month</div>
-                        <div className={`num font-display mt-1 text-lg ${p.summary.operating_profit < 0 ? "text-red-700" : "text-ok"}`}>{money(p.summary.operating_profit, { compact: true })}</div>
-                      </div>
-                      <div>
-                        <div className="label-mono text-[10px] text-ink-400">Chance of a loss</div>
-                        <div className="num font-display mt-1 text-lg">{pct(p.summary.prob_loss)}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="border-t border-black/[0.06] pt-4 text-xs text-ink-400">Not simulated yet — open it and load the market.</p>
-                  )}
-                </div>
-                <div className="mt-4 flex items-center justify-between text-xs text-ink-400">
-                  <span>Updated {ago(p.updated_at)}</span>
-                  <Link href={`/app/projects/${p.id}`} className="inline-flex items-center gap-1 text-accent hover:underline">Open <ArrowRight className="h-3 w-3" /></Link>
-                </div>
+      )}
+      {projects && projects.length > 0 && (
+        <ul>
+          {projects.map((p) => (
+            <li key={p.id} className="group grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-2 border-b border-ink-600 py-4 transition-colors hover:bg-white md:grid-cols-[minmax(0,1fr)_6rem_7rem_6rem_6rem_2rem] md:px-2">
+              <div className="min-w-0">
+                <Link href={`/app/projects/${p.id}`} className="font-display block truncate text-[20px] leading-tight underline-offset-4 hover:underline">{p.name}{p.is_demo && <span className="ml-2 border border-dashed border-night px-1 align-middle font-sans text-[11px] font-medium">Demo</span>}</Link>
+                <div className="mt-0.5 truncate text-[13px] text-ink-400">{p.category.label} · {p.locations[0]?.address || `${p.locations[0]?.lat.toFixed(4)}, ${p.locations[0]?.lng.toFixed(4)}`}</div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              {p.summary ? (
+                <>
+                  <div className="hidden md:block"><div className="text-[12px] capitalize text-ink-400">{p.summary.unit_label}</div><div className="num font-semibold">{num(p.summary.units_sold)}</div></div>
+                  <div><div className="text-[12px] text-ink-400">Profit / month</div><div className={`num font-semibold ${p.summary.operating_profit < 0 ? "text-danger" : "text-ok"}`}>{money(p.summary.operating_profit, { compact: true })}</div></div>
+                  <div className="hidden md:block"><div className="text-[12px] text-ink-400">Loss risk</div><div className="num font-semibold">{pct(p.summary.prob_loss)}</div></div>
+                </>
+              ) : (
+                <Link href={`/app/projects/${p.id}`} className="inline-flex items-center gap-1 text-[13px] font-medium text-atlas md:col-span-3">Not tested yet. Open <ArrowRight className="h-3 w-3" /></Link>
+              )}
+              <div className="hidden text-[13px] text-ink-400 md:block">{ago(p.updated_at)}</div>
+              <button aria-label={`Delete ${p.name}`} onClick={() => setDel(p)} className="hidden p-1 text-ink-400 opacity-0 transition-opacity hover:text-danger focus:opacity-100 group-hover:opacity-100 md:block"><Trash2 className="h-4 w-4" /></button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <Dialog
         open={!!del}

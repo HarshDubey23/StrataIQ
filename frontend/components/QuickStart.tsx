@@ -4,7 +4,7 @@
  * Quick start for people who don't know the jargon: write the idea in one sentence ,
  * see the plan StrataIQ understood — with every guessed number labeled — fix anything, and go.
  */
-import { ArrowRight, Check, Lightbulb, MapPin, Pencil, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Lightbulb, MapPin, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LocationPicker, type PickedPlace } from "@/components/LocationPicker";
@@ -93,7 +93,7 @@ export function QuickStart({ compact = false, autoFocus = false }: { compact?: b
       setPlace(pl.place ? { lat: pl.place.lat, lng: pl.place.lng, address: pl.place.display_name || pl.place.name } : null);
       setEditPlace(!pl.place);
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "I couldn't read that — try 'a café in Indiranagar'");
+      setErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "We could not read that. Try 'a cafe in South Austin'.");
     } finally {
       setBusy(null);
     }
@@ -115,18 +115,18 @@ export function QuickStart({ compact = false, autoFocus = false }: { compact?: b
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-xl border border-accent/35 bg-[linear-gradient(135deg,rgba(47,73,255,.14),rgba(47,73,255,.02)_55%,transparent)]", compact ? "p-4" : "p-5 sm:p-7")}>
-      <div className="flex items-center gap-2 text-sm font-medium text-ink-100"><Sparkles className="h-4 w-4 text-accent" /> Describe your idea in one line</div>
-      <p className="mt-1 text-xs text-ink-400">Business type and place are enough — I&apos;ll fill the rest with typical numbers you can change.</p>
+    <div className={cn("border border-night bg-white", compact ? "p-4" : "p-5 sm:p-6")}>
+      <div className="text-[15px] font-semibold text-ink-100">Describe your idea in one line</div>
+      <p className="mt-0.5 text-[13px] text-ink-400">A business type and a place are enough. We fill the rest with typical numbers you can change.</p>
       <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); void understand(); }}>
         <input autoFocus={autoFocus} value={text} onChange={(e) => setText(e.target.value)} placeholder={`e.g. ${EXAMPLES[0]}`} aria-label="Your business idea"
-          className="h-12 flex-1 rounded-lg border border-black/10 bg-ink-950/70 px-4 text-[15px] outline-none transition-[border-color,box-shadow] placeholder:text-ink-500 focus:border-accent focus:shadow-[0_0_0_3px_rgba(47,73,255,.2)]" />
-        <Button type="submit" variant="primary" size="lg" loading={busy === "plan"}>Build my plan <ArrowRight className="h-4 w-4" /></Button>
+          className="h-12 flex-1 border border-night bg-white px-4 text-[16px] placeholder:text-ink-400 focus:outline-2 focus:outline-atlas" />
+        <Button type="submit" variant="next" size="lg" loading={busy === "plan"}>Build my plan <ArrowRight className="h-4 w-4" /></Button>
       </form>
       {!plan && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {EXAMPLES.map((x) => (
-            <button key={x} onClick={() => { setText(x); void understand(x); }} className="rounded-md border border-black/10 px-2.5 py-1 text-[11.5px] text-ink-300 transition-colors hover:border-accent/60 hover:text-ink-100">{x}</button>
+            <button key={x} onClick={() => { setText(x); void understand(x); }} className="border border-ink-600 px-2.5 py-1 text-[13px] text-ink-300 transition-colors hover:border-night hover:text-night">{x}</button>
           ))}
         </div>
       )}
@@ -145,10 +145,10 @@ export function QuickStart({ compact = false, autoFocus = false }: { compact?: b
               <div className="mb-1 flex items-center gap-1.5 font-medium text-ink-200"><Lightbulb className="h-3.5 w-3.5 text-warn" /> Starter assumptions (change any later)</div>
               <ul className="list-disc space-y-0.5 pl-4 text-ink-400">{plan.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
             </div>
-            <Button variant="primary" size="lg" className="w-full" disabled={!place} loading={busy === "create"} onClick={go}>
-              {busy === "create" ? "Creating…" : "Analyse this idea with live data"} <ArrowRight className="h-4 w-4" />
+            <Button variant="next" size="lg" className="w-full" disabled={!place} loading={busy === "create"} onClick={go}>
+              {busy === "create" ? "Creating…" : "Test this location with live data"} <ArrowRight className="h-4 w-4" />
             </Button>
-            <p className="text-[11px] text-ink-500">Next: I load the real competitors and population around the place, run 10,000 simulated customers, and show you profit, risk and the best strategy.</p>
+            <p className="text-[13px] text-ink-400">Next we load the real rivals and population around the place, run 10,000 simulated customers, and show you profit, risk and the best plan.</p>
           </div>
           {(editPlace || !place) && (
             <div>

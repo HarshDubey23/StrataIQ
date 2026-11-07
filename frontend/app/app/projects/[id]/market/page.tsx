@@ -254,7 +254,7 @@ export default function MarketPage() {
         )}
       </section>
 
-      <aside className="flex w-full flex-col border-l border-black/[0.06] bg-ink-950/80 backdrop-blur-xl lg:w-[400px]">
+      <aside className="flex w-full flex-col border-l border-black/[0.06] bg-ink-950/80 -xl lg:w-[400px]">
         <div className="flex gap-1 border-b border-black/[0.06] p-2">
           {(["evidence", "competitors", "sites", "locations"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)} data-tour={t === "sites" ? "best-sites" : undefined}

@@ -121,13 +121,13 @@ def decide(scenarios: list[dict], objective: Objective, evidence: dict, archetyp
 
     if p50 is not None and p50 > 0 and (pl is None or pl < 0.25):
         verdict = "potentially_viable"
-        head = f"'{best['name']}' appears financially viable under the current assumptions"
+        head = f"The '{best['name']}' plan appears financially viable under the current assumptions"
     elif p50 is not None and p50 < 0 and (pl is None or pl > 0.7):
         verdict = "financially_challenging"
-        head = f"'{best['name']}' is financially challenging under the current inputs"
+        head = f"The '{best['name']}' plan is financially challenging under the current inputs"
     else:
         verdict = "high_uncertainty"
-        head = f"'{best['name']}' could go either way under the current assumptions"
+        head = f"The '{best['name']}' plan could go either way under the current assumptions"
     if high_gaps:
         head += ", but key evidence is missing and the result should be treated as provisional."
         if verdict == "high_uncertainty":

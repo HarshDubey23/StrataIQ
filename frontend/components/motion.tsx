@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import { AnimatePresence, animate, motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -65,7 +66,7 @@ export function CountUp({ to }: { to: number }) {
 /** Choice button whose filled background glides to the selected option, the Skiper animated-tab pattern. */
 export function Chip({ group, on, tone, onClick, children }: { group: string; on: boolean; tone: string; onClick: () => void; children: ReactNode }) {
   return (
-    <button aria-pressed={on} onClick={onClick} className={`relative min-h-11 bg-white px-4 text-[16px] transition-colors hover:bg-night/10 ${on ? "text-white" : ""}`}>
+    <button aria-pressed={on} onClick={onClick} className={`relative min-h-11 border border-night bg-white px-4 text-[16px] transition-colors hover:bg-ink-800 ${on ? "text-white" : "text-night"}`}>
       {on && <motion.span layoutId={`chip-${group}`} className={`absolute inset-0 ${tone}`} transition={{ type: "spring", stiffness: 420, damping: 36 }} />}
       <span className="relative">{children}</span>
     </button>
@@ -76,7 +77,7 @@ export function Chip({ group, on, tone, onClick, children }: { group: string; on
 export function ScrollBar() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
-  return <motion.div aria-hidden style={{ scaleX }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-accent" />;
+  return <motion.div aria-hidden style={{ scaleX }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-you" />;
 }
 
 /** A card that tilts toward the pointer in 3D, the Aceternity "3D card" pattern. */
@@ -119,7 +120,7 @@ export function Marquee({ items }: { items: string[] }) {
   const still = useReducedMotion();
   const row = (hidden: boolean) => (
     <ul aria-hidden={hidden} className="flex shrink-0 items-center gap-14 pr-14">
-      {items.map((t) => <li key={t} className="whitespace-nowrap font-display text-[clamp(1.75rem,1.2rem+2vw,3.25rem)] font-medium tracking-[-0.03em]">{t}</li>)}
+      {items.map((t) => <li key={t} className="whitespace-nowrap font-display text-[clamp(1.75rem,1.2rem+2vw,3.25rem)]">{t}</li>)}
     </ul>
   );
   if (still) return <ul className="flex flex-wrap gap-x-10 gap-y-2 px-5 text-[20px]">{items.map((t) => <li key={t}>{t}</li>)}</ul>;
@@ -164,16 +165,16 @@ export function FactItem({ fact }: { fact: Fact }) {
       onFocus={show} onBlur={hide}
       onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>
       <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)}
-        className={`group flex min-h-12 w-full items-center justify-between gap-4 px-4 py-3 text-left text-[17px] transition-colors duration-200 ${open ? "bg-night text-white" : "bg-white text-night"}`}>
+        className={`group flex min-h-12 w-full items-center justify-between gap-4 px-4 py-3 text-left text-[17px] transition-colors duration-200 ${open ? "bg-atlas text-white" : "border border-ink-600 bg-white text-night"}`}>
         {fact.label}
-        <span aria-hidden className={`text-[20px] leading-none transition-transform duration-300 motion-reduce:transition-none ${open ? "translate-x-1 text-accent-dim" : "text-accent"}`}>→</span>
+        <ArrowRight aria-hidden className={`h-5 w-5 shrink-0 transition-transform duration-300 motion-reduce:transition-none ${open ? "translate-x-1" : "text-atlas"}`} />
       </button>
       <AnimatePresence>
         {open && (
           <motion.div role="note" initial={still ? false : { opacity: 0, x: -14, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={still ? { opacity: 0 } : { opacity: 0, x: -8 }} transition={{ duration: 0.22, ease: EASE }}
             className="mt-1 lg:absolute lg:left-full lg:top-1/2 lg:mt-0 lg:w-[26rem] lg:-translate-y-1/2 lg:pl-3">
-            <div className="bg-night p-6 text-white">
-              <h4 className="font-display text-[22px] font-medium leading-tight tracking-[-0.02em]">{fact.label}</h4>
+            <div className="bg-atlas p-6 text-white">
+              <h4 className="font-display text-[24px] leading-tight">{fact.label}</h4>
               <p className="mt-3 text-[16px] leading-[1.5]">{fact.detail}</p>
               {fact.source && <p className="mt-4 border-t border-white/20 pt-3 text-[14px]">Source: {fact.source}</p>}
             </div>

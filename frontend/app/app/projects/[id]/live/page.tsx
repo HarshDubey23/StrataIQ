@@ -234,7 +234,7 @@ export default function LiveMarket() {
                 </div>
               ))}
               {abm.genome && (
-                <Link href={`/app/projects/${p.id}/genome`} className="pointer-events-auto rounded-lg border border-agent/40 bg-ink-950/90 px-3 py-2 backdrop-blur hover:border-agent">
+                <Link href={`/app/projects/${p.id}/genome`} className="pointer-events-auto rounded-lg border border-agent/40 bg-ink-950/90 px-3 py-2  hover:border-agent">
                   <div className="flex items-center gap-1 text-[10px] text-agent"><Dna className="h-3 w-3" /> Agent genome</div>
                   <div className="num text-lg font-semibold text-ink-100">{num(abm.n_agents)} × {abm.genome.per_agent}<span className="ml-1.5 text-xs font-normal text-ink-400">= {num(abm.genome.total_parameters)} params</span></div>
                 </Link>
@@ -298,7 +298,7 @@ export default function LiveMarket() {
       </section>
 
       {/* right panel */}
-      <aside className="w-full space-y-4 overflow-y-auto border-l border-black/[0.06] bg-ink-950/80 backdrop-blur-xl p-4 lg:max-h-[calc(100vh-112px)] lg:w-[380px]">
+      <aside className="w-full space-y-4 overflow-y-auto border-l border-black/[0.06] bg-ink-950/80 -xl p-4 lg:max-h-[calc(100vh-112px)] lg:w-[380px]">
         <div className="flex items-center gap-2">
           <Select value={sid} onChange={(e) => { setSid(e.target.value); setAgent(null); }} aria-label="Scenario">
             {scenarios.map((s) => <option key={s.id} value={s.id}>{s.name}{s.is_baseline ? " (baseline)" : ""}</option>)}
@@ -381,7 +381,7 @@ export default function LiveMarket() {
               {abm.monthly_finance.map((m) => (
                 <div key={m.month} className="flex justify-between py-0.5">
                   <span className="text-ink-400">Month {m.month}</span>
-                  <span className="num">{num(m.capped_units)} {unit} · <span className={m.profit < 0 ? "text-red-700" : "text-emerald-700"}>{money(m.profit, { compact: true })}</span></span>
+                  <span className="num">{num(m.capped_units)} {unit} · <span className={m.profit < 0 ? "text-danger" : "text-ok"}>{money(m.profit, { compact: true })}</span></span>
                 </div>
               ))}
               <p className="mt-1.5 text-[10px] text-ink-500">Ramp-up from launch as awareness spreads. Steady-state static model: {money(res.finance.operating_profit, { compact: true })}/month.</p>

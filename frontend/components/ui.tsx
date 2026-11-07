@@ -9,14 +9,16 @@ export function cn(...a: Parameters<typeof clsx>) {
   return clsx(...a);
 }
 
-type BtnVariant = "primary" | "secondary" | "ghost" | "danger";
+/** `next` is yellow and marks the one next step on a screen. */
+type BtnVariant = "primary" | "next" | "secondary" | "ghost" | "danger";
 const btnBase =
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold tracking-[-0.005em] transition-[background,color,box-shadow,transform,border-color] duration-300 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  "inline-flex items-center justify-center gap-2 text-sm font-semibold transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 const btnVariants: Record<BtnVariant, string> = {
-  primary: "sheen bg-accent text-white hover:bg-night",
-  secondary: "border border-ink-100/15 bg-white text-ink-100 hover:border-ink-100 hover:bg-ink-100 hover:text-white",
-  ghost: "text-ink-300 hover:bg-ink-100/[0.06] hover:text-ink-100",
-  danger: "border border-danger/40 bg-danger/10 text-red-700 hover:bg-danger/20",
+  primary: "border border-atlas bg-atlas text-white hover:border-atlas-deep hover:bg-atlas-deep",
+  next: "border border-night bg-you text-night hover:bg-you-deep",
+  secondary: "border border-night bg-white text-night hover:bg-ink-800",
+  ghost: "text-ink-300 hover:bg-ink-800 hover:text-ink-100",
+  danger: "border border-danger bg-white text-danger hover:bg-danger hover:text-white",
 };
 const btnSizes = { sm: "h-8 px-3 text-xs", md: "h-10 px-4.5", lg: "h-12 px-6 text-[15px]" };
 
@@ -58,7 +60,7 @@ export function ButtonLink({
 
 export function Card({ className, children, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("rounded-md border border-ink-100/[0.1] bg-white", className)} {...rest}>
+    <div className={cn("border border-ink-600 bg-white", className)} {...rest}>
       {children}
     </div>
   );
@@ -66,10 +68,10 @@ export function Card({ className, children, ...rest }: React.HTMLAttributes<HTML
 
 export function CardHeader({ title, subtitle, right, className }: { title: React.ReactNode; subtitle?: React.ReactNode; right?: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("flex items-start justify-between gap-3 border-b border-ink-100/[0.08] px-5 py-3.5", className)}>
+    <div className={cn("flex items-start justify-between gap-3 border-b border-ink-600 px-5 py-3.5", className)}>
       <div className="min-w-0">
-        <h3 className="font-display text-[15px] tracking-tight text-ink-100">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-xs text-ink-300">{subtitle}</p>}
+        <h3 className="font-display text-[17px] text-ink-100">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-[13px] text-ink-300">{subtitle}</p>}
       </div>
       {right}
     </div>
@@ -79,26 +81,26 @@ export function CardHeader({ title, subtitle, right, className }: { title: React
 /** Evidence-type label. Every number on screen should carry one of these. */
 export type EvidenceKind = "observed" | "user" | "assumption" | "model" | "demo" | "unknown" | "official" | "ai" | "field";
 const kindStyle: Record<EvidenceKind, string> = {
-  observed: "border-observed/40 bg-observed/10 text-observed",
-  user: "border-userdata/40 bg-userdata/10 text-userdata",
-  assumption: "border-assumption/40 bg-assumption/10 text-ink-200",
-  model: "border-model/40 bg-model/10 text-model",
-  demo: "border-warn/50 bg-warn/15 text-warn",
-  unknown: "border-ink-500 bg-ink-800 text-ink-300",
-  official: "border-sky-400/40 bg-sky-400/10 text-sky-700",
-  ai: "border-fuchsia-400/40 bg-fuchsia-400/10 text-fuchsia-700",
-  field: "border-field/50 bg-field/10 text-field",
+  observed: "bg-brick",
+  user: "bg-you",
+  assumption: "bg-stone",
+  model: "bg-stone",
+  demo: "border-dashed bg-white",
+  unknown: "bg-white",
+  official: "bg-brick",
+  ai: "bg-ink-800",
+  field: "bg-moss",
 };
 const kindLabel: Record<EvidenceKind, string> = {
-  observed: "Observed",
-  user: "User",
-  assumption: "Assumed",
-  model: "Model",
+  observed: "Measured",
+  user: "Yours",
+  assumption: "Estimated",
+  model: "Estimated",
   demo: "Demo",
   unknown: "Unknown",
-  official: "Official est.",
+  official: "Measured",
   ai: "AI text",
-  field: "Field-verified",
+  field: "Checked on the street",
 };
 const kindTitle: Record<EvidenceKind, string> = {
   observed: "Observed in a data source (e.g. OpenStreetMap)",
@@ -116,7 +118,7 @@ export function Evidence({ kind, label, className, title }: { kind: EvidenceKind
   return (
     <span
       title={title ?? kindTitle[kind]}
-      className={cn("inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-px text-[10.5px] font-medium", kindStyle[kind], className)}
+      className={cn("inline-flex shrink-0 items-center gap-1 whitespace-nowrap border border-night px-1.5 py-px text-[11px] font-medium text-night", kindStyle[kind], className)}
     >
       {label ?? kindLabel[kind]}
     </span>
@@ -138,10 +140,10 @@ export function statusToKind(status: string | null | undefined): EvidenceKind {
 export function Badge({ children, tone = "neutral", className }: { children: React.ReactNode; tone?: "neutral" | "ok" | "warn" | "danger" | "accent"; className?: string }) {
   const tones = {
     neutral: "bg-ink-800 text-ink-200 border-ink-600",
-    ok: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
-    warn: "bg-amber-500/10 text-amber-700 border-amber-500/30",
-    danger: "bg-red-500/10 text-red-700 border-red-500/30",
-    accent: "bg-accent/10 text-accent border-accent/40",
+    ok: "bg-moss/40 text-night border-ok",
+    warn: "bg-you/30 text-night border-warn",
+    danger: "bg-brick/40 text-night border-danger",
+    accent: "bg-accent-dim text-night border-atlas",
   };
   return <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs", tones[tone], className)}>{children}</span>;
 }
@@ -164,19 +166,19 @@ export function Field({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <label htmlFor={htmlFor} className="text-xs font-semibold text-ink-200">
+        <label htmlFor={htmlFor} className="text-[13px] font-semibold text-ink-200">
           {label}
         </label>
         {kind && <Evidence kind={kind} />}
       </div>
       {children}
-      {error ? <p className="text-xs text-red-700">{error}</p> : hint ? <p className="text-xs text-ink-400">{hint}</p> : null}
+      {error ? <p className="text-xs text-danger">{error}</p> : hint ? <p className="text-xs text-ink-400">{hint}</p> : null}
     </div>
   );
 }
 
 export const inputCls =
-  "h-10 w-full rounded-md border border-ink-100/[0.14] bg-white px-3.5 text-sm text-ink-100 placeholder:text-ink-500 transition-[border-color,background,box-shadow] focus:border-accent focus:shadow-[0_0_0_3px_rgba(47,73,255,.14)] focus:outline-none";
+  "h-10 w-full border border-ink-500 bg-white px-3 text-sm text-ink-100 placeholder:text-ink-500 transition-[border-color] focus:border-night focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-atlas";
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(inputCls, props.className)} />;
@@ -262,7 +264,7 @@ export function NumberInput({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-lg bg-black/[0.05]", className)} />;
+  return <div className={cn("animate-pulse bg-ink-800", className)} />;
 }
 
 export function Spinner({ label }: { label?: string }) {
@@ -276,7 +278,7 @@ export function Spinner({ label }: { label?: string }) {
 
 export function EmptyState({ icon, title, body, action }: { icon?: React.ReactNode; title: string; body?: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="grid-bg flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-ink-100/20 bg-white/60 px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 border border-dashed border-ink-500 bg-white px-6 py-14 text-center">
       {icon && <div className="text-ink-400">{icon}</div>}
       <h3 className="font-display text-xl text-ink-100">{title}</h3>
       {body && <p className="max-w-md text-sm text-ink-300">{body}</p>}
@@ -287,9 +289,9 @@ export function EmptyState({ icon, title, body, action }: { icon?: React.ReactNo
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex items-start gap-3 rounded-md border border-red-500/30 bg-red-500/5 p-4 text-sm" role="alert">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" />
-      <div className="flex-1 text-red-800">{message}</div>
+    <div className="flex items-start gap-3 border border-danger bg-white p-4 text-sm" role="alert">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+      <div className="flex-1 text-danger">{message}</div>
       {onRetry && (
         <Button size="sm" onClick={onRetry}>
           Retry
@@ -303,12 +305,12 @@ export function Notice({ tone = "info", children, className }: { tone?: "info" |
   return (
     <div
       className={cn(
-        "flex items-start gap-2.5 rounded-lg border p-3 text-xs leading-relaxed",
-        tone === "warn" ? "border-warn/30 bg-amber-50 text-amber-900" : "border-black/[0.08] bg-ink-850 text-ink-200",
+        "flex items-start gap-2.5 border p-3 text-[13px] leading-relaxed",
+        tone === "warn" ? "border-warn bg-you/20 text-night" : "border-ink-600 bg-ink-850 text-ink-200",
         className,
       )}
     >
-      {tone === "warn" ? <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-700" /> : <Info className="mt-px h-3.5 w-3.5 shrink-0 text-ink-300" />}
+      {tone === "warn" ? <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-warn" /> : <Info className="mt-px h-3.5 w-3.5 shrink-0 text-ink-300" />}
       <div>{children}</div>
     </div>
   );
@@ -329,7 +331,7 @@ export function Tip({ text, children }: { text: string; children?: React.ReactNo
         {children ?? <Info className="h-3.5 w-3.5" />}
       </button>
       {open && (
-        <span id={id} role="tooltip" className="absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-md bg-night p-2.5 text-xs leading-relaxed text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,.6)]">
+        <span id={id} role="tooltip" className="absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 bg-night p-2.5 text-xs leading-relaxed text-white">
           {text}
         </span>
       )}
@@ -346,16 +348,16 @@ export function Dialog({ open, onClose, title, children, footer }: { open: boole
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-100/30 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} className="panel rise w-full max-w-md overflow-hidden rounded-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between bg-night px-5 py-3.5 text-white">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-atlas/80 p-4" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={title} className="panel w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between bg-atlas px-5 py-3.5 text-white">
           <h2 className="font-display text-base">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="text-white/60 hover:text-white">
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="p-4 text-sm text-ink-200">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-black/[0.06] px-5 py-3">{footer}</div>}
+        {footer && <div className="flex justify-end gap-2 border-t border-ink-600 px-5 py-3">{footer}</div>}
       </div>
     </div>
   );
@@ -379,14 +381,14 @@ export function Metric({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-md border border-ink-100/[0.1] bg-white p-3.5 transition-colors hover:border-ink-100/30", className)}>
+    <div className={cn("border border-ink-600 bg-white p-3.5", className)}>
       <div className="flex items-start justify-between gap-2">
         <span className="label-mono min-w-0 leading-tight text-ink-400">{label}</span>
         {kind && <Evidence kind={kind} className="-mr-1 -mt-0.5 scale-90" />}
       </div>
-      <div className="num font-display mt-2.5 text-[24px] leading-none tracking-tight text-ink-100">{value}</div>
+      <div className="num font-display mt-2.5 text-[28px] leading-none text-ink-100">{value}</div>
       <div className="mt-1.5 flex items-center gap-2 text-xs">
-        {delta && <span className={cn("num", deltaGood === null || deltaGood === undefined ? "text-ink-300" : deltaGood ? "text-ok" : "text-red-700")}>{delta}</span>}
+        {delta && <span className={cn("num", deltaGood === null || deltaGood === undefined ? "text-ink-300" : deltaGood ? "text-ok" : "text-danger")}>{delta}</span>}
         {sub && <span className="text-ink-400">{sub}</span>}
       </div>
     </div>
@@ -395,14 +397,14 @@ export function Metric({
 
 export function Segmented<T extends string>({ value, options, onChange, className }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; className?: string }) {
   return (
-    <div role="radiogroup" className={cn("inline-flex rounded-md border border-ink-100/[0.12] bg-white p-0.5", className)}>
+    <div role="radiogroup" className={cn("inline-flex border border-night bg-white", className)}>
       {options.map((o) => (
         <button
           key={o.value}
           role="radio"
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
-          className={cn("rounded-sm px-3 py-1 text-xs font-medium transition-colors", value === o.value ? "bg-ink-100 text-white" : "text-ink-300 hover:text-ink-100")}
+          className={cn("px-3 py-1.5 text-[13px] font-medium transition-colors", value === o.value ? "bg-atlas text-white" : "text-ink-300 hover:text-ink-100")}
         >
           {o.label}
         </button>
@@ -413,7 +415,7 @@ export function Segmented<T extends string>({ value, options, onChange, classNam
 
 export function DemoBanner() {
   return (
-    <div className="flex items-center gap-2 border-b border-warn/30 bg-warn/[0.08] px-4 py-1.5 text-xs font-medium text-warn">
+    <div className="flex items-center gap-2 border-b border-night bg-you px-4 py-1.5 text-[13px] font-medium text-night">
       <AlertTriangle className="h-3.5 w-3.5" />
       Demo scenario: illustrative market data, not verified live conditions.
     </div>

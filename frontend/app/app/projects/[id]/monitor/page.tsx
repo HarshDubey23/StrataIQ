@@ -92,7 +92,7 @@ export default function MonitorPage() {
                       <td className="num text-right">{a.error ? `${a.error.units_abs > 0 ? "+" : ""}${num(a.error.units_abs)} (${pct(a.error.units_pct)})` : "—"}</td>
                       <td className="num text-right">{money(a.revenue, { compact: true })}</td>
                       <td className="px-3"><Evidence kind="user" label="User-reported" /></td>
-                      <td><button aria-label={`Delete ${a.period}`} onClick={async () => { await api(`/projects/${p.id}/actual-outcomes/${a.period}`, { method: "DELETE" }); load(); }} className="px-2 text-ink-500 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></button></td>
+                      <td><button aria-label={`Delete ${a.period}`} onClick={async () => { await api(`/projects/${p.id}/actual-outcomes/${a.period}`, { method: "DELETE" }); load(); }} className="px-2 text-ink-500 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button></td>
                     </tr>
                   ))}
                 </tbody>

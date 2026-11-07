@@ -74,7 +74,7 @@ const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
   return { status: r.status, body: j };
 }, [path, method, body]);
 
-await step("landing", async () => { await page.goto(BASE); await page.getByRole("heading", { name: "See if your location wins before you sign." }).waitFor(); await page.waitForTimeout(6000); await shot("01-landing"); });
+await step("landing", async () => { await page.goto(BASE); await page.getByRole("heading", { name: "Know your numbers before you sign the lease." }).waitFor(); await page.waitForTimeout(6000); await shot("01-landing"); });
 await step("methodology", async () => { await page.goto(`${BASE}/methodology`); await page.getByRole("heading", { name: "How StrataIQ tests a location" }).waitFor(); });
 await step("sign up", async () => {
   await page.goto(`${BASE}/sign-up`);

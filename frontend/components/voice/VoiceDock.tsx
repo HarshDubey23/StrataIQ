@@ -974,7 +974,7 @@ function VoiceDockInner() {
           <div className="flex items-center gap-4 px-5 pt-5">
             <Orb level={level} phase={phase} size={64} />
             <div className="min-w-0 flex-1">
-              <div className="font-display text-xl font-medium tracking-tight" aria-live="polite">{statusText[phase]}</div>
+              <div className="font-display text-xl font-medium " aria-live="polite">{statusText[phase]}</div>
               <div className="mt-0.5 text-xs text-ink-400">
                 {engine === "realtime" ? "ElevenLabs realtime" : "Speko voice"} · {projectId ? "reading this project's live data" : "no project open"}
               </div>
@@ -1057,7 +1057,7 @@ function VoiceDockInner() {
 
       <button
         onClick={() => (open ? (active ? void stop() : void start()) : (setOpen(true), void start()))}
-        className="group pointer-events-auto flex items-center rounded-full border border-black/[0.08] bg-white/90 p-1.5 shadow-[0_1px_2px_rgba(13,16,40,.05),0_18px_40px_-16px_rgba(13,16,40,.35)] backdrop-blur-xl transition-[border-color,transform] duration-500 hover:-translate-y-0.5 hover:border-accent/40"
+        className="group pointer-events-auto flex items-center rounded-full border border-black/[0.08] bg-white/90 p-1.5 shadow-[0_1px_2px_rgba(13,16,40,.05),0_18px_40px_-16px_rgba(13,16,40,.35)] -xl transition-[border-color,transform] duration-500 hover:-translate-y-0.5 hover:border-accent/40"
         aria-label={active ? "Stop voice analyst" : "Talk to Strata, the voice analyst"}
         title="Talk to Strata · press V"
       >
@@ -1094,7 +1094,7 @@ function Orb({ level, phase, size }: { level: number; phase: Phase; size: number
         style={{
           inset: size * 0.12,
           background: "radial-gradient(circle at 35% 30%, #ffffff 0%, #c9d2ff 18%, #2F49FF 45%, #1d2366 85%, #0b0e2e 100%)",
-          boxShadow: "inset 0 -6px 14px rgba(0,0,0,.45), 0 0 24px rgba(47,73,255,.45)",
+          boxShadow: "inset 0 -6px 14px rgba(0,0,0,.45), 0 0 24px rgba(29,79,145,.45)",
           animation: phase === "idle" ? "orb-breathe 4s ease-in-out infinite" : undefined,
         }}
       />

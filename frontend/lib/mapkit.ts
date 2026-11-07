@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Map kit: the "night cartography" look shared by every map, plus a lazily
+ * Map kit: the fire-atlas look shared by every map, plus a lazily
  * loaded deck.gl overlay for real 3D data layers (competitor pillars,
  * population columns, demand arcs). deck.gl is imported on demand so it never
  * runs during server rendering and only ships to pages that draw a map.
@@ -12,18 +12,12 @@ export const STYLE_DARK = "https://tiles.openfreemap.org/styles/positron"; // li
 export const STYLE_FALLBACK = "https://tiles.openfreemap.org/styles/liberty";
 
 export const C = {
-  ground: "#eef0f4",
-  water: "#d2ddef",
-  park: "#e2ebdf",
-  road: "#ffffff",
-  roadMajor: "#ffffff",
-  label: "#6b7180",
-  you: [217, 58, 30] as [number, number, number],
-  youSoft: [138, 155, 255] as [number, number, number],
-  comp: [245, 158, 11] as [number, number, number],
-  agent: [229, 72, 77] as [number, number, number],
-  user: [124, 58, 237] as [number, number, number],
-  field: [101, 163, 13] as [number, number, number],
+  you: [242, 201, 76] as [number, number, number],
+  youSoft: [242, 201, 76] as [number, number, number],
+  comp: [233, 143, 134] as [number, number, number],
+  agent: [169, 196, 228] as [number, number, number],
+  user: [242, 201, 76] as [number, number, number],
+  field: [159, 203, 168] as [number, number, number],
 };
 
 export async function pickStyle(): Promise<string> {
@@ -44,12 +38,13 @@ function safe(fn: () => void) {
   }
 }
 
-/** Survey-blueprint palette for the landing city: one blue field, white line work. */
-export const BP = { field: "#0B1B3A", water: "#14306B", park: "#12284F", line: "#FFFFFF" };
+/** The atlas ground: blue field, white streets, pale blocks. Pink, yellow and stone are left for data. */
+export const BP = { field: "#1d4f91", water: "#163e75", park: "#2a5c9e", line: "#FFFFFF" };
 
-/** Landing look: the street as a blueprint. Fills vanish into the blue, roads become white lines,
- *  buildings become glassy pale-blue blocks with white footprints, labels go. */
-function blueprint(m: MLMap, layers: { id: string; type: string }[], minzoom: number) {
+/** Recolor the base style, extrude real OSM building footprints and light them. `labels` keeps street names (app maps). */
+export function enhanceMap(m: MLMap, opts: { buildingsMinZoom?: number; buildingOpacity?: number; labels?: boolean } = {}) {
+  const layers = m.getStyle().layers || [];
+  const minzoom = opts.buildingsMinZoom ?? 12.5;
   for (const l of layers) {
     const id = l.id.toLowerCase();
     if (l.type === "background") safe(() => m.setPaintProperty(l.id, "background-color", BP.field));
@@ -61,97 +56,40 @@ function blueprint(m: MLMap, layers: { id: string; type: string }[], minzoom: nu
       if (/road|highway|street|tunnel|bridge|path|rail/.test(id)) {
         const major = /motorway|trunk|primary|major/.test(id);
         safe(() => m.setPaintProperty(l.id, "line-color", BP.line));
-        safe(() => m.setPaintProperty(l.id, "line-opacity", major ? 0.5 : 0.18));
+        safe(() => m.setPaintProperty(l.id, "line-opacity", major ? 0.75 : 0.32));
       } else if (!id.includes("water")) safe(() => m.setLayoutProperty(l.id, "visibility", "none"));
-    } else if (l.type === "symbol") safe(() => m.setLayoutProperty(l.id, "visibility", "none"));
-  }
-  if (!m.getSource("openmaptiles")) return;
-  safe(() =>
-    m.addLayer({
-      id: "siq-bp-footprints", source: "openmaptiles", "source-layer": "building", type: "line", minzoom,
-      paint: { "line-color": BP.line, "line-width": 0.6, "line-opacity": 0.45 },
-    }),
-  );
-  safe(() =>
-    m.addLayer({
-      id: "siq-3d-buildings", source: "openmaptiles", "source-layer": "building", type: "fill-extrusion", minzoom,
-      paint: {
-        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#5068ff", 20, "#7b8dff", 60, "#a9b5ff", 160, "#e4e8ff"],
-        "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], minzoom, 0, minzoom + 1.5, ["coalesce", ["get", "render_height"], 6]],
-        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-        "fill-extrusion-opacity": 0.72,
-        "fill-extrusion-vertical-gradient": true,
-      },
-    }),
-  );
-  safe(() => m.setLight({ anchor: "map", color: "#ffffff", intensity: 0.42, position: [1.3, 210, 40] }));
-  const anyMap = m as unknown as { setSky?: (s: Record<string, unknown>) => void };
-  safe(() =>
-    anyMap.setSky?.({
-      "sky-color": BP.field, "horizon-color": "#8f9fff", "fog-color": BP.field,
-      "sky-horizon-blend": 0.5, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.25, "atmosphere-blend": 0.4,
-    }),
-  );
-}
-
-/** Recolour the base style, extrude real OSM building footprints and add lighting + atmosphere. */
-export function enhanceMap(m: MLMap, opts: { buildingsMinZoom?: number; buildingOpacity?: number; theme?: "light" | "blueprint" } = {}) {
-  const style = m.getStyle();
-  const layers = style.layers || [];
-  if (opts.theme === "blueprint") return blueprint(m, layers, opts.buildingsMinZoom ?? 12.5);
-  for (const l of layers) {
-    const id = l.id.toLowerCase();
-    if (l.type === "background") safe(() => m.setPaintProperty(l.id, "background-color", C.ground));
-    else if (l.type === "fill" && id.includes("water")) safe(() => m.setPaintProperty(l.id, "fill-color", C.water));
-    else if (l.type === "fill" && (id.includes("park") || id.includes("landcover") || id.includes("wood") || id.includes("grass")))
-      safe(() => m.setPaintProperty(l.id, "fill-color", C.park));
-    else if (l.type === "fill" && id.includes("building")) safe(() => m.setLayoutProperty(l.id, "visibility", "none"));
-    else if (l.type === "line" && (id.includes("road") || id.includes("highway") || id.includes("street") || id.includes("tunnel") || id.includes("bridge"))) {
-      const major = /motorway|trunk|primary|major/.test(id);
-      safe(() => m.setPaintProperty(l.id, "line-color", major ? C.roadMajor : C.road));
     } else if (l.type === "symbol") {
-      safe(() => m.setPaintProperty(l.id, "text-color", C.label));
-      safe(() => m.setPaintProperty(l.id, "text-halo-color", C.ground));
-      safe(() => m.setPaintProperty(l.id, "text-halo-width", 1.4));
+      if (!opts.labels) safe(() => m.setLayoutProperty(l.id, "visibility", "none"));
+      else {
+        safe(() => m.setPaintProperty(l.id, "text-color", "#ffffff"));
+        safe(() => m.setPaintProperty(l.id, "text-halo-color", BP.field));
+        safe(() => m.setPaintProperty(l.id, "text-halo-width", 1.4));
+      }
     }
   }
-  const firstSymbol = layers.find((l) => l.type === "symbol")?.id;
   if (m.getSource("openmaptiles") && !m.getLayer("siq-3d-buildings")) {
     safe(() =>
       m.addLayer(
         {
-          id: "siq-3d-buildings",
-          source: "openmaptiles",
-          "source-layer": "building",
-          type: "fill-extrusion",
-          minzoom: opts.buildingsMinZoom ?? 12.5,
+          id: "siq-3d-buildings", source: "openmaptiles", "source-layer": "building", type: "fill-extrusion", minzoom,
           paint: {
-            "fill-extrusion-color": [
-              "interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6],
-              0, "#f8f9fb", 12, "#eef0f4", 30, "#e3e6ec", 80, "#d5d9e1", 200, "#c4c9d3",
-            ],
-            "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 14, ["coalesce", ["get", "render_height"], 6]],
+            "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#8fb0da", 20, "#b4cbe7", 60, "#d6e3f2", 160, "#f7f8fa"],
+            "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], minzoom, 0, minzoom + 1.5, ["coalesce", ["get", "render_height"], 6]],
             "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-            "fill-extrusion-opacity": opts.buildingOpacity ?? 0.92,
-            "fill-extrusion-vertical-gradient": true,
+            "fill-extrusion-opacity": opts.buildingOpacity ?? 0.9,
+            "fill-extrusion-vertical-gradient": false,
           },
         },
-        firstSymbol,
+        opts.labels ? layers.find((l) => l.type === "symbol")?.id : undefined,
       ),
     );
   }
-  // low sun from the side gives the white blocks readable faces
-  safe(() => m.setLight({ anchor: "map", color: "#ffffff", intensity: 0.5, position: [1.3, 210, 40] }));
+  safe(() => m.setLight({ anchor: "map", color: "#ffffff", intensity: 0.42, position: [1.3, 210, 40] }));
   const anyMap = m as unknown as { setSky?: (s: Record<string, unknown>) => void };
   safe(() =>
     anyMap.setSky?.({
-      "sky-color": "#dfe6f6",
-      "horizon-color": "#eef1f7",
-      "fog-color": "#F3F4F7",
-      "sky-horizon-blend": 0.6,
-      "horizon-fog-blend": 0.7,
-      "fog-ground-blend": 0.35,
-      "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 12, 0.6, 16, 0.3],
+      "sky-color": BP.water, "horizon-color": BP.field, "fog-color": BP.field,
+      "sky-horizon-blend": 0.5, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.25, "atmosphere-blend": 0.4,
     }),
   );
 }
@@ -188,7 +126,7 @@ export async function attachDeck(m: MLMap): Promise<DeckHandle | null> {
       layers: [],
       getTooltip: (info: { object?: unknown }) => {
         const t = tip?.(info);
-        return t ? { text: t, style: { background: "rgba(255,255,255,.97)", color: "#131312", border: "1px solid rgba(0,0,0,.08)", borderRadius: "8px", fontSize: "12px", padding: "6px 9px", fontFamily: "var(--font-inter-tight), sans-serif" } } : null;
+        return t ? { text: t, style: { background: "#f7f8fa", color: "#0f1f3d", border: "1px solid #0f1f3d", borderRadius: "0", fontSize: "13px", padding: "6px 9px", fontFamily: "var(--font-inter-tight), sans-serif" } } : null;
       },
     } as ConstructorParameters<DeckMods["MapboxOverlay"]>[0]);
     m.addControl(overlay as unknown as IControl);
@@ -211,24 +149,10 @@ export async function attachDeck(m: MLMap): Promise<DeckHandle | null> {
   }
 }
 
-/** colour ramp for population columns: pale cobalt → cobalt → red */
+/** Ramp for population columns on the blue ground: stone to white. */
 export function popColor(t: number, alpha = 150): [number, number, number, number] {
   const s = Math.max(0, Math.min(1, t));
-  const stops: [number, [number, number, number]][] = [
-    [0, [214, 220, 255]],
-    [0.45, [120, 140, 255]],
-    [0.75, [217, 58, 30]],
-    [1, [229, 72, 77]],
-  ];
-  for (let i = 1; i < stops.length; i++) {
-    if (s <= stops[i][0]) {
-      const [a0, c0] = stops[i - 1];
-      const [a1, c1] = stops[i];
-      const k = (s - a0) / (a1 - a0);
-      return [c0[0] + (c1[0] - c0[0]) * k, c0[1] + (c1[1] - c0[1]) * k, c0[2] + (c1[2] - c0[2]) * k, alpha];
-    }
-  }
-  return [229, 72, 77, alpha];
+  return [169 + 78 * s, 196 + 52 * s, 228 + 22 * s, alpha];
 }
 
 export function metersPerZoneRadius(spacingKm: number | undefined | null): number {

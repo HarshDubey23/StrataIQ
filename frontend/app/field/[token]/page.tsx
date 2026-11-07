@@ -59,7 +59,7 @@ export default function FieldApp() {
   const done = b.checklist.filter((t) => (b.counts[t.kind] ?? 0) >= t.target).length;
   return (
     <div className="mx-auto min-h-screen max-w-md pb-16">
-      <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-ink-950/90 px-5 pb-3 pt-4 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-ink-950/90 px-5 pb-3 pt-4 -xl">
         <div className="flex items-center gap-2.5">
           <LogoMark size={22} />
           <span className="text-[13px] font-medium">StrataIQ Field</span>
@@ -67,7 +67,7 @@ export default function FieldApp() {
             <span className="h-1.5 w-1.5 rounded-full bg-field" /> {b.request.status === "submitted" ? "Submitted" : "Collecting"}
           </span>
         </div>
-        <h1 className="font-display mt-3 text-[22px] font-medium leading-tight tracking-tight">{b.project.category} · {b.project.name}</h1>
+        <h1 className="font-display mt-3 text-[22px] font-medium leading-tight ">{b.project.category} · {b.project.name}</h1>
         {b.location && (
           <a href={`https://www.google.com/maps/search/?api=1&query=${b.location.lat},${b.location.lng}`} target="_blank" rel="noreferrer" className="mt-1 flex items-center gap-1.5 text-xs text-ink-400 hover:text-ink-100">
             <MapPin className="h-3.5 w-3.5 text-accent" /> {b.location.address || `${b.location.lat.toFixed(4)}, ${b.location.lng.toFixed(4)}`}{b.location.radius_km ? ` · within ${b.location.radius_km} km` : ""}

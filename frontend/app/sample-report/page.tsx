@@ -16,9 +16,9 @@ export default function SampleReport() {
       <div className="no-print mx-auto mb-6 max-w-4xl">
         <div className="flex items-center justify-between gap-3">
           <Link href="/" className="font-display text-2xl font-medium">StrataIQ</Link>
-          <button onClick={() => window.print()} className="min-h-11 bg-accent px-5 text-[16px] font-medium text-white">Download PDF</button>
+          <button onClick={() => window.print()} className="min-h-11 border border-night bg-you px-5 text-[16px] font-semibold text-night hover:bg-you-deep">Download PDF</button>
         </div>
-        <p className="mt-3 bg-night p-4 text-[17px] leading-snug text-white">
+        <p className="mt-3 bg-atlas p-4 text-[17px] leading-snug text-white">
           This is a sample report. The market data is real and was loaded live for South Austin; the prices and costs are example inputs, not a real business.{" "}
           <Link href="/" className="whitespace-nowrap font-medium underline underline-offset-4">Test your own location</Link>
         </p>

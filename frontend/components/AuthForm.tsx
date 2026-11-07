@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
-import { Logo } from "@/components/brand";
+import { AtlasKey, BlockPlan, Logo } from "@/components/brand";
 import { Button, ErrorState, Field, Input } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import type { Project, User } from "@/lib/types";
@@ -80,16 +80,24 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+    <div className="grid min-h-screen bg-paper lg:grid-cols-[1.15fr_1fr]">
+      <div className="relative hidden overflow-hidden border-r border-night bg-atlas lg:block">
+        <BlockPlan seed={14} cols={8} rows={8} className="absolute inset-0 h-full w-full" />
+        <div className="sheet absolute bottom-6 left-6 w-72 p-4">
+          <p className="font-display text-[22px] leading-tight">Every block tells you something. Every number says where it came from.</p>
+          <AtlasKey className="mt-4" />
+        </div>
+      </div>
+      <div className="flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8">
           <Logo />
         </div>
-        <form onSubmit={submit} className="space-y-5 bg-white p-8 text-ink-100" noValidate>
+        <form onSubmit={submit} className="space-y-5 text-ink-100" noValidate>
           <div>
-            <h1 className="font-display text-4xl font-medium leading-none tracking-[-0.03em]">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
-            <p className="mt-1 text-sm text-ink-300">
-              {demo ? "Sign in to open the labeled demo scenario." : mode === "sign-up" ? "Start testing business ideas against a model of the real market." : "Welcome back."}
+            <h1 className="font-display text-[44px] leading-none">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
+            <p className="mt-2 text-[15px] text-ink-300">
+              {demo ? "Sign in to open the labeled demo scenario." : mode === "sign-up" ? "Test a location before you sign the lease." : "Welcome back."}
             </p>
           </div>
           {error && <ErrorState message={error} />}
@@ -104,27 +112,28 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           <Field label="Password" htmlFor="password" error={errors.password} hint={mode === "sign-up" ? "At least 8 characters. Stored only as a salted bcrypt hash." : undefined}>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "sign-up" ? "new-password" : "current-password"} required />
           </Field>
-          <Button type="submit" variant="primary" className="w-full" loading={busy}>
+          <Button type="submit" variant="next" size="lg" className="w-full" loading={busy}>
             {mode === "sign-up" ? "Create account" : "Sign in"}
           </Button>
           <button
             type="button"
             onClick={guest}
-            className="w-full rounded-md border border-ink-100/15 py-2.5 text-sm font-semibold text-ink-200 transition-colors hover:border-ink-100 hover:bg-ink-100 hover:text-white"
+            className="h-12 w-full border border-night bg-white text-sm font-semibold text-night transition-colors hover:bg-ink-800"
           >
             Continue as guest
           </button>
-          <p className="text-center text-xs text-ink-400">
+          <p className="text-center text-[14px] text-ink-300">
             {mode === "sign-up" ? (
-              <>Already have an account? <Link className="text-accent hover:underline" href={`/sign-in${demo ? "?demo=1" : ""}`}>Sign in</Link></>
+              <>Already have an account? <Link className="font-medium text-atlas underline underline-offset-4" href={`/sign-in${demo ? "?demo=1" : ""}`}>Sign in</Link></>
             ) : (
-              <>New here? <Link className="text-accent hover:underline" href={`/sign-up${demo ? "?demo=1" : ""}`}>Create an account</Link></>
+              <>New here? <Link className="font-medium text-atlas underline underline-offset-4" href={`/sign-up${demo ? "?demo=1" : ""}`}>Create an account</Link></>
             )}
           </p>
           {mode === "sign-in" && (
-            <p className="text-center text-[11px] text-ink-500">Forgot your password? Contact support and we will help you get back in.</p>
+            <p className="text-center text-[13px] text-ink-400">Forgot your password? Contact support and we will help you get back in.</p>
           )}
         </form>
+      </div>
       </div>
     </div>
   );

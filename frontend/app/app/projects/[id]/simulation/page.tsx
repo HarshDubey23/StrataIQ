@@ -175,7 +175,7 @@ export default function SimulationLab() {
               {s.name}
               {s.is_baseline && <span className="ml-1 opacity-60">(baseline)</span>}
               {!s.latest_run && <span className="ml-1 opacity-60">· not run</span>}
-              {s.latest_run?.stale && <span className="ml-1 text-amber-700">· changed</span>}
+              {s.latest_run?.stale && <span className="ml-1 text-warn">· changed</span>}
             </button>
           ))}
         </div>
@@ -199,7 +199,7 @@ export default function SimulationLab() {
             ) : (
               <button onClick={() => setRenaming(true)} className="font-display truncate text-left text-lg hover:text-accent" title="Rename">{sel.name}</button>
             )}
-            {!sel.is_baseline && <button onClick={() => setDelOpen(true)} aria-label="Delete scenario" className="text-ink-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>}
+            {!sel.is_baseline && <button onClick={() => setDelOpen(true)} aria-label="Delete scenario" className="text-ink-500 hover:text-danger"><Trash2 className="h-4 w-4" /></button>}
           </div>
 
           <Field label="Location">
@@ -295,7 +295,7 @@ export default function SimulationLab() {
             </div>
           </details>
 
-          <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-ink-100/10 bg-white/90 p-3 backdrop-blur-xl">
+          <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-ink-100/10 bg-white/90 p-3 -xl">
             <Button variant="secondary" size="sm" onClick={save} loading={saving} disabled={!dirty}><Save className="h-3.5 w-3.5" /> Save</Button>
             <Button variant="primary" className="flex-1" onClick={run} loading={running} disabled={!hasSnapshot}>
               <Play className="h-4 w-4" /> {res && !dirty && !stale ? "Recalculate" : "Run simulation"}
@@ -304,7 +304,7 @@ export default function SimulationLab() {
           {!hasSnapshot && market && (
             <Notice tone="warn">No market data for this location yet. <Link className="text-accent underline" href={`/app/projects/${p.id}/market`}>Load it on the Market map</Link>.</Notice>
           )}
-          {(dirty || stale) && res && <p className="text-xs text-amber-700">Inputs changed since the last run. Results shown are from the previous run.</p>}
+          {(dirty || stale) && res && <p className="text-xs text-warn">Inputs changed since the last run. Results shown are from the previous run.</p>}
         </aside>
 
         {/* CENTER: map + analysis */}
@@ -385,8 +385,8 @@ export default function SimulationLab() {
                           <tr key={s.label} className="border-t border-black/[0.06]">
                             <td className="py-2">{s.label}</td>
                             <td className="num text-right">{num(s.units)}</td>
-                            <td className={cn("num text-right", s.profit < 0 && "text-red-700")}>{money(s.profit)}</td>
-                            <td className={cn("num text-right", s.delta_profit < 0 ? "text-red-700" : "text-emerald-700")}>{money(s.delta_profit, { sign: true })}</td>
+                            <td className={cn("num text-right", s.profit < 0 && "text-danger")}>{money(s.profit)}</td>
+                            <td className={cn("num text-right", s.delta_profit < 0 ? "text-danger" : "text-ok")}>{money(s.delta_profit, { sign: true })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -469,7 +469,7 @@ export default function SimulationLab() {
                 <Metric
                   label="Operating profit / mo"
                   className="col-span-2"
-                  value={<span className={res.finance.operating_profit < 0 ? "text-red-700" : "text-emerald-700"}>{money(res.finance.operating_profit)}</span>}
+                  value={<span className={res.finance.operating_profit < 0 ? "text-danger" : "text-ok"}>{money(res.finance.operating_profit)}</span>}
                   kind="model"
                   delta={d(res.finance.operating_profit, baseRes?.finance.operating_profit) !== null ? money(d(res.finance.operating_profit, baseRes?.finance.operating_profit), { sign: true }) : null}
                   deltaGood={(d(res.finance.operating_profit, baseRes?.finance.operating_profit) ?? 0) >= 0}

@@ -17,32 +17,32 @@ export interface ReportContent {
 
 function H({ children }: { n: number; children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 mt-10 break-after-avoid font-display text-2xl font-medium tracking-[-0.02em] text-ink-100">
+    <h2 className="mb-3 mt-10 break-after-avoid font-display text-[28px] text-ink-100">
       {children}
     </h2>
   );
 }
 
 const VERDICT: Record<string, { label: string; tone: string }> = {
-  potentially_viable: { label: "Looks viable under these inputs", tone: "bg-ok" },
-  financially_challenging: { label: "Financially challenging as planned", tone: "bg-danger" },
-  high_uncertainty: { label: "Too uncertain to call yet", tone: "bg-warn" },
+  potentially_viable: { label: "Can work under these inputs", tone: "bg-moss" },
+  financially_challenging: { label: "Loses money as planned", tone: "bg-brick" },
+  high_uncertainty: { label: "Too uncertain to call yet", tone: "bg-you" },
 };
 
 function Kpi({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="bg-ink-900 p-4">
-      <div className="text-xs text-ink-300">{label}</div>
-      <div className="mt-1 font-display text-2xl font-medium tracking-[-0.02em] text-ink-100">{value}</div>
-      {note && <div className="mt-1 text-xs text-ink-400">{note}</div>}
+    <div className="border-b border-r border-night bg-white p-4">
+      <div className="text-[13px] text-ink-300">{label}</div>
+      <div className="num mt-1 font-display text-[30px] leading-none text-ink-100">{value}</div>
+      {note && <div className="mt-1.5 text-[12px] text-ink-400">{note}</div>}
     </div>
   );
 }
 
 function ChartCard({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
   return (
-    <section className="break-inside-avoid bg-ink-900 p-4">
-      <h3 className="text-sm font-semibold text-ink-100">{title}</h3>
+    <section className="break-inside-avoid border border-ink-600 bg-white p-4">
+      <h3 className="font-display text-[19px] text-ink-100">{title}</h3>
       <p className="mb-3 mt-0.5 text-xs text-ink-400">{note}</p>
       {children}
     </section>
@@ -55,8 +55,8 @@ function ShareBars({ data }: { data: Record<string, number | null | undefined> }
     <ul className="space-y-2 text-xs">
       {rows.map(([k, v]) => (
         <li key={k}>
-          <div className="flex justify-between"><span className="capitalize">{k.replaceAll("_", " ")}</span><span className="num font-medium">{pct(Number(v))}</span></div>
-          <div className="mt-0.5 h-2 bg-ink-800"><div className="h-2 bg-data" style={{ width: `${Number(v) * 100}%` }} /></div>
+          <div className="flex justify-between"><span className="capitalize">{({ two_wheeler: "motorcycle", auto: "taxi" } as Record<string, string>)[k] ?? k.replaceAll("_", " ")}</span><span className="num font-medium">{pct(Number(v))}</span></div>
+          <div className="mt-0.5 h-2 border border-night bg-white"><div className="h-full bg-stone" style={{ width: `${Number(v) * 100}%` }} /></div>
         </li>
       ))}
     </ul>
@@ -73,8 +73,8 @@ function BottomLine({ c }: { c: ReportContent }) {
   const risk = d.risks.find((x) => x.factor !== "Data gap");
   const steps = d.next_actions.slice(0, 3);
   return (
-    <section className="mt-10 break-inside-avoid bg-night p-6 text-white">
-      <h2 className="font-display text-3xl font-medium tracking-[-0.02em]">Bottom line and what to do</h2>
+    <section className="mt-10 break-inside-avoid bg-atlas p-6 text-white">
+      <h2 className="font-display text-[32px] leading-tight">Bottom line and what to do</h2>
       <p className="mt-3 text-[15px] leading-relaxed">
         {d.headline} Under the best plan tested, &ldquo;{best!.scenario.name}&rdquo;, the model puts a typical month at {money(mc?.profit?.p50 ?? r.finance.operating_profit)}{mc ? `, within a range of ${money(mc.profit.p10)} to ${money(mc.profit.p90)}, with a ${pct(mc.prob_loss)} chance of a monthly loss` : ""}.
         {r.finance.payback_months ? ` Startup costs would pay back in about ${num(r.finance.payback_months, 1)} months.` : " Startup costs do not pay back on these inputs."}
@@ -85,7 +85,7 @@ function BottomLine({ c }: { c: ReportContent }) {
           {steps.map((a, i) => <li key={i}><b>{a.action}</b> {a.why}</li>)}
         </ol>
       )}
-      <p className="mt-4 text-xs text-white/80">Before you sign, replace the example costs with real quotes and check the street in person.</p>
+      <p className="mt-4 text-[13px] text-white">Before you sign, replace the example costs with real quotes and check the street in person.</p>
     </section>
   );
 }
@@ -107,15 +107,17 @@ function Executive({ c }: { c: ReportContent }) {
   const ramp = (abm?.weekly || []).map((w: any) => ({ ...w, units: (w.units / last) * (r.summary.modeled_demand_units / (membership ? 1 : 30 / 7)) }));
   return (
     <>
-      <div className={`mt-6 p-5 text-white ${verdict?.tone ?? "bg-night"}`}>
-        <div className="font-display text-2xl font-medium tracking-[-0.02em]">{verdict?.label ?? "Result"}</div>
+      <div className={`mt-6 border border-night p-5 text-night ${verdict?.tone ?? "bg-ink-800"}`}>
+        <div className="font-display text-[32px] leading-tight">{verdict?.label ?? "Result"}</div>
         <p className="mt-1 text-[15px] leading-snug">{d.headline}</p>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 border-l border-t border-night md:grid-cols-3">
         <Kpi label="Profit in a typical month" value={money(mc?.profit?.p50 ?? f.operating_profit)} note={mc ? `Range ${money(mc.profit.p10, { compact: true })} to ${money(mc.profit.p90, { compact: true })}` : undefined} />
-        <Kpi label={membership ? "Members to break even" : "Sales a day to break even"} value={f.break_even_units == null ? "Not reached" : num(membership ? f.break_even_units : f.break_even_units / 30)} note={`Forecast ${num(membership ? r.summary.modeled_demand_units : r.summary.modeled_demand_units / 30)}`} />
+        <Kpi label={membership ? "Members to break even" : "Sales a day to break even"} value={f.break_even_units == null ? "Not reached" : num(membership ? f.break_even_units : f.break_even_units / 30)} note={`At ${money(r.summary.price)} and your costs`} />
+        <Kpi label={membership ? "Members forecast" : "Sales a day forecast"} value={num(membership ? r.summary.modeled_demand_units : r.summary.modeled_demand_units / 30)} note="Planning estimate" />
         <Kpi label="Chance of a monthly loss" value={mc ? pct(mc.prob_loss) : "Not run"} note={mc ? `From ${num(mc.draws)} market scenarios` : undefined} />
-        <Kpi label="Payback on startup cost" value={f.payback_months ? `${num(f.payback_months, 1)} months` : "Not reached"} note={`Monthly revenue ${money(f.revenue, { compact: true })}`} />
+        <Kpi label="Payback on startup cost" value={f.payback_months ? `${num(f.payback_months, 1)} months` : "Not reached"} note={`${money(r.finance?.startup_cost ?? (best?.scenario as any)?.inputs?.startup_cost ?? 0, { compact: true })} to open`} />
+        <Kpi label="Monthly revenue" value={money(f.revenue, { compact: true })} note="Planning estimate" />
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {mc?.histogram && <ChartCard title="Range of monthly profit" note="Each bar is how often a profit level came up across market scenarios."><ProfitHistogram mc={mc} /></ChartCard>}
@@ -128,8 +130,8 @@ function Executive({ c }: { c: ReportContent }) {
       </div>
       {r.income && <div className="mt-3 break-inside-avoid"><IncomeMix income={r.income} price={r.summary.price} /></div>}
       {r.sensitivity?.stress_tests?.length > 0 && (
-        <section className="mt-3 break-inside-avoid bg-ink-900 p-4">
-          <h3 className="text-sm font-semibold text-ink-100">Stress tests</h3>
+        <section className="mt-3 break-inside-avoid border border-ink-600 bg-white p-4">
+          <h3 className="font-display text-[19px] text-ink-100">Stress tests</h3>
           <table className="mt-2 w-full text-xs">
             <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">If this happens</th><th className="text-right font-normal">Sales</th><th className="text-right font-normal">Profit / month</th><th className="text-right font-normal">Change</th></tr></thead>
             <tbody>{r.sensitivity.stress_tests.map((t: any) => <tr key={t.label} className="border-t border-black/[0.06]"><td className="py-1">{t.label}</td><td className="num text-right">{num(t.units)}</td><td className="num text-right">{money(t.profit)}</td><td className={`num text-right ${t.delta_profit < 0 ? "text-danger" : "text-ok"}`}>{money(t.delta_profit, { sign: true })}</td></tr>)}</tbody>
@@ -166,7 +168,7 @@ export function ReportView({ c }: { c: ReportContent }) {
   const ran = c.scenarios.filter((s) => s.result);
   return (
     <article className="print-light mx-auto max-w-4xl bg-ink-950 p-6 text-sm leading-relaxed text-ink-200 md:p-10">
-      {c.project.is_demo && <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-800">DEMO SCENARIO — Illustrative market data; not verified live conditions.</div>}
+      {c.project.is_demo && <div className="mb-4 rounded border border-amber-500/40 bg-you/200/10 px-3 py-2 text-xs font-medium text-amber-800">DEMO SCENARIO — Illustrative market data; not verified live conditions.</div>}
       <header>
         <div className="print-only font-display text-lg font-medium text-ink-100">StrataIQ</div>
         <h1 className="mt-5 font-display text-4xl font-medium leading-[1.02] tracking-[-0.03em] text-ink-100">{c.project.name}</h1>
@@ -190,7 +192,7 @@ export function ReportView({ c }: { c: ReportContent }) {
               <div className="font-medium text-ink-100">{l.label}</div>
               <div className="text-xs text-ink-300">{l.address}</div>
               <div className="text-xs">Catchment: {s?.catchment_method === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${distance(l.catchment.radius_km)} straight-line radius`}</div>
-              {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "user-entered" : s.population.source}; placement: {s.population.method})</div> : <div className="text-xs text-amber-700">Population unavailable</div>}
+              {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "user-entered" : s.population.source}; placement: {s.population.method})</div> : <div className="text-xs text-warn">Population unavailable</div>}
               {s && <div className="text-xs">Data coverage: {s.coverage.level} — {s.coverage.note}</div>}
             </div>
           </div>
@@ -208,7 +210,7 @@ export function ReportView({ c }: { c: ReportContent }) {
           )))}
         </tbody>
       </table>
-      {c.locations.some((l) => l.snapshot?.errors?.length) && <p className="mt-2 text-xs text-amber-700">Some sources failed: {c.locations.flatMap((l) => l.snapshot?.errors || []).map((e) => `${e.source} (${e.message})`).join("; ")}</p>}
+      {c.locations.some((l) => l.snapshot?.errors?.length) && <p className="mt-2 text-xs text-warn">Some sources failed: {c.locations.flatMap((l) => l.snapshot?.errors || []).map((e) => `${e.source} (${e.message})`).join("; ")}</p>}
 
       <H n={4}>Competitor overview</H>
       <p className="mb-2 text-xs text-ink-400">{c.competitors.filter((x) => x.active).length} active competitors ({c.competitors.filter((x) => x.source === "user").length} user-entered, {c.competitors.filter((x) => x.is_hypothetical).length} hypothetical). Prices are unknown unless recorded by the user.</p>

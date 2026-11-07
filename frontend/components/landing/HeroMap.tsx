@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Landing-page city, drawn as a survey blueprint: real OpenStreetMap buildings and roads, real
+ * Landing-page city, drawn as a fire atlas: real OpenStreetMap buildings and roads, real
  * competitors fetched live through the StrataIQ API, and an ILLUSTRATIVE crowd that walks to a shop.
  *
  * The camera is scrubbed by scroll: `progress` (0..5, a ref so scrolling never re-renders React) is
@@ -27,9 +27,9 @@ const CAMERAS: Cam[] = [
 ];
 
 const WHITE: [number, number, number] = [255, 255, 255];
-const INK: [number, number, number] = [0, 0, 0];
-const RED: [number, number, number] = [255, 75, 62];
-const HAZE: [number, number, number] = [170, 184, 255];
+const YOU: [number, number, number] = [242, 201, 76];
+const BRICK: [number, number, number] = [233, 143, 134];
+const STONE: [number, number, number] = [207, 224, 245];
 const rgba = (c: [number, number, number], a: number) => [c[0], c[1], c[2], a] as [number, number, number, number];
 
 function rand(seed: number) {
@@ -137,12 +137,14 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
         return;
       }
       map.current = m;
+      // the headline sheet covers the left side, so the site sits in the open part of the map
+      if (window.innerWidth >= 1024) m.setPadding({ left: Math.min(760, window.innerWidth * 0.5), top: 0, right: 0, bottom: 0 });
       // recolour as soon as the style is parsed (not after every tile), so the base style's grey never shows
       let painted = false;
       const paint = () => {
         if (painted || !m.isStyleLoaded()) return;
         painted = true;
-        enhanceMap(m, { buildingsMinZoom: 12, theme: "blueprint" });
+        enhanceMap(m, { buildingsMinZoom: 12 });
         requestAnimationFrame(() => setShown(true));
       };
       m.on("styledata", paint);
@@ -171,7 +173,7 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
           const t = (now / 22) % 1400;
           const pulse = (now / 12) % 260;
           const binMax = Math.max(1, ...S.bins.map((b) => b.n));
-          const pc = (p: Person) => (!choose ? rgba(RED, 235) : p.choice === "you" ? rgba(WHITE, 255) : p.choice === "rival" ? rgba(INK, 210) : rgba(HAZE, 120));
+          const pc = (p: Person) => (!choose ? rgba(STONE, 235) : p.choice === "you" ? rgba(YOU, 255) : p.choice === "rival" ? rgba(BRICK, 240) : rgba(STONE, 110));
           d?.setLayers((DL) => [
             new DL.ScatterplotLayer({
               id: "catchment", data: [S.spot], getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
@@ -187,7 +189,7 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
             }),
             showTrips && new DL.TripsLayer({
               id: "trips", data: S.walkers, getPath: (x: Person) => x.path, getTimestamps: (x: Person) => x.ts,
-              getColor: (x: Person) => (x.choice === "you" ? WHITE : INK), widthMinPixels: 2, trailLength: 80, currentTime: t,
+              getColor: (x: Person) => (x.choice === "you" ? YOU : BRICK), widthMinPixels: 2, trailLength: 80, currentTime: t,
               fadeTrail: true, capRounded: true, jointRounded: true, opacity: sc === 5 ? 0.5 : 0.9,
             }),
             new DL.ScatterplotLayer({
@@ -197,19 +199,19 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
               updateTriggers: { getRadius: showPeople, getFillColor: choose },
             }),
             new DL.ColumnLayer({
-              id: "comps", data: S.comps, diskResolution: 4, angle: 45, radius: 13, extruded: true, wireframe: true,
-              getPosition: (c: PreviewComp) => [c.lng, c.lat], getElevation: showComps ? 110 : 0,
-              getFillColor: rgba(INK, 235), getLineColor: rgba(WHITE, 150),
+              id: "comps", data: S.comps, diskResolution: 4, angle: 45, radius: 13, extruded: true, wireframe: true, material: false,
+              getPosition: (c: PreviewComp) => [c.lng, c.lat], getElevation: showComps ? 75 : 0,
+              getFillColor: rgba(BRICK, 255), getLineColor: [15, 31, 61, 255],
               transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: showComps },
             }),
             new DL.ScatterplotLayer({
               id: "site-ring", data: [S.spot], getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
-              getRadius: 40 + pulse, getFillColor: [0, 0, 0, 0], getLineColor: rgba(WHITE, Math.max(0, 230 - pulse * 0.88)),
+              getRadius: 40 + pulse, getFillColor: [0, 0, 0, 0], getLineColor: rgba(YOU, Math.max(0, 240 - pulse * 0.92)),
               stroked: true, filled: false, lineWidthMinPixels: 2, updateTriggers: { getRadius: now, getLineColor: now },
             }),
             new DL.ColumnLayer({
-              id: "site", data: [S.spot], diskResolution: 36, radius: 20, extruded: true,
-              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 5 ? 1100 : 640, getFillColor: rgba(WHITE, 255),
+              id: "site", data: [S.spot], diskResolution: 4, angle: 45, radius: 34, extruded: true, wireframe: true, material: false, getLineColor: [15, 31, 61, 255],
+              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 5 ? 420 : 260, getFillColor: rgba(YOU, 255),
               transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: sc === 5 },
             }),
           ].filter(Boolean));
