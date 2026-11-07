@@ -33,7 +33,7 @@ const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
 let pid = null;
 await step("landing", async () => {
   await page.goto(BASE);
-  await page.getByRole("heading", { name: "Test the location before you sign." }).waitFor({ timeout: 60000 });
+  await page.getByRole("heading", { name: "See if your location wins before you sign." }).waitFor({ timeout: 60000 });
   await shot("01-hero", 12000);
   for (const [i, id] of [[2, "real"], [3, "agents"], [5, "voice"]]) {
     await page.evaluate((x) => document.getElementById(x)?.scrollIntoView(), id);
