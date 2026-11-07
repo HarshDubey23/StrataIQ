@@ -7,6 +7,20 @@ on:
   workflow_dispatch:
 
 jobs:
+  docker-web:
+    # The production image once built the wrong root layout, which only showed on a real server.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t web ./frontend
+      - name: The image serves the landing page with its styles
+        run: |
+          docker run -d --name web -p 3000:3000 -e API_URL=http://127.0.0.1:9 web
+          for i in $(seq 1 30); do curl -sf -o page.html localhost:3000/ && break; sleep 2; done
+          grep -q 'See if your location wins before you sign.' page.html
+          css=$(grep -o '/_next/static/css/[^"]*' page.html | head -1)
+          test -n "$css" && curl -sf -o /dev/null "localhost:3000$css"
+
   backend:
     runs-on: ubuntu-latest
     services:

@@ -1,5 +1,5 @@
 FROM node:22-alpine AS build
-WORKDIR /app
+WORKDIR /srv/web
 ARG API_URL=http://api:8000
 ARG NEXT_PUBLIC_MARKET=US
 ARG NEXT_PUBLIC_CONTACT_EMAIL=
@@ -11,8 +11,8 @@ COPY . .
 RUN npm run build
 
 FROM node:22-alpine
-WORKDIR /app
+WORKDIR /srv/web
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
-COPY --from=build /app ./
+COPY --from=build /srv/web ./
 EXPOSE 3000
 CMD ["npm", "start"]
