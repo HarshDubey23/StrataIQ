@@ -88,6 +88,9 @@ def capabilities():
 
 # Public, cached preview for the landing page: real competitors around a famous street, no account needed.
 PREVIEW_SPOTS = {
+    "austin": {"label": "Downtown Austin, Texas", "lat": 30.2672, "lng": -97.7431},
+    "miami": {"label": "Wynwood, Miami, Florida", "lat": 25.8005, "lng": -80.1990},
+    "phoenix": {"label": "Downtown Phoenix, Arizona", "lat": 33.4484, "lng": -112.0740},
     "cp-delhi": {"label": "Connaught Place, New Delhi", "lat": 28.6315, "lng": 77.2167},
     "indiranagar": {"label": "Indiranagar, Bengaluru", "lat": 12.9719, "lng": 77.6412},
     "bandra": {"label": "Bandra West, Mumbai", "lat": 19.0596, "lng": 72.8295},
@@ -97,7 +100,7 @@ PREVIEW_CATS = {"gym", "cafe", "pizza", "restaurant", "pharmacy", "salon", "bake
 
 
 @router.get("/market/preview")
-async def preview(spot: str = Query(default="cp-delhi"), category: str = Query(default="cafe"), radius_m: int = Query(default=1600, ge=300, le=3000)):
+async def preview(spot: str = Query(default="austin"), category: str = Query(default="cafe"), radius_m: int = Query(default=1600, ge=300, le=3000)):
     if spot not in PREVIEW_SPOTS or category not in PREVIEW_CATS:
         raise HTTPException(404, "Unknown preview")
     sp = PREVIEW_SPOTS[spot]

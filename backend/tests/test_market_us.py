@@ -1,9 +1,13 @@
 import json
+import re
+from pathlib import Path
 import os
 import subprocess
 import sys
 
 from app.api import quickstart as qs
+from app.api.catalog import PREVIEW_CATS, PREVIEW_SPOTS
+from app.api.demo import LIVE_SPOTS_IN, LIVE_SPOTS_US
 from app.api.quickstart import parse_idea
 
 
@@ -61,3 +65,13 @@ print(json.dumps({
     assert r["spot"] == "austin"
     assert r["gym"] == 49
     assert r["rent"] == 7000
+
+
+def test_every_landing_place_and_business_works_on_the_backend():
+    """Regression: the landing page offered US places that the preview endpoint rejected."""
+    landing = Path(__file__).parents[2] / "frontend" / "components" / "landing"
+    spots = re.findall(r'key: "([\w-]+)", label', (landing / "spots.ts").read_text(encoding="utf-8"))
+    cats = re.findall(r'\{ key: "(\w+)", label: "', (landing / "Landing.tsx").read_text(encoding="utf-8"))
+    assert {"austin", "miami", "phoenix"} <= set(spots) and len(cats) >= 5
+    assert set(spots) <= set(PREVIEW_SPOTS) and set(spots) <= set(LIVE_SPOTS_US) | set(LIVE_SPOTS_IN)
+    assert set(cats) <= PREVIEW_CATS
