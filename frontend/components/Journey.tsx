@@ -4,7 +4,7 @@
  * Guidance for people who have never done a market study: a five-step journey with the next step always one
  * click away, a short welcome tour, and a plain-language glossary of every term the app uses.
  */
-import { BookA, Check, ChevronDown, ChevronRight, Crosshair, Footprints, Map as MapIcon, Mic, Users, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Crosshair, Footprints, Map as MapIcon, Mic, Users, X } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -118,6 +118,7 @@ export function Journey({ project }: { project: Project }) {
     { key: "live", seg: "/live", label: "Live market", hint: "10,000 agents choose you, a rival or nothing", done: ran && visited.includes("live") },
     { key: "lab", seg: "/simulation", label: "Simulation lab", hint: "Try prices, sites and budgets side by side", done: explored },
     { key: "decide", seg: "/decisions", label: "Decisions", hint: "Go / no-go and what could make it wrong", done: visited.includes("decisions") },
+    { key: "lease", seg: "/lease", label: "Lease Counter", hint: "Your walk-away rent, your personal risk and a counteroffer to send", done: visited.includes("lease") },
     { key: "report", seg: "/report", label: "Report", hint: "Share a feasibility report", done: visited.includes("report") },
   ];
   const next = steps.find((s) => !s.done);
@@ -126,12 +127,12 @@ export function Journey({ project }: { project: Project }) {
 
   return (
     <>
-      <div className="-mx-4 mt-4 flex items-end gap-3 pr-4 md:-mx-8 md:pr-8">
+      <div className="-mx-4 mt-4 flex flex-col-reverse gap-2 md:-mx-8 lg:flex-row lg:items-end lg:gap-3 lg:pr-8">
         <nav aria-label="Project steps" className="flex min-w-0 flex-1 items-end gap-px overflow-x-auto pl-4 [scrollbar-width:none] md:pl-8 [&::-webkit-scrollbar]:hidden">
           {steps.map((s, i) => {
             const active = path.startsWith(base + s.seg);
             return (
-              <Link key={s.key} href={base + s.seg} title={s.hint} aria-current={active ? "page" : undefined}
+              <Link key={s.key} href={base + s.seg} title={s.hint} aria-current={active ? "page" : undefined} ref={active ? (el) => el?.scrollIntoView({ block: "nearest", inline: "center" }) : undefined}
                 className={cn("relative flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-[14px] transition-colors duration-200", active ? "font-medium text-night" : "text-white hover:bg-atlas-deep")}>
                 {active && <motion.span layoutId="step-tab" className="absolute inset-0 bg-ink-950" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
                 {s.done && !active ? <Check className="relative h-3.5 w-3.5" aria-label="Done" /> : <span className="num relative text-[13px]">{i + 1}</span>}
@@ -141,7 +142,7 @@ export function Journey({ project }: { project: Project }) {
             );
           })}
         </nav>
-        <div className="flex shrink-0 items-center gap-1 pb-1.5">
+        <div className="flex shrink-0 items-center justify-end gap-1 px-4 lg:px-0 lg:pb-1.5">
           <div className="relative shrink-0">
             <button onClick={() => setMore((m) => !m)} aria-expanded={more} className="flex items-center gap-1 px-2.5 py-1.5 text-[13px] text-white hover:bg-atlas-deep">
               {moreActive?.label || "More"} <ChevronDown className="h-3.5 w-3.5" />
@@ -151,11 +152,11 @@ export function Journey({ project }: { project: Project }) {
                 {MORE.map((m) => (
                   <Link key={m.label} href={base + m.seg} className="block px-3 py-2 text-[14px] text-night hover:bg-ink-800">{m.label}</Link>
                 ))}
+                <button onClick={() => { setMore(false); setTour(true); }} className="block w-full border-t border-ink-600 px-3 py-2 text-left text-[14px] text-night hover:bg-ink-800">How it works</button>
+                <button onClick={() => { setMore(false); setWords(true); }} className="block w-full px-3 py-2 text-left text-[14px] text-night hover:bg-ink-800">Glossary</button>
               </div>
             )}
           </div>
-          <button onClick={() => setTour(true)} className="hidden px-2.5 py-1.5 text-[13px] text-white hover:bg-atlas-deep lg:inline-block">How it works</button>
-          <button onClick={() => setWords(true)} className="hidden items-center gap-1 px-2.5 py-1.5 text-[13px] text-white hover:bg-atlas-deep lg:inline-flex"><BookA className="h-3.5 w-3.5" /> Glossary</button>
           {next && (
             <Link href={base + next.seg} title={next.hint} className="group ml-1 inline-flex h-8 items-center gap-1.5 border border-night bg-you px-3 text-[13px] font-semibold text-night transition-colors hover:bg-you-deep">
               Next: {next.label} <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />

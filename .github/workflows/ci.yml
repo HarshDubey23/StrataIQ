@@ -121,6 +121,8 @@ jobs:
           npx tsc --noEmit 2>&1 | tee tsc.log
       - name: Lint
         run: npm run lint
+      - name: Lease math
+        run: npm run test:lease
       - name: Build
         run: |
           set -o pipefail

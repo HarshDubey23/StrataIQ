@@ -42,6 +42,7 @@ const PLAN: Fact[] = [
   { label: "Profit in a bad, normal and good month", detail: "A range across 800 market scenarios, including how often you would lose money, so you see the downside before you commit." },
   { label: "The price that earns you the most", detail: "Sales and profit at every price point, using the incomes of the people who actually live and work around your address." },
   { label: "Better spots nearby", detail: "We test other points around your address and show where the same plan performs better, and which rivals it avoids." },
+  { label: "Your walk-away rent and counteroffer", detail: "Enter the landlord's offer. See the rent your plan can carry, what you would personally owe if the business closed, and get a counteroffer letter ready to send." },
   { label: "The risks to check before you sign", detail: "The assumptions that move your profit most, in order, so you know exactly which quotes to get and what to check on the street." },
 ];
 

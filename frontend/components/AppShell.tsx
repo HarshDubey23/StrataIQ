@@ -86,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={{ user, caps }}>
       <div className="flex min-h-screen">
-        <div className="sticky top-0 hidden h-screen md:block">{side}</div>
+        <div className="no-print sticky top-0 hidden h-screen md:block">{side}</div>
         {open && (
           <div className="fixed inset-0 z-50 flex md:hidden">
             <div className="h-full">{side}</div>
@@ -94,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-14 items-center gap-3 bg-atlas px-4 text-white md:hidden">
+          <div className="no-print flex h-14 items-center gap-3 bg-atlas px-4 text-white md:hidden">
             <button onClick={() => setOpen((x) => !x)} aria-label="Menu" className="text-white">
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

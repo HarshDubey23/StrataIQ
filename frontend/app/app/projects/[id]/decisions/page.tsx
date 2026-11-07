@@ -132,7 +132,7 @@ export default function Decisions() {
             <CardHeader title="Scenario ranking" subtitle={`By ${d.objective_label}`} />
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
-                <thead><tr className="border-b border-black/[0.06] text-left text-xs text-ink-400"><th className="px-3 py-2 font-normal">#</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Units</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">P10</th><th className="text-right font-normal">P(loss)</th><th className="px-3 text-right font-normal">Payback</th></tr></thead>
+                <thead><tr className="border-b border-black/[0.06] text-left text-xs text-ink-400"><th className="px-3 py-2 font-normal">#</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Sales</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">Bad month</th><th className="text-right font-normal">Loss risk</th><th className="px-3 text-right font-normal">Payback</th></tr></thead>
                 <tbody>
                   {d.ranking.map((r) => (
                     <tr key={r.scenario_id} className={cn("border-b border-black/[0.06]/60", r.rank === 1 && "bg-accent-dim")}>
@@ -204,7 +204,7 @@ export default function Decisions() {
                   <div className="mt-1 h-1.5 rounded bg-ink-800"><div className={cn("h-1.5 rounded", x.spearman_rho >= 0 ? "bg-stone" : "bg-brick")} style={{ width: `${Math.abs(x.spearman_rho) * 100}%` }} /></div>
                 </div>
               ))}
-              <p className="mt-2 text-[11px] text-ink-500">Rank correlation with profit across Monte Carlo draws (model attribution, not causation).</p>
+              <p className="mt-2 text-[11px] text-ink-500">How closely each assumption moved with profit across market scenarios. It shows association, not cause.</p>
             </Card>
           )}
           <ButtonLink href={`/app/projects/${p.id}/report`} variant="next" size="lg" className="w-full">Create the report</ButtonLink>
