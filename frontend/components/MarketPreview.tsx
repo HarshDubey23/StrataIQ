@@ -32,7 +32,7 @@ export function MarketPreview() {
     roads.push(`M 0 ${30 + i * 50} L 600 ${10 + i * 52}`);
   }
   return (
-    <div className="relative overflow-hidden rounded-md border border-black/[0.07] bg-ink-900 shadow-2xl shadow-black/40">
+    <div className="relative overflow-hidden rounded-md border border-black/[0.07] bg-ink-900 shadow-black/40">
       <div className="flex items-center justify-between border-b border-black/[0.07] px-4 py-2 text-[11px] text-ink-300">
         <span className="font-medium text-ink-200">Market Reality Map</span>
         <span className="rounded border border-warn/40 bg-warn/10 px-1.5 py-px font-medium text-warn">Illustrative preview — not real data</span>

@@ -1,0 +1,581 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T10:57:50.407Z",
+  "title": "Design System: StrataIQ",
+  "extensions": {
+    "colorMeta": {
+      "atlas": {
+        "role": "primary",
+        "displayName": "Atlas Blue",
+        "canonical": "#1d4f91",
+        "approximation": "oklch(43.1% 0.121 256.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.121 256.8)",
+          "oklch(27.0% 0.121 256.8)",
+          "oklch(39.0% 0.121 256.8)",
+          "oklch(51.0% 0.121 256.8)",
+          "oklch(63.0% 0.121 256.8)",
+          "oklch(75.0% 0.121 256.8)",
+          "oklch(87.0% 0.121 256.8)",
+          "oklch(95.0% 0.121 256.8)"
+        ]
+      },
+      "atlas-deep": {
+        "role": "primary",
+        "displayName": "Atlas Deep",
+        "canonical": "#163e75",
+        "approximation": "oklch(36.8% 0.104 257.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.104 257.4)",
+          "oklch(27.0% 0.104 257.4)",
+          "oklch(39.0% 0.104 257.4)",
+          "oklch(51.0% 0.104 257.4)",
+          "oklch(63.0% 0.104 257.4)",
+          "oklch(75.0% 0.104 257.4)",
+          "oklch(87.0% 0.104 257.4)",
+          "oklch(95.0% 0.104 257.4)"
+        ]
+      },
+      "atlas-park": {
+        "role": "primary",
+        "displayName": "Atlas Park",
+        "canonical": "#2a5c9e",
+        "approximation": "oklch(47.5% 0.120 256.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.120 256.4)",
+          "oklch(27.0% 0.120 256.4)",
+          "oklch(39.0% 0.120 256.4)",
+          "oklch(51.0% 0.120 256.4)",
+          "oklch(63.0% 0.120 256.4)",
+          "oklch(75.0% 0.120 256.4)",
+          "oklch(87.0% 0.120 256.4)",
+          "oklch(95.0% 0.120 256.4)"
+        ]
+      },
+      "brick": {
+        "role": "secondary",
+        "displayName": "Brick Pink",
+        "canonical": "#e98f86",
+        "approximation": "oklch(74.1% 0.111 26.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.111 26.2)",
+          "oklch(27.0% 0.111 26.2)",
+          "oklch(39.0% 0.111 26.2)",
+          "oklch(51.0% 0.111 26.2)",
+          "oklch(63.0% 0.111 26.2)",
+          "oklch(75.0% 0.111 26.2)",
+          "oklch(87.0% 0.111 26.2)",
+          "oklch(95.0% 0.111 26.2)"
+        ]
+      },
+      "you": {
+        "role": "secondary",
+        "displayName": "Frame Yellow",
+        "canonical": "#f2c94c",
+        "approximation": "oklch(85.0% 0.146 90.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.146 90.5)",
+          "oklch(27.0% 0.146 90.5)",
+          "oklch(39.0% 0.146 90.5)",
+          "oklch(51.0% 0.146 90.5)",
+          "oklch(63.0% 0.146 90.5)",
+          "oklch(75.0% 0.146 90.5)",
+          "oklch(87.0% 0.146 90.5)",
+          "oklch(95.0% 0.146 90.5)"
+        ]
+      },
+      "you-deep": {
+        "role": "secondary",
+        "displayName": "Frame Yellow Deep",
+        "canonical": "#e3b52f",
+        "approximation": "oklch(79.3% 0.149 88.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.149 88.3)",
+          "oklch(27.0% 0.149 88.3)",
+          "oklch(39.0% 0.149 88.3)",
+          "oklch(51.0% 0.149 88.3)",
+          "oklch(63.0% 0.149 88.3)",
+          "oklch(75.0% 0.149 88.3)",
+          "oklch(87.0% 0.149 88.3)",
+          "oklch(95.0% 0.149 88.3)"
+        ]
+      },
+      "stone": {
+        "role": "secondary",
+        "displayName": "Pale Stone",
+        "canonical": "#a9c4e4",
+        "approximation": "oklch(81.1% 0.054 252.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.054 252.8)",
+          "oklch(27.0% 0.054 252.8)",
+          "oklch(39.0% 0.054 252.8)",
+          "oklch(51.0% 0.054 252.8)",
+          "oklch(63.0% 0.054 252.8)",
+          "oklch(75.0% 0.054 252.8)",
+          "oklch(87.0% 0.054 252.8)",
+          "oklch(95.0% 0.054 252.8)"
+        ]
+      },
+      "moss": {
+        "role": "secondary",
+        "displayName": "Street Moss",
+        "canonical": "#9fcba8",
+        "approximation": "oklch(80.1% 0.068 150.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.068 150.8)",
+          "oklch(27.0% 0.068 150.8)",
+          "oklch(39.0% 0.068 150.8)",
+          "oklch(51.0% 0.068 150.8)",
+          "oklch(63.0% 0.068 150.8)",
+          "oklch(75.0% 0.068 150.8)",
+          "oklch(87.0% 0.068 150.8)",
+          "oklch(95.0% 0.068 150.8)"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Verdict Green",
+        "canonical": "#1e7a46",
+        "approximation": "oklch(51.4% 0.117 153.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.117 153.6)",
+          "oklch(27.0% 0.117 153.6)",
+          "oklch(39.0% 0.117 153.6)",
+          "oklch(51.0% 0.117 153.6)",
+          "oklch(63.0% 0.117 153.6)",
+          "oklch(75.0% 0.117 153.6)",
+          "oklch(87.0% 0.117 153.6)",
+          "oklch(95.0% 0.117 153.6)"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Verdict Red",
+        "canonical": "#b3261e",
+        "approximation": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.178 28.7)",
+          "oklch(27.0% 0.178 28.7)",
+          "oklch(39.0% 0.178 28.7)",
+          "oklch(51.0% 0.178 28.7)",
+          "oklch(63.0% 0.178 28.7)",
+          "oklch(75.0% 0.178 28.7)",
+          "oklch(87.0% 0.178 28.7)",
+          "oklch(95.0% 0.178 28.7)"
+        ]
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0f1f3d",
+        "approximation": "oklch(24.4% 0.061 261.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.061 261.8)",
+          "oklch(27.0% 0.061 261.8)",
+          "oklch(39.0% 0.061 261.8)",
+          "oklch(51.0% 0.061 261.8)",
+          "oklch(63.0% 0.061 261.8)",
+          "oklch(75.0% 0.061 261.8)",
+          "oklch(87.0% 0.061 261.8)",
+          "oklch(95.0% 0.061 261.8)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Map Sheet",
+        "canonical": "#f7f8fa",
+        "approximation": "oklch(97.9% 0.003 264.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.003 264.5)",
+          "oklch(27.0% 0.003 264.5)",
+          "oklch(39.0% 0.003 264.5)",
+          "oklch(51.0% 0.003 264.5)",
+          "oklch(63.0% 0.003 264.5)",
+          "oklch(75.0% 0.003 264.5)",
+          "oklch(87.0% 0.003 264.5)",
+          "oklch(95.0% 0.003 264.5)"
+        ]
+      },
+      "ink-900": {
+        "role": "neutral",
+        "displayName": "White",
+        "canonical": "#ffffff",
+        "approximation": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(27.0% 0.000 89.9)",
+          "oklch(39.0% 0.000 89.9)",
+          "oklch(51.0% 0.000 89.9)",
+          "oklch(63.0% 0.000 89.9)",
+          "oklch(75.0% 0.000 89.9)",
+          "oklch(87.0% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "ink-950": {
+        "role": "neutral",
+        "displayName": "Cool Page",
+        "canonical": "#eef2f6",
+        "approximation": "oklch(95.9% 0.007 247.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.007 247.9)",
+          "oklch(27.0% 0.007 247.9)",
+          "oklch(39.0% 0.007 247.9)",
+          "oklch(51.0% 0.007 247.9)",
+          "oklch(63.0% 0.007 247.9)",
+          "oklch(75.0% 0.007 247.9)",
+          "oklch(87.0% 0.007 247.9)",
+          "oklch(95.0% 0.007 247.9)"
+        ]
+      },
+      "ink-800": {
+        "role": "neutral",
+        "displayName": "Pressed Grey",
+        "canonical": "#e4e9f0",
+        "approximation": "oklch(93.2% 0.011 256.7)",
+        "tonalRamp": [
+          "oklch(15.0% 0.011 256.7)",
+          "oklch(27.0% 0.011 256.7)",
+          "oklch(39.0% 0.011 256.7)",
+          "oklch(51.0% 0.011 256.7)",
+          "oklch(63.0% 0.011 256.7)",
+          "oklch(75.0% 0.011 256.7)",
+          "oklch(87.0% 0.011 256.7)",
+          "oklch(95.0% 0.011 256.7)"
+        ]
+      },
+      "ink-600": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#b9c4d2",
+        "approximation": "oklch(81.6% 0.023 254.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.023 254.4)",
+          "oklch(27.0% 0.023 254.4)",
+          "oklch(39.0% 0.023 254.4)",
+          "oklch(51.0% 0.023 254.4)",
+          "oklch(63.0% 0.023 254.4)",
+          "oklch(75.0% 0.023 254.4)",
+          "oklch(87.0% 0.023 254.4)",
+          "oklch(95.0% 0.023 254.4)"
+        ]
+      },
+      "ink-500": {
+        "role": "neutral",
+        "displayName": "Slate Placeholder",
+        "canonical": "#68758a",
+        "approximation": "oklch(55.9% 0.036 260.0)",
+        "tonalRamp": [
+          "oklch(15.0% 0.036 260.0)",
+          "oklch(27.0% 0.036 260.0)",
+          "oklch(39.0% 0.036 260.0)",
+          "oklch(51.0% 0.036 260.0)",
+          "oklch(63.0% 0.036 260.0)",
+          "oklch(75.0% 0.036 260.0)",
+          "oklch(87.0% 0.036 260.0)",
+          "oklch(95.0% 0.036 260.0)"
+        ]
+      },
+      "ink-400": {
+        "role": "neutral",
+        "displayName": "Slate Tertiary",
+        "canonical": "#53617a",
+        "approximation": "oklch(49.1% 0.044 261.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.044 261.9)",
+          "oklch(27.0% 0.044 261.9)",
+          "oklch(39.0% 0.044 261.9)",
+          "oklch(51.0% 0.044 261.9)",
+          "oklch(63.0% 0.044 261.9)",
+          "oklch(75.0% 0.044 261.9)",
+          "oklch(87.0% 0.044 261.9)",
+          "oklch(95.0% 0.044 261.9)"
+        ]
+      },
+      "ink-300": {
+        "role": "neutral",
+        "displayName": "Slate Secondary",
+        "canonical": "#38465f",
+        "approximation": "oklch(39.3% 0.046 261.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.046 261.8)",
+          "oklch(27.0% 0.046 261.8)",
+          "oklch(39.0% 0.046 261.8)",
+          "oklch(51.0% 0.046 261.8)",
+          "oklch(63.0% 0.046 261.8)",
+          "oklch(75.0% 0.046 261.8)",
+          "oklch(87.0% 0.046 261.8)",
+          "oklch(95.0% 0.046 261.8)"
+        ]
+      },
+      "observed": {
+        "role": "secondary",
+        "displayName": "Evidence Text Measured",
+        "canonical": "#a23e30",
+        "approximation": "oklch(50.0% 0.136 30.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.136 30.5)",
+          "oklch(27.0% 0.136 30.5)",
+          "oklch(39.0% 0.136 30.5)",
+          "oklch(51.0% 0.136 30.5)",
+          "oklch(63.0% 0.136 30.5)",
+          "oklch(75.0% 0.136 30.5)",
+          "oklch(87.0% 0.136 30.5)",
+          "oklch(95.0% 0.136 30.5)"
+        ]
+      },
+      "userdata": {
+        "role": "secondary",
+        "displayName": "Evidence Text Yours",
+        "canonical": "#7a5c00",
+        "approximation": "oklch(49.2% 0.101 86.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.101 86.4)",
+          "oklch(27.0% 0.101 86.4)",
+          "oklch(39.0% 0.101 86.4)",
+          "oklch(51.0% 0.101 86.4)",
+          "oklch(63.0% 0.101 86.4)",
+          "oklch(75.0% 0.101 86.4)",
+          "oklch(87.0% 0.101 86.4)",
+          "oklch(95.0% 0.101 86.4)"
+        ]
+      },
+      "field": {
+        "role": "secondary",
+        "displayName": "Evidence Text Street-Checked",
+        "canonical": "#2f7a43",
+        "approximation": "oklch(51.8% 0.113 149.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.113 149.5)",
+          "oklch(27.0% 0.113 149.5)",
+          "oklch(39.0% 0.113 149.5)",
+          "oklch(51.0% 0.113 149.5)",
+          "oklch(63.0% 0.113 149.5)",
+          "oklch(75.0% 0.113 149.5)",
+          "oklch(87.0% 0.113 149.5)",
+          "oklch(95.0% 0.113 149.5)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Story headlines printed as strips on the live map."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headlines on public pages."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card headers and panel titles."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Metric values, always tabular."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading text and explanations."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and control text."
+      },
+      "evidence": {
+        "displayName": "Evidence",
+        "purpose": "The evidence chip on a number."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Rises, reveals and word-by-word headlines (0.7s to 0.85s)."
+      },
+      {
+        "name": "ease-in-out-quart",
+        "value": "cubic-bezier(0.76, 0, 0.24, 1)",
+        "purpose": "Printed wipes: strips pulled across the map (0.6s, 0.09s per line) and the opening sheet lifting (0.85s)."
+      },
+      {
+        "name": "camera-descent",
+        "value": "flyTo 3800ms, curve 1.2",
+        "purpose": "The first flight down to the street, and the flight to a new address."
+      },
+      {
+        "name": "camera-scrub",
+        "value": "per-frame lerp 0.075 toward the scroll position",
+        "purpose": "Hands the camera to the scroll through five scene cameras."
+      },
+      {
+        "name": "camera-drift",
+        "value": "bearing +0.0014 degrees per ms",
+        "purpose": "Keeps the city alive when the page is still."
+      },
+      {
+        "name": "scroll-smoothing",
+        "value": "Lenis lerp 0.085, wheel 0.9",
+        "purpose": "Smooth scroll on public pages; off under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Next Step Button",
+      "kind": "button",
+      "refersTo": "button-next",
+      "description": "The one yellow next step on a screen.",
+      "html": "<button class=\"ds-btn-next\">See this street</button>",
+      "css": ".ds-btn-next{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;font:600 14px var(--font-sans);cursor:pointer;transition:background-color .15s,color .15s,transform .15s;background:var(--color-you);color:var(--color-night);border:1px solid var(--color-night)} .ds-btn-next:hover{background:var(--color-you-deep)} .ds-btn-next:focus-visible{outline:2px solid var(--color-night);outline-offset:2px} .ds-btn-next:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The default action when it is not the next step.",
+      "html": "<button class=\"ds-btn-primary\">Compare prices</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;font:600 14px var(--font-sans);cursor:pointer;transition:background-color .15s,color .15s,transform .15s;background:var(--color-atlas);color:#fff;border:1px solid var(--color-atlas)} .ds-btn-primary:hover{background:var(--color-atlas-deep);border-color:var(--color-atlas-deep)} .ds-btn-primary:focus-visible{outline:2px solid var(--color-night);outline-offset:2px} .ds-btn-primary:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Any quieter action.",
+      "html": "<button class=\"ds-btn-secondary\">Retry</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;font:600 14px var(--font-sans);cursor:pointer;transition:background-color .15s,color .15s,transform .15s;background:#fff;color:var(--color-night);border:1px solid var(--color-night)} .ds-btn-secondary:hover{background:var(--color-ink-800)} .ds-btn-secondary:focus-visible{outline:2px solid var(--color-night);outline-offset:2px} .ds-btn-secondary:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text field in forms.",
+      "html": "<input class=\"ds-input\" placeholder=\"1402 South Lamar, Austin, TX\" aria-label=\"Address\">",
+      "css": ".ds-input{height:40px;width:100%;padding:0 12px;background:#fff;color:var(--color-night);border:1px solid var(--color-ink-500);font:14px var(--font-sans);transition:border-color .15s} .ds-input::placeholder{color:var(--color-ink-500)} .ds-input:focus{border-color:var(--color-night);outline:2px solid var(--color-atlas);outline-offset:0}"
+    },
+    {
+      "name": "Landing Header",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Atlas blue bar with rolling text links.",
+      "html": "<nav class=\"ds-nav\"><strong>StrataIQ</strong><span><a href=\"#\">Pricing</a><a href=\"#\">How it works</a><a href=\"#\">Sign in</a></span></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 40px;background:var(--color-atlas);color:#fff;font:16px var(--font-sans)} .ds-nav strong{font:600 22px var(--font-display)} .ds-nav span{display:flex;gap:20px} .ds-nav a{color:inherit;text-decoration:none} .ds-nav a:hover{text-decoration:underline} .ds-nav a:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Evidence Chip",
+      "kind": "chip",
+      "refersTo": "evidence-measured",
+      "description": "Says where a number came from, in the key's color.",
+      "html": "<span class=\"ds-ev\" style=\"background:var(--color-brick)\">Measured</span> <span class=\"ds-ev\" style=\"background:var(--color-you)\">Yours</span> <span class=\"ds-ev\" style=\"background:var(--color-stone)\">Estimated</span> <span class=\"ds-ev\" style=\"background:var(--color-moss)\">Checked on the street</span>",
+      "css": ".ds-ev{display:inline-flex;padding:1px 6px;border:1px solid var(--color-night);color:var(--color-night);font:500 11px var(--font-sans);white-space:nowrap}"
+    },
+    {
+      "name": "Map Sheet",
+      "kind": "card",
+      "refersTo": "sheet",
+      "description": "The one container on the map, and for menus and dialogs.",
+      "html": "<div class=\"ds-sheet\">Drag the rent</div>",
+      "css": ".ds-sheet{padding:12px;background:var(--color-paper);border:1px solid var(--color-night);color:var(--color-night);font:600 15px var(--font-sans)}"
+    },
+    {
+      "name": "Printed Strip",
+      "kind": "custom",
+      "refersTo": "strip",
+      "description": "A headline printed on the live map, one outlined band per line.",
+      "html": "<div class=\"ds-strips\"><h1 class=\"ds-strip\">Know your</h1><div class=\"ds-strip\">numbers before</div><div class=\"ds-strip\">you sign the lease.</div></div>",
+      "css": ".ds-strips{padding:24px;background:var(--color-atlas)} .ds-strip{display:block;width:fit-content;margin:-1px 0 0;padding:0 .2em .06em;background:var(--color-paper);color:var(--color-night);border:1px solid var(--color-night);font:600 48px/1.12 var(--font-display);letter-spacing:-.012em}"
+    },
+    {
+      "name": "Atlas Key",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The printed legend. The active meaning widens its swatch and goes bold.",
+      "html": "<ul class=\"ds-key\"><li class=\"on\"><i style=\"background:var(--color-brick)\"></i>Measured</li><li><i style=\"background:var(--color-you)\"></i>Yours</li><li><i style=\"background:var(--color-stone)\"></i>Estimated</li></ul>",
+      "css": ".ds-key{list-style:none;width:208px;margin:0;padding:12px;background:var(--color-paper);border:1px solid var(--color-night);color:var(--color-night);font:13px/1 var(--font-sans)} .ds-key li{display:flex;align-items:center;gap:8px;margin-top:6px} .ds-key li:first-child{margin-top:0} .ds-key i{width:16px;height:12px;border:1px solid var(--color-night);transition:width .3s} .ds-key li.on{font-weight:700} .ds-key li.on i{width:28px}"
+    },
+    {
+      "name": "Verdict Band",
+      "kind": "custom",
+      "refersTo": "verdict-ok",
+      "description": "The call, in verdict color and never in key color.",
+      "html": "<section class=\"ds-verdict\">Can work under these inputs</section>",
+      "css": ".ds-verdict{padding:24px;background:var(--color-ok);color:#fff;border:1px solid var(--color-night);font:600 28px var(--font-display)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Fire Atlas",
+    "overview": "**Creative North Star: \"The Fire Atlas\"**\n\nAmerican fire insurance atlases mapped every block to answer one question: is this building a good risk? StrataIQ prints that same sheet for one address. The ground is deep atlas blue, content sits on cool white map sheets, and everything is a flat fill with a thin ink outline, as if printed rather than rendered.\n\nColor is a legend here, not decoration. A founder with no data background can read where any number came from by its color, and a printed key says so on the map. The real city is the hero: real buildings and streets in atlas colors, with the words printed straight onto it as label strips.\n\nPublic pages move a lot and tie that motion to the scroll, on one uninterrupted camera shot. Signed-in screens are denser and calmer, with the same materials on a cooler page. The system rejects the SaaS hero with a floating dashboard, and dark dashboards with glowing charts.",
+    "keyCharacteristics": [
+      "Atlas blue ground, cool white map sheets, flat fills, 1px ink outlines, square corners.",
+      "A fixed color key for evidence: pink measured, yellow yours, stone estimated.",
+      "Verdict colors kept apart from the key: green, red and ink.",
+      "Exactly one yellow next step on a screen.",
+      "Headlines printed as strips on the live map.",
+      "One continuous camera shot under the landing story."
+    ],
+    "rules": [
+      {
+        "name": "The Atlas Key Rule",
+        "body": "Pink means measured, yellow means yours, stone means estimated, and these never carry other meanings. If a color is not saying where a number came from, it is the wrong color. The logo and drawn atlas plates may use all three, because they are drawings of the key.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Yellow Step Rule",
+        "body": "A screen has exactly one yellow next step. Everything else clickable is atlas, white or a plain link. If a whole closing band is yellow, that band is the step and its button goes ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Separate Verdict Rule",
+        "body": "A verdict speaks only in green (#1e7a46), red (#b3261e) or ink (#0f1f3d). Verdict color never borrows from the key, and the key never signals good or bad.",
+        "section": "colors"
+      },
+      {
+        "name": "The Printed Strip Rule",
+        "body": "Headlines on the live map are printed strips: each line its own map-sheet band with an ink outline, stacked 1px over the last, sized to its text. The city stays visible between the words and every word stays readable. Never put display type on the moving map without its strip.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Shot Rule",
+        "body": "The landing story is one continuous camera shot over the real street. There are no cuts: the camera descends on load, then the scroll scrubs it through every scene, with a slow drift so the city is alive when the page is still. Words change, the map never reloads. Changing the address flies the same camera to the new street.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Print Rule",
+        "body": "No shadows, and no gradient as a surface. A pattern that prints, like a hatch marking a zone on a chart, is ink and stays allowed.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do let the real map stay visible, in atlas colors, wherever the story happens.",
+      "Do mark every number with its evidence: pink measured, yellow yours, stone estimated.",
+      "Do say what is illustrative where it appears, as the customer scene does.",
+      "Do give every screen one yellow next step in plain words.",
+      "Do tie landing motion to the scroll, and wipe strips in with cubic-bezier(0.76, 0, 0.24, 1).",
+      "Do keep all content visible and still under reduced motion: no opening sheet, no tilt, strips shown in place."
+    ],
+    "donts": [
+      "Don't use pink, yellow or stone for warnings, status, emphasis or chart decoration.",
+      "Don't color a verdict with the key, or a key label with verdict colors.",
+      "Don't add a second yellow action to a screen.",
+      "Don't add shadows or gradient surfaces to sheets, cards or panels.",
+      "Don't build a SaaS hero with a floating dashboard, or a dark dashboard with glowing charts.",
+      "Don't cut the landing shot into separate map sections or swap the map for a screenshot.",
+      "Don't set display type on the moving map without its strip."
+    ]
+  }
+}

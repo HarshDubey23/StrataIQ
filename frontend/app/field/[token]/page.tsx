@@ -95,7 +95,6 @@ export default function FieldApp() {
           <div className="space-y-4">
             {b.request.brief && (
               <div className="rounded-md border border-accent/30 bg-accent/[0.07] p-4 text-sm leading-relaxed text-ink-100">
-                <p className="idx mb-1.5">FROM THE ANALYST</p>
                 {b.request.brief}
               </div>
             )}

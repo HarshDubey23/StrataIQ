@@ -259,7 +259,7 @@ export default function Landing() {
       const r = await fetch(`/api/v1/market/peek?q=${encodeURIComponent(q)}&category=${cat}`);
       const j = await r.json();
       if (!r.ok) throw new Error(typeof j.detail === "string" ? j.detail : j.error?.message || "We could not find that address.");
-      setSpot({ key: `${j.place.lat},${j.place.lng}`, label: j.place.label, lat: j.place.lat, lng: j.place.lng });
+      setSpot({ key: `${j.place.lat},${j.place.lng}`, label: q, lat: j.place.lat, lng: j.place.lng });
       setTimeout(() => goTo(1), 500);
     } catch (err) {
       setFindErr(err instanceof Error ? err.message : "We could not find that address.");
@@ -312,7 +312,7 @@ export default function Landing() {
             </div>
             <nav aria-label="Story" className="pointer-events-auto absolute right-5 top-1/2 hidden -translate-y-1/2 flex-col items-end gap-1 md:right-8 md:flex">
               {SHEETS.map((l, i) => (
-                <button key={l} onClick={() => goTo(i)} aria-current={scene === i ? "step" : undefined} className={`group flex items-center gap-2 border border-night px-2 py-1 text-[13px] font-medium transition-colors duration-200 ${scene === i ? "bg-you text-night" : "bg-paper text-night hover:bg-white"}`}>
+                <button key={l} onClick={() => goTo(i)} aria-current={scene === i ? "step" : undefined} className={`group flex items-center gap-2 border border-night px-2 py-1 text-[13px] font-medium transition-colors duration-200 ${scene === i ? "bg-night text-white" : "bg-paper text-night hover:bg-white"}`}>
                   <span className="num">{i + 1}</span>
                   <span className={scene === i ? "" : "hidden group-hover:inline"}>{l}</span>
                 </button>
@@ -468,7 +468,7 @@ export default function Landing() {
                 <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); document.getElementById("address")?.focus(); }} className="mt-4 border-b border-current text-[18px] font-medium">Start with an address</button>
               </Reveal>
               <Reveal delay={0.1}>
-                <Stamp className="font-display text-[5rem] leading-none text-you">$29</Stamp>
+                <Stamp className="font-display text-[5rem] leading-none">$29</Stamp>
                 <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">The full report for one location: profit range, price tests, your walk-away rent, a counteroffer letter and your checklist. One payment, no subscription.</p>
                 <RollLink href="/sample-report" className="mt-4 border-b border-current text-[18px] font-medium">See a sample report</RollLink>
               </Reveal>

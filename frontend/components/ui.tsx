@@ -140,9 +140,9 @@ export function statusToKind(status: string | null | undefined): EvidenceKind {
 export function Badge({ children, tone = "neutral", className }: { children: React.ReactNode; tone?: "neutral" | "ok" | "warn" | "danger" | "accent"; className?: string }) {
   const tones = {
     neutral: "bg-ink-800 text-ink-200 border-ink-600",
-    ok: "bg-moss/40 text-night border-ok",
-    warn: "bg-you/30 text-night border-warn",
-    danger: "bg-brick/40 text-night border-danger",
+    ok: "bg-white text-ok border-ok",
+    warn: "bg-white text-warn border-warn",
+    danger: "bg-white text-danger border-danger",
     accent: "bg-accent-dim text-night border-atlas",
   };
   return <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs", tones[tone], className)}>{children}</span>;
@@ -306,7 +306,7 @@ export function Notice({ tone = "info", children, className }: { tone?: "info" |
     <div
       className={cn(
         "flex items-start gap-2.5 border p-3 text-[13px] leading-relaxed",
-        tone === "warn" ? "border-warn bg-you/20 text-night" : "border-ink-600 bg-ink-850 text-ink-200",
+        tone === "warn" ? "border-warn bg-white text-night" : "border-ink-600 bg-ink-850 text-ink-200",
         className,
       )}
     >
@@ -415,7 +415,7 @@ export function Segmented<T extends string>({ value, options, onChange, classNam
 
 export function DemoBanner() {
   return (
-    <div className="flex items-center gap-2 border-b border-night bg-you px-4 py-1.5 text-[13px] font-medium text-night">
+    <div className="flex items-center gap-2 border-b border-night border-dashed bg-white px-4 py-1.5 text-[13px] font-medium text-night">
       <AlertTriangle className="h-3.5 w-3.5" />
       Demo scenario: illustrative market data, not verified live conditions.
     </div>

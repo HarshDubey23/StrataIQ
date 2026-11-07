@@ -119,7 +119,6 @@ export default function FieldResearch() {
     <main className="mx-auto w-full max-w-7xl p-4 md:p-8">
       <header className="rise grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <p className="idx">02/ GROUND TRUTH</p>
           <h2 className="font-display mt-2 text-[clamp(1.8rem,3.4vw,2.8rem)] font-medium leading-[1] tracking-[-0.04em]">Field research</h2>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-300">
             Maps miss informal shops, real prices and how people actually behave. A researcher from the {p.category.label.toLowerCase()} industry walks the
@@ -180,7 +179,6 @@ export default function FieldResearch() {
             <Card className="rise rise-1">
               <div className="flex flex-wrap items-start justify-between gap-4 p-6">
                 <div>
-                  <p className="idx">ASSIGNMENT</p>
                   <h3 className="font-display mt-1.5 text-xl font-medium ">{f.request.researcher_name || "Field researcher"} · <span className="text-ink-300">{f.request.specialty}</span></h3>
                   <p className="mt-1 text-xs text-ink-400">Requested {ago(f.request.created_at)}{f.request.due_date ? ` · needed by ${f.request.due_date}` : ""}</p>
                 </div>
@@ -312,7 +310,6 @@ export default function FieldResearch() {
           <Card className="rise rise-2 p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="idx">RECORD</p>
                 <h3 className="font-display mt-1 text-lg font-medium ">Add ground data yourself</h3>
               </div>
               {loc && <Link href={`/app/projects/${p.id}/market`} className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-ink-100"><MapPin className="h-3.5 w-3.5" /> map</Link>}

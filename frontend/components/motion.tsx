@@ -117,7 +117,7 @@ export function Chip({ group, on, tone, onClick, children }: { group: string; on
 export function ScrollBar() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
-  return <motion.div aria-hidden style={{ scaleX }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-you" />;
+  return <motion.div aria-hidden style={{ scaleX }} className="absolute inset-x-0 top-0 h-1.5 origin-left bg-white" />;
 }
 
 /** A card that tilts toward the pointer in 3D, the Aceternity "3D card" pattern. */
