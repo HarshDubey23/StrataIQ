@@ -70,6 +70,7 @@ function readRecent(): Place[] {
 function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: string) => void; onPick: (p: Place) => void }) {
   const [open, setOpen] = useState(false);
   const [found, setFound] = useState<Place[]>([]);
+  const [searched, setSearched] = useState("");
   const [at, setAt] = useState(-1);
   const [recent, setRecent] = useState<Place[]>([]);
   const q = value.trim();
@@ -79,7 +80,10 @@ function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: 
     const ctl = new AbortController();
     // waits for a pause in typing, and each new letter cancels the last request
     const t = setTimeout(() => {
-      fetch(`/api/v1/market/suggest?q=${encodeURIComponent(q)}`, { signal: ctl.signal }).then((r) => (r.ok ? r.json() : { results: [] })).then((j) => setFound(j.results)).catch(() => undefined);
+      fetch(`/api/v1/market/suggest?q=${encodeURIComponent(q)}`, { signal: ctl.signal }).then((r) => (r.ok ? r.json() : { results: [] })).then((j) => {
+        setFound(j.results);
+        setSearched(q);
+      }).catch(() => undefined);
     }, 200);
     return () => {
       clearTimeout(t);
@@ -98,7 +102,7 @@ function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: 
     <div className="relative min-w-0 flex-1">
       <label htmlFor="address" className="sr-only">Street address, city and state</label>
       <input id="address" role="combobox" aria-expanded={open && items.length > 0} aria-controls="address-list" aria-autocomplete="list" aria-activedescendant={at >= 0 ? `place-${at}` : undefined} autoComplete="off"
-        value={value} placeholder="1402 South Lamar, Austin, TX"
+        value={value} placeholder="US address: 1402 South Lamar, Austin, TX"
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => { setRecent(readRecent()); setOpen(true); }}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
@@ -110,6 +114,9 @@ function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: 
           else if (e.key === "Enter" && at >= 0) { e.preventDefault(); pick(items[at]); }
         }}
         className="min-h-12 w-full border-b-2 border-night bg-transparent px-1 text-[18px] placeholder:text-ink-400 focus:outline-2 focus:outline-atlas" />
+      {open && searched === q && q.length >= 3 && !found.length && (
+        <p className="sheet absolute inset-x-0 z-40 px-3 py-2.5 text-[14px] max-md:bottom-full md:top-full">No US match yet. StrataIQ only has US data for now.</p>
+      )}
       {open && items.length > 0 && (
         <ul id="address-list" role="listbox" className="sheet absolute inset-x-0 z-40 max-h-72 overflow-y-auto max-md:bottom-full md:top-full">
           {groups.filter(([, l]) => l.length).map(([name, l]) => (

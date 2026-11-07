@@ -448,3 +448,10 @@ select {
   from { transform: scale(1); opacity: 1; }
   to { transform: scale(7); opacity: 0; }
 }
+
+/* the scale bar only has room on wide screens */
+@media (max-width: 1279px) {
+  .maplibregl-ctrl-scale {
+    display: none;
+  }
+}

@@ -148,7 +148,14 @@ async def peek(category: str = Query(default="gym"), q: str | None = Query(defau
         except ProviderError as e:
             raise HTTPException(502, f"Address search is busy right now ({e.message[:100]})") from e
         if not found:
-            raise HTTPException(404, "We could not find that address. Add the city and state.")
+            # say what is actually wrong: a real place outside our data is not a bad address
+            try:
+                anywhere, _ = await osm.geocode(q, limit=1, cache=Cache(session_factory()))
+            except ProviderError:
+                anywhere = []
+            if anywhere:
+                raise HTTPException(422, f"{anywhere[0]['name']} is outside the United States. StrataIQ only has US data for now, so try a US address.")
+            raise HTTPException(404, "We could not find that address. Try a street, city and state, like 1402 South Lamar, Austin, TX.")
         lat, lng, label = found[0]["lat"], found[0]["lng"], found[0]["display_name"]
     data = income_us.load_tracts()
     area = income_us.area_summary(data, lat, lng) if data is not None else None

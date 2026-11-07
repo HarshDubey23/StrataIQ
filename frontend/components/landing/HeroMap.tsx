@@ -230,10 +230,10 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
           }
 
           // your site: its height follows the rent you drag
-          const pTarget = sc === 4 ? 200 + 330 * S.pillar : 300;
+          const pTarget = sc === 4 ? 110 + 220 * S.pillar : 170;
           if (Math.abs(S.pillarH - pTarget) > 1 && dataDue) {
             S.pillarH += (pTarget - S.pillarH) * (1 - Math.exp(-dt / 120));
-            (m.getSource("site") as GeoJSONSource).setData(FC([cube(S.spot.lng, S.spot.lat, 42, S.pillarH)]));
+            (m.getSource("site") as GeoJSONSource).setData(FC([cube(S.spot.lng, S.spot.lat, 26, S.pillarH)]));
             S.lastData = now;
           }
 
@@ -288,7 +288,7 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
     live.current.walkers = c.walkers;
     (m.getSource("people") as GeoJSONSource).setData(c.people);
     (m.getSource("catchment") as GeoJSONSource).setData(ring(spot.lng, spot.lat, 3.219));
-    (m.getSource("site") as GeoJSONSource).setData(FC([cube(spot.lng, spot.lat, 42, live.current.pillarH)]));
+    (m.getSource("site") as GeoJSONSource).setData(FC([cube(spot.lng, spot.lat, 26, live.current.pillarH)]));
     marker.current?.setLngLat([spot.lng, spot.lat]);
   }, [ready, spot, comps, tracts]);
 
