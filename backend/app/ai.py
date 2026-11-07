@@ -1,4 +1,4 @@
-"""Optional LLM features (Anthropic Messages API).
+"""Optional LLM features, off unless AI_API_KEY, AI_API_URL and AI_MODEL are set.
 
 The LLM is used for two narrow jobs and is never in the numerical path:
 1. Map a free-text business description to OSM tag filters + archetype
@@ -19,28 +19,29 @@ from .categories.archetypes import ARCHETYPES
 from .config import get_settings
 
 log = logging.getLogger("strataiq.ai")
-API = "https://api.anthropic.com/v1/messages"
 
 
 def enabled() -> bool:
-    return bool(get_settings().anthropic_api_key)
+    s = get_settings()
+    return bool(s.ai_api_key and s.ai_api_url and s.ai_model)
 
 
 async def _call(system: str, user: str, tool: dict | None = None, max_tokens: int = 700) -> dict | None:
     s = get_settings()
-    body = {"model": s.anthropic_model, "max_tokens": max_tokens, "system": system,
+    body = {"model": s.ai_model, "max_tokens": max_tokens, "system": system,
             "messages": [{"role": "user", "content": user}]}
     if tool:
         body["tools"] = [tool]
         body["tool_choice"] = {"type": "tool", "name": tool["name"]}
     try:
         async with httpx.AsyncClient(timeout=30) as c:
-            r = await c.post(API, json=body, headers={"x-api-key": s.anthropic_api_key, "anthropic-version": "2023-06-01",
-                                                       "content-type": "application/json"})
+            name, _, value = s.ai_extra_header.partition(":")  # a provider's required version header, "name: value"
+            extra = {name.strip(): value.strip()} if name else {}
+            r = await c.post(s.ai_api_url, json=body, headers={"x-api-key": s.ai_api_key, "content-type": "application/json", **extra})
             r.raise_for_status()
             return r.json()
     except (httpx.HTTPError, ValueError) as e:
-        log.warning("anthropic call failed: %s", e)
+        log.warning("AI call failed: %s", type(e).__name__)
         return None
 
 
@@ -129,4 +130,4 @@ async def explain(decision: dict) -> dict:
     if not grounded(text, payload):
         log.info("discarded ungrounded explanation")
         return {"status": "rejected_ungrounded", "text": None}
-    return {"status": "ok", "text": text, "model": get_settings().anthropic_model}
+    return {"status": "ok", "text": text, "model": get_settings().ai_model}

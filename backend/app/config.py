@@ -44,8 +44,10 @@ class Settings:
     ors_url: str = field(default_factory=lambda: os.getenv("ORS_URL", "https://api.openrouteservice.org"))
     routing_url: str = field(default_factory=lambda: os.getenv("ROUTING_URL", "https://routing.openstreetmap.de"))
     routing_max_coords: int = field(default_factory=lambda: int(os.getenv("ROUTING_MAX_COORDS", "100")))
-    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
-    anthropic_model: str = field(default_factory=lambda: os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5"))
+    ai_api_key: str = field(default_factory=lambda: os.getenv("AI_API_KEY", ""))
+    ai_api_url: str = field(default_factory=lambda: os.getenv("AI_API_URL", ""))
+    ai_model: str = field(default_factory=lambda: os.getenv("AI_MODEL", ""))
+    ai_extra_header: str = field(default_factory=lambda: os.getenv("AI_EXTRA_HEADER", ""))
     # Speko voice gateway: LLM brain + Hinglish TTS for the voice analyst
     speko_api_key: str = field(default_factory=lambda: os.getenv("SPEKO_API_KEY", ""))
     speko_url: str = field(default_factory=lambda: os.getenv("SPEKO_URL", "https://api.speko.dev"))

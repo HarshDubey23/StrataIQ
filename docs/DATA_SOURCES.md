@@ -10,7 +10,7 @@ All sources are described once in `backend/app/providers/registry.py`; the UI re
 | openrouteservice | travel-time catchments | optional (`ORS_API_KEY`) | ORS terms; OSM ODbL | falls back to radius, recorded as a snapshot error |
 | OpenFreeMap tiles | base map, 3D buildings where heights exist | browser | © OpenMapTiles, OSM | falls back to the positron style |
 | User input | prices, costs, competitors, actual outcomes | — | owned by the user | labelled user-entered, never “verified” |
-| Anthropic API | optional category mapping and explanation text | optional (`ANTHROPIC_API_KEY`) | — | never produces numbers |
+| AI provider | optional category mapping and explanation text | optional (`AI_API_KEY`) | — | never produces numbers |
 
 **Timestamps.** Each provenance record stores `retrieved_at` (when StrataIQ fetched it) and `source_updated_at` (OSM database
 timestamp / record edit time / WorldPop reference year). The UI always shows both.
