@@ -238,7 +238,7 @@ def _tag_word(t: str) -> str:
     return t.split(":", 1)[1].replace("_", " ")
 
 
-async def photon_pois(lat: float, lng: float, radius_m: int, filters: list[str], limit: int = 50, terms: list[str] | None = None) -> list[dict]:
+async def photon_pois(lat: float, lng: float, radius_m: int, filters: list[str], limit: int = 50, max_queries: int = 9, terms: list[str] | None = None) -> list[dict]:
     """Komoot Photon (OSM-based geocoder) — finds POIs by OSM tag near a point. No key needed."""
     tags, words = filter_terms(filters)
     extra = [t for t in (terms or []) if t and len(t) >= 3]
@@ -248,7 +248,7 @@ async def photon_pois(lat: float, lng: float, radius_m: int, filters: list[str],
     queries += [(w, None) for w in words + extra[:2]]
     seen_q: list[tuple[str, str | None]] = []
     for q, tag in queries:
-        if (q.lower(), tag) not in [(x.lower(), y) for x, y in seen_q] and len(seen_q) < 9:
+        if (q.lower(), tag) not in [(x.lower(), y) for x, y in seen_q] and len(seen_q) < max_queries:
             seen_q.append((q, tag))
     POI_KEYS = {"amenity", "shop", "leisure", "sport", "craft", "office", "healthcare", "tourism", "club"}
 
@@ -400,6 +400,89 @@ def _merge_pois(*groups: list[dict]) -> list[dict]:
             seen_ref.add(p["ref"])
             out.append(p)
     return out
+
+
+_background: set[asyncio.Task] = set()
+
+
+async def quick_competitors(lat: float, lng: float, radius_m: int, filters: list[str], cache: Cache | None = None, terms: list[str] | None = None, budget_s: float = 5.0) -> tuple[list[dict], dict, bool]:
+    """Rivals within a few seconds. Returns (pois, provenance, complete).
+
+    The slow public Overpass servers can take half a minute or time out, so a smaller search answers first. The full
+    search keeps running and fills the cache, so asking again soon gets everything. Nearby points share one search.
+    """
+    from . import foursquare
+
+    rlat, rlng = round(lat, 3), round(lng, 3)
+    full = asyncio.create_task(fetch_competitors(rlat, rlng, radius_m, filters, cache, terms=terms, timeout_s=30.0, limit=400))
+    _background.add(full)
+
+    def finished(t: asyncio.Task) -> None:
+        _background.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            log.warning("full competitor search failed: %s", t.exception())
+
+    full.add_done_callback(finished)
+    done, _ = await asyncio.wait({full}, timeout=0.4)  # a cached answer comes back at once
+    if done and full.exception() is None:
+        pois, prov = full.result()
+        return pois, prov, True
+
+    async def small() -> list[dict]:
+        tasks = [photon_pois(rlat, rlng, radius_m, filters, terms=terms, max_queries=3)]
+        if foursquare.enabled():
+            tasks.append(foursquare.fsq_pois(rlat, rlng, radius_m, terms or []))
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        merged = _merge_pois([], results[0] if isinstance(results[0], list) else [])
+        if len(results) > 1 and isinstance(results[1], list):
+            merged, _added = foursquare.merge_with_osm(merged, results[1])
+        return merged
+
+    quick = asyncio.create_task(small())
+    await asyncio.wait({full, quick}, timeout=budget_s, return_when=asyncio.ALL_COMPLETED)
+    if full.done() and full.exception() is None:
+        quick.cancel()
+        pois, prov = full.result()
+        return pois, prov, True
+    pois = quick.result() if quick.done() and not quick.cancelled() and quick.exception() is None else []
+    if not quick.done():
+        quick.cancel()
+    return pois, provenance("osm_photon", detail=f"{len(pois)} found so far; the full search is still running"), False
+
+
+def parse_photon_suggest(data: dict) -> list[dict]:
+    """Photon results as address suggestions: US only, one line each, no repeats."""
+    out, seen = [], set()
+    for f in data.get("features") or []:
+        p = f.get("properties") or {}
+        if (p.get("countrycode") or "").upper() != "US":
+            continue
+        try:
+            lng, lat = f["geometry"]["coordinates"][:2]
+        except (KeyError, TypeError, ValueError):
+            continue
+        street = " ".join(x for x in [p.get("housenumber"), p.get("street")] if x)
+        first = street or p.get("name") or ""
+        city = p.get("city") or p.get("county") or ""
+        label = ", ".join(x for x in [first, city if city != first else "", p.get("state")] if x)
+        if label and label not in seen:
+            seen.add(label)
+            out.append({"label": label, "lat": float(lat), "lng": float(lng)})
+    return out
+
+
+async def suggest_places(q: str, cache: Cache | None = None, limit: int = 6) -> list[dict]:
+    """Address suggestions while someone types. Photon allows search-as-you-type; Nominatim's usage policy does not."""
+    q = " ".join(q.split())
+    key = cache_key("photon_suggest", {"q": q.lower()})
+    if cache and (hit := cache.get(key)):
+        return hit[0]["results"]
+    r = await client().get("https://photon.komoot.io/api/", params={"q": q, "limit": limit * 2, "lang": "en"}, timeout=httpx.Timeout(4.0, connect=2.0))
+    r.raise_for_status()
+    results = parse_photon_suggest(r.json())[:limit]
+    if cache:
+        cache.put(key, "photon_suggest", {"results": results}, timedelta(days=7))
+    return results
 
 
 async def fetch_competitors(lat: float, lng: float, radius_m: int, filters: list[str], cache: Cache | None = None,

@@ -11,9 +11,11 @@ import { AtlasKey, BlockPlan, Logo, LogoMark } from "@/components/brand";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
 import type { Tract } from "./HeroMap";
-import { money, num, US_MARKET } from "@/lib/format";
+import { money, num } from "@/lib/format";
+import { deviceTier, type Tier } from "@/lib/device";
 
 const HeroMap = dynamic(() => import("./HeroMap"), { ssr: false, loading: () => null });
+const AtlasLite = dynamic(() => import("./AtlasLite"), { ssr: false, loading: () => null });
 
 const CATS = [
   { key: "gym", label: "gym", many: "gyms" },
@@ -54,11 +56,91 @@ async function ensureSession(): Promise<void> {
   if (!g.ok) throw new Error("The server is waking up. Try again in a few seconds.");
 }
 
+type Place = { label: string; lat: number; lng: number };
+const RECENT = "siq-recent-places";
+function readRecent(): Place[] {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+/** The address box: suggestions while you type, your recent places and popular ones before you do. */
+function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: string) => void; onPick: (p: Place) => void }) {
+  const [open, setOpen] = useState(false);
+  const [found, setFound] = useState<Place[]>([]);
+  const [at, setAt] = useState(-1);
+  const [recent, setRecent] = useState<Place[]>([]);
+  const q = value.trim();
+  useEffect(() => {
+    setAt(-1);
+    if (q.length < 3) return setFound([]);
+    const ctl = new AbortController();
+    // waits for a pause in typing, and each new letter cancels the last request
+    const t = setTimeout(() => {
+      fetch(`/api/v1/market/suggest?q=${encodeURIComponent(q)}`, { signal: ctl.signal }).then((r) => (r.ok ? r.json() : { results: [] })).then((j) => setFound(j.results)).catch(() => undefined);
+    }, 200);
+    return () => {
+      clearTimeout(t);
+      ctl.abort();
+    };
+  }, [q]);
+  const groups: [string, Place[]][] = q.length >= 3 ? [["Suggestions", found]] : [["Recent", recent], ["Popular", SPOTS.map((s) => ({ label: s.label, lat: s.lat, lng: s.lng }))]];
+  const items = groups.flatMap(([, l]) => l);
+  const pick = (p: Place) => {
+    setOpen(false);
+    onChange(p.label);
+    onPick(p);
+  };
+  let idx = -1;
+  return (
+    <div className="relative min-w-0 flex-1">
+      <label htmlFor="address" className="sr-only">Street address, city and state</label>
+      <input id="address" role="combobox" aria-expanded={open && items.length > 0} aria-controls="address-list" aria-autocomplete="list" aria-activedescendant={at >= 0 ? `place-${at}` : undefined} autoComplete="off"
+        value={value} placeholder="1402 South Lamar, Austin, TX"
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => { setRecent(readRecent()); setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onKeyDown={(e) => {
+          if (!open || !items.length) return;
+          if (e.key === "ArrowDown") { e.preventDefault(); setAt((a) => (a + 1) % items.length); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); setAt((a) => (a <= 0 ? items.length - 1 : a - 1)); }
+          else if (e.key === "Escape") setOpen(false);
+          else if (e.key === "Enter" && at >= 0) { e.preventDefault(); pick(items[at]); }
+        }}
+        className="min-h-12 w-full border-b-2 border-night bg-transparent px-1 text-[18px] placeholder:text-ink-400 focus:outline-2 focus:outline-atlas" />
+      {open && items.length > 0 && (
+        <ul id="address-list" role="listbox" className="sheet absolute inset-x-0 z-40 max-h-72 overflow-y-auto max-md:bottom-full md:top-full">
+          {groups.filter(([, l]) => l.length).map(([name, l]) => (
+            <li key={name} role="presentation">
+              <p className="px-3 pt-2 text-[12px] font-semibold text-ink-400">{name}</p>
+              <ul role="presentation">
+                {l.map((p) => {
+                  idx++;
+                  const i = idx;
+                  return (
+                    <li key={`${name}${p.label}`} id={`place-${i}`} role="option" aria-selected={at === i} onPointerDown={(e) => { e.preventDefault(); pick(p); }}
+                      className={`min-h-11 cursor-pointer px-3 py-2.5 text-[15px] leading-snug ${at === i ? "bg-atlas text-white" : "hover:bg-ink-800"}`}>
+                      {p.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function useLenis() {
   useEffect(() => {
-    if (reduced()) return;
+    // a phone's own scrolling is already the smoothest there is
+    if (reduced() || window.matchMedia("(pointer: coarse)").matches) return;
     let raf = 0;
     let lenis: { raf: (t: number) => void; destroy: () => void } | null = null;
     import("lenis").then(({ default: Lenis }) => {
@@ -227,6 +309,8 @@ export default function Landing() {
   const [busy, setBusy] = useState(false);
   const [rent, setRent] = useState<number | null>(null);
   const [inStory, setInStory] = useState(true);
+  const [tier, setTier] = useState<Tier | null>(null);
+  useEffect(() => setTier(deviceTier()), []);
   const storyEnd = useRef<HTMLDivElement>(null);
   const { progress, scene } = useStoryProgress();
   useLenis();
@@ -239,19 +323,27 @@ export default function Landing() {
     const at = `lat=${spot.lat}&lng=${spot.lng}&category=${cat}`;
     fetch(`/api/v1/market/peek?${at}&label=${encodeURIComponent(spot.label)}`).then((r) => (r.ok ? r.json() : null)).then(setPeek).catch(() => setPeek(null));
     const ctl = new AbortController();
-    const to = setTimeout(() => ctl.abort(), 60_000);
+    const to = setTimeout(() => ctl.abort(), 15_000);
+    let again: ReturnType<typeof setTimeout> | undefined;
     try {
       const r = await fetch(`/api/v1/market/preview?${at}`, { signal: ctl.signal });
-      setPreview(r.ok ? await r.json() : null);
+      const j = r.ok ? await r.json() : null;
+      setPreview(j);
+      // a first answer comes fast; the full search is still running behind it, so collect it shortly
+      if (j && !j.complete) again = setTimeout(() => fetch(`/api/v1/market/preview?${at}`).then((x) => (x.ok ? x.json() : null)).then((k) => k && setPreview((old) => (k.competitors.length >= (old?.competitors.length ?? 0) ? k : old))).catch(() => undefined), 25_000);
     } catch {
       setPreview(null);
     } finally {
       clearTimeout(to);
       setLoading(false);
     }
+    return () => clearTimeout(again);
   }, [spot, cat]);
   useEffect(() => {
-    void load();
+    const cleanup = load();
+    return () => {
+      void cleanup.then((stop) => stop());
+    };
   }, [load]);
 
   useEffect(() => {
@@ -266,6 +358,17 @@ export default function Landing() {
 
   const goTo = (i: number) => document.querySelectorAll("[data-scene]")[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
 
+  function goToPlace(p: Place) {
+    try {
+      localStorage.setItem(RECENT, JSON.stringify([p, ...readRecent().filter((x) => x.label !== p.label)].slice(0, 3)));
+    } catch {
+      /* storage blocked: the page just has no recent places */
+    }
+    setFindErr(null);
+    setSpot({ key: `${p.lat},${p.lng}`, label: p.label, lat: p.lat, lng: p.lng });
+    setTimeout(() => goTo(1), 400);
+  }
+
   async function find(e: React.FormEvent) {
     e.preventDefault();
     const q = address.trim();
@@ -276,8 +379,7 @@ export default function Landing() {
       const r = await fetch(`/api/v1/market/peek?q=${encodeURIComponent(q)}&category=${cat}`);
       const j = await r.json();
       if (!r.ok) throw new Error(typeof j.detail === "string" ? j.detail : j.error?.message || "We could not find that address.");
-      setSpot({ key: `${j.place.lat},${j.place.lng}`, label: q, lat: j.place.lat, lng: j.place.lng });
-      setTimeout(() => goTo(1), 500);
+      goToPlace({ label: q, lat: j.place.lat, lng: j.place.lng });
     } catch (err) {
       setFindErr(err instanceof Error ? err.message : "We could not find that address.");
     } finally {
@@ -316,7 +418,8 @@ export default function Landing() {
       <Opening first={first} />
       {/* The one continuous shot: the real street stays under the whole story */}
       <div className="fixed inset-0 z-0 overflow-hidden bg-atlas">
-        <HeroMap spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} crosshair active={inStory} pillar={t ? rentNow / t.rent / 1.2 : 1} />
+        {tier === "atlas" && <AtlasLite spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} active={inStory} />}
+        {(tier === "full" || tier === "lite") && <HeroMap spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} crosshair={tier === "full"} quality={tier} active={inStory} pillar={t ? rentNow / t.rent / 1.2 : 1} onStruggling={() => setTier("atlas")} />}
         <div className="absolute inset-x-0 top-16 z-10"><ScrollBar /></div>
       </div>
 
@@ -350,9 +453,7 @@ export default function Landing() {
                         </select>
                         <span>at</span>
                       </div>
-                      <label htmlFor="address" className="sr-only">Street address, city and state</label>
-                      <input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="1402 South Lamar, Austin, TX" autoComplete="street-address"
-                        className="min-h-12 min-w-0 flex-1 border-b-2 border-night bg-transparent px-1 text-[18px] placeholder:text-ink-400 focus:outline-2 focus:outline-atlas" />
+                      <AddressBox value={address} onChange={setAddress} onPick={goToPlace} />
                       <Magnetic>
                         <button type="submit" disabled={finding} className="inline-flex min-h-12 w-full items-center justify-center gap-2 whitespace-nowrap border border-night bg-you px-5 text-[17px] font-semibold text-night transition-colors hover:bg-you-deep active:translate-y-px disabled:opacity-60">
                           {finding && <Loader2 className="h-4 w-4 animate-spin" />} See this street

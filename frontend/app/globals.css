@@ -429,3 +429,22 @@ select {
   color: var(--color-night) !important;
   font-weight: 600;
 }
+
+/* your site's ring: a compositor animation, so it costs the map nothing */
+.site-ping {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+.site-ping::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--color-you);
+  border-radius: 999px;
+  animation: site-ping 2s var(--ease-out-expo) infinite;
+}
+@keyframes site-ping {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(7); opacity: 0; }
+}

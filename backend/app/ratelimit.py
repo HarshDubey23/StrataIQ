@@ -18,7 +18,7 @@ RULES = [
     ("POST", re.compile(r"/field/[^/]+/(records|submit)$"), "field", 60, 60),
 ]
 # these two call public map services for anyone, signed in or not
-PUBLIC_MAP = [("GET", re.compile(r"/market/(peek|preview)$"), "public_map", 30, 60)]
+PUBLIC_MAP = [("GET", re.compile(r"/market/(peek|preview)$"), "public_map", 30, 60), ("GET", re.compile(r"/market/suggest$"), "suggest", 120, 60)]
 RULES += PUBLIC_MAP
 WRITE = ("write", 120, 60)
 READ = ("read", 600, 60)

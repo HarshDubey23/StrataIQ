@@ -6,7 +6,7 @@
  * population columns, demand arcs). deck.gl is imported on demand so it never
  * runs during server rendering and only ships to pages that draw a map.
  */
-import type { IControl, Map as MLMap } from "maplibre-gl";
+import type { IControl, LayerSpecification, Map as MLMap, StyleSpecification } from "maplibre-gl";
 
 export const STYLE_DARK = "https://tiles.openfreemap.org/styles/positron"; // light base, recoloured in enhanceMap
 export const STYLE_FALLBACK = "https://tiles.openfreemap.org/styles/liberty";
@@ -21,13 +21,38 @@ export const C = {
 };
 
 export async function pickStyle(): Promise<string> {
+  return STYLE_DARK;
+}
+
+/**
+ * The landing style: the base style's JSON reduced to water, parks and roads in atlas colors, before the map is made.
+ * It paints right the first time, and the layers it drops are never decoded.
+ */
+export async function atlasStyle(): Promise<StyleSpecification | string> {
   try {
     const r = await fetch(STYLE_DARK);
-    if (r.ok) return STYLE_DARK;
+    if (!r.ok) throw new Error("style");
+    const s = (await r.json()) as StyleSpecification;
+    const keep: LayerSpecification[] = [{ id: "bg", type: "background", paint: { "background-color": BP.field } }];
+    for (const l of s.layers) {
+      const src = "source-layer" in l ? l["source-layer"] : "";
+      if (l.type === "fill" && src === "water") keep.push({ ...l, paint: { "fill-color": BP.water } });
+      else if (l.type === "fill" && src === "park") keep.push({ ...l, paint: { "fill-color": BP.park } });
+      else if (l.type === "line" && src === "transportation" && !/rail|ferry|aeroway/.test(l.id)) {
+        const major = /motorway|trunk|primary|major/.test(l.id);
+        keep.push({ ...l, paint: { "line-color": "#ffffff", "line-opacity": major ? 0.75 : 0.34, "line-width": ["interpolate", ["exponential", 1.4], ["zoom"], 12, major ? 1.2 : 0.4, 16, major ? 7 : 3] } });
+      }
+    }
+    const source = "openmaptiles";
+    keep.push(
+      { id: "siq-buildings-flat", source, "source-layer": "building", type: "fill", minzoom: 14, layout: { visibility: "none" }, paint: { "fill-color": "#cfe0f5", "fill-outline-color": "#0f1f3d" } },
+      { id: "siq-footprints", source, "source-layer": "building", type: "line", minzoom: 13, paint: { "line-color": "#0f1f3d", "line-width": 1, "line-opacity": 0.8 } },
+      { id: "siq-buildings-3d", source, "source-layer": "building", type: "fill-extrusion", minzoom: 13, paint: { "fill-extrusion-color": "#f7f8fa", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false } },
+    );
+    return { ...s, layers: keep, light: { anchor: "map", color: "#dbe8f7", intensity: 0.16, position: [1.15, 210, 30] }, glyphs: undefined, sprite: undefined };
   } catch {
-    /* offline */
+    return STYLE_FALLBACK;
   }
-  return STYLE_FALLBACK;
 }
 
 function safe(fn: () => void) {
@@ -98,14 +123,14 @@ export function enhanceMap(m: MLMap, opts: { buildingsMinZoom?: number; building
 // ---------------------------------------------------------------- deck.gl overlay
 type DeckMods = {
   MapboxOverlay: typeof import("@deck.gl/mapbox").MapboxOverlay;
-  layers: typeof import("@deck.gl/layers") & { TripsLayer: typeof import("@deck.gl/geo-layers").TripsLayer };
+  layers: typeof import("@deck.gl/layers");
 };
 let deckMods: Promise<DeckMods> | null = null;
 export function loadDeck(): Promise<DeckMods> {
   if (!deckMods) {
-    deckMods = Promise.all([import("@deck.gl/mapbox"), import("@deck.gl/layers"), import("@deck.gl/geo-layers")]).then(([mb, layers, geo]) => ({
+    deckMods = Promise.all([import("@deck.gl/mapbox"), import("@deck.gl/layers")]).then(([mb, layers]) => ({
       MapboxOverlay: mb.MapboxOverlay,
-      layers: { ...layers, TripsLayer: geo.TripsLayer },
+      layers,
     }));
   }
   return deckMods;

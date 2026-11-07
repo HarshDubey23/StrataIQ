@@ -1,6 +1,10 @@
 {$DOMAIN} {
 	encode zstd gzip
-	reverse_proxy web:3000
+	# a deploy restarts the web container: hold requests for a moment instead of showing an error
+	reverse_proxy web:3000 {
+		lb_try_duration 30s
+		lb_try_interval 250ms
+	}
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"

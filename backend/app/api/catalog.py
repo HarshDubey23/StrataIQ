@@ -110,15 +110,24 @@ async def preview(spot: str = Query(default="austin"), category: str = Query(def
     if entry is None:
         raise HTTPException(404, "Unknown category")
     try:
-        pois, prov = await osm.fetch_competitors(sp["lat"], sp["lng"], radius_m, list(entry.filters), Cache(session_factory()), limit=400,
-                                                 timeout_s=30, terms=[entry.label.split("/")[0].strip(), *entry.synonyms[:2]])
+        pois, prov, complete = await osm.quick_competitors(sp["lat"], sp["lng"], radius_m, list(entry.filters), Cache(session_factory()),
+                                                           terms=[entry.label.split("/")[0].strip(), *entry.synonyms[:2]])
     except ProviderError as e:
         raise HTTPException(502, f"OpenStreetMap is busy right now ({e.message[:100]})") from e
-    return {"spot": {**sp, "key": spot}, "category": {"key": entry.key, "label": entry.label}, "radius_m": radius_m,
+    return {"spot": {**sp, "key": spot}, "category": {"key": entry.key, "label": entry.label}, "radius_m": radius_m, "complete": complete,
             "competitors": [{"name": p["name"] or "Unnamed", "lat": p["lat"], "lng": p["lng"], "ref": p["ref"]} for p in pois],
             "source": {"name": " + ".join([prov.get("name") or ""] + [a["name"] for a in prov.get("also") or []]),
                        "retrieved_at": prov.get("retrieved_at"), "detail": prov.get("detail"), "from_cache": prov.get("from_cache"),
                        "attribution": " · ".join([prov.get("attribution") or ""] + [a["attribution"] for a in prov.get("also") or []])}}
+
+
+@router.get("/market/suggest")
+async def suggest(q: str = Query(min_length=3, max_length=120)):
+    """Public address suggestions while someone types. A slow or failed lookup just shows none: typing still works."""
+    try:
+        return {"results": await osm.suggest_places(q, Cache(session_factory()))}
+    except Exception:  # noqa: BLE001
+        return {"results": []}
 
 
 @router.get("/market/peek")
