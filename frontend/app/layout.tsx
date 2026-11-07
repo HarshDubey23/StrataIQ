@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Instrument_Serif, Inter_Tight, JetBrains_Mono, Tiro_Devanagari_Hindi } from "next/font/google";
+import { Archivo, Instrument_Serif, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import VoiceDock from "@/components/voice/VoiceDockLoader";
@@ -9,7 +9,6 @@ const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["nor
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono", display: "swap" });
 // Archivo with its width axis: extra-wide for landing headlines, normal width for landing text
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
-const tiro = Tiro_Devanagari_Hindi({ subsets: ["devanagari"], weight: "400", variable: "--font-tiro", display: "swap" });
 
 export const metadata: Metadata = {
   title: "StrataIQ: test a business location before you sign",
@@ -20,7 +19,7 @@ export const viewport: Viewport = { themeColor: "#f3f4f1", colorScheme: "light" 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable} ${tiro.variable} ${archivo.variable}`}>
+    <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable} ${archivo.variable}`}>
       <head>
         {/* Entrance animations start hidden; without script the text must still show */}
         <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style></noscript>

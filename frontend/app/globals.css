@@ -15,7 +15,6 @@
   --font-display: var(--font-archivo), ui-sans-serif, sans-serif;
   --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
   --font-mono: var(--font-jbmono), ui-monospace, SFMono-Regular, monospace;
-  --font-deva: var(--font-tiro), serif;
 
   --color-ink-950: #f3f4f1; /* page */
   --color-ink-900: #ffffff; /* surface */
@@ -468,11 +467,32 @@ html.lenis body {
   border-bottom-color: #fff !important;
 }
 
+@page {
+  size: letter;
+  margin: 16mm 14mm;
+}
+
 @media print {
   html,
   body {
     background: white !important;
     color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  article {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  section,
+  table,
+  tr,
+  li {
+    break-inside: avoid;
+  }
+  h2,
+  h3 {
+    break-after: avoid;
   }
   .no-print {
     display: none !important;

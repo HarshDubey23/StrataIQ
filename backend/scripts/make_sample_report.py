@@ -23,7 +23,7 @@ from app.security import hash_password  # noqa: E402
 from app.services.runs import execute_run, point_wkt, refresh_snapshot  # noqa: E402
 
 
-TOKEN = "sample-austin"
+TOKEN = "sample-report-downtown-austin"
 EMAIL = "sample-report@internal.strataiq.app"
 
 

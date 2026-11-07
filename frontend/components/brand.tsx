@@ -1,7 +1,7 @@
 import Link from "next/link";
 import cn from "clsx";
 
-/** Mark: three survey strata (स्तर = layer) with the site point lit in cobalt. */
+/** Mark: three survey strata with the site point lit. */
 export function LogoMark({ size = 24, tone = "light" }: { size?: number; tone?: "light" | "dark" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
@@ -21,7 +21,6 @@ export function Logo({ href = "/", compact = false, tone = "light" }: { href?: s
       {!compact && (
         <span className="flex items-baseline gap-1.5">
           <span className="lp-wide text-[16px] tracking-[-0.02em]">StrataIQ</span>
-          <span className={cn("font-deva text-[13px] transition-colors group-hover:text-accent", tone === "dark" ? "text-white/45" : "text-ink-400")} lang="hi">स्तर</span>
         </span>
       )}
     </Link>

@@ -510,7 +510,7 @@ export default function SimulationLab() {
                   </div>
                 ))}
                 <p className="text-[10px] text-ink-500">{res.income
-                  ? "Share of each spending class (India's bottom 40% / middle 40% / top 20%, sized from official data for this area) whose willingness to pay exceeds your price."
+                  ? "Share of each spending class (the US bottom 40% / middle 40% / top 20%, sized from official data for this area) whose willingness to pay exceeds your price."
                   : "Share of each synthetic segment whose assumed willingness to pay exceeds your price."}</p>
               </Card>
               {res.income && <IncomeMix income={res.income} />}

@@ -53,6 +53,12 @@ async function diagnose() {
   await timed("server proxy", async () => (await fetch(`${BASE}/api/health`)).status);
   await timed("browser script", () => page.evaluate(() => document.readyState));
   L(`  diagnose open requests: ${JSON.stringify(openRequests())}`);
+  const stuck = page.url();
+  const cookie = (await ctx.cookies()).map((c) => `${c.name}=${c.value}`).join("; ");
+  await timed("same page outside browser", async () => {
+    const r = await fetch(stuck, { headers: { cookie } });
+    return `${r.status} ${(await r.text()).length} bytes from ${stuck.replace(BASE, "")}`;
+  });
   const stack = new Promise((ok) => cdp.once("Debugger.paused", (e) => ok(e.callFrames.slice(0, 14).map((f) => `${f.functionName || "(anon)"} ${f.url.replace(/^.*\/_next\/static\/chunks\//, "")}:${f.location.lineNumber}:${f.location.columnNumber}`))));
   await cdp.send("Debugger.pause").catch((e) => L(`  diagnose pause failed: ${e}`));
   await timed("frozen at", () => stack.then((frames) => JSON.stringify(frames)));

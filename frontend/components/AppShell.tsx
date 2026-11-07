@@ -44,27 +44,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Logo href="/app" tone="dark" />
       </div>
       <div className="p-3">
-        <Link href="/app/projects/new" className="sheen flex h-11 items-center justify-between rounded-md bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-night">
+        <Link href="/app/projects/new" className="sheen flex h-11 items-center justify-between bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-night">
           New analysis <Plus className="h-4 w-4" />
         </Link>
       </div>
       <nav className="flex-1 px-3 pt-3" aria-label="Main">
-        <p className="label-mono px-2 pb-2 text-white/35">Workspace</p>
-        {nav.filter((n) => n.href !== "/app/projects/new").map((n, i) => {
+        {nav.filter((n) => n.href !== "/app/projects/new").map((n) => {
           const active = n.exact ? path === n.href : path.startsWith(n.href);
           return (
             <Link
               key={n.href}
               href={n.href}
               className={cn(
-                "group relative flex items-center gap-3 border-t border-white/[0.08] px-2 py-2.5 text-[13.5px] transition-colors",
-                active ? "text-white" : "text-white/55 hover:text-white",
+                "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-[15px] transition-colors",
+                active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
               )}
             >
-              <span className={cn("label-mono w-5 transition-colors", active ? "text-accent" : "text-white/30 group-hover:text-white/60")}>0{i + 1}</span>
               <span className="flex-1">{n.label}</span>
               <n.icon className={cn("h-4 w-4 transition-colors", active ? "text-accent" : "text-white/30 group-hover:text-white/60")} />
-              {active && <span aria-hidden className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 bg-accent" />}
             </Link>
           );
         })}
@@ -74,8 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-70", caps ? "animate-ping bg-ok" : "bg-white/30")} />
           <span className={cn("relative inline-flex h-2 w-2 rounded-full", caps ? "bg-[#3ddc84]" : "bg-white/30")} />
         </span>
-        {caps ? "Live data connected" : "Connecting…"}
-        {caps && <span className="num ml-auto font-mono text-[10px] text-white/35">{caps.model_version}</span>}
+        {caps ? "All systems running" : "Connecting…"}
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-white/10 px-5 py-4 text-xs">
         <span className="flex min-w-0 items-center gap-2">

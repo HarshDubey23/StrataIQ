@@ -18,7 +18,7 @@ import type { MarketData, Run, SimResult } from "@/lib/types";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => <div className="absolute inset-0 flex items-center justify-center bg-ink-950 text-sm text-ink-400">Loading live market…</div> });
 
-const MODE_LABEL: Record<string, string> = { walk: "Walk", two_wheeler: "Two-wheeler", car: "Car", auto: "Auto", bus: "Bus", metro: "Metro / rail", cycle: "Cycle" };
+const MODE_LABEL: Record<string, string> = { walk: "Walk", two_wheeler: "Motorcycle", car: "Car", auto: "Taxi", bus: "Bus", metro: "Rail", cycle: "Bicycle" };
 const TT = { contentStyle: { background: "#FFFFFF", border: "1px solid #E7E4DC", borderRadius: 6, fontSize: 12 } };
 
 export default function LiveMarket() {

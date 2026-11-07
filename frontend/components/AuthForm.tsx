@@ -80,17 +80,14 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-accent px-4 py-10">
-      <div aria-hidden className="lp-grid pointer-events-none absolute inset-0" />
-      <div aria-hidden className="lp-wide pointer-events-none absolute inset-x-0 bottom-0 select-none text-center text-[19vw] leading-[0.78] tracking-[-0.06em] text-white/[0.07]">StrataIQ</div>
-      <div className="rise relative w-full max-w-sm">
-        <div className="mb-10 flex justify-center">
-          <Logo tone="dark" />
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-8">
+          <Logo />
         </div>
-        <form onSubmit={submit} className="space-y-4 rounded-md bg-white p-7 text-ink-100 shadow-[12px_12px_0_var(--color-night)]" noValidate>
+        <form onSubmit={submit} className="space-y-5 bg-white p-8 text-ink-100" noValidate>
           <div>
-            <p className="label-mono text-accent">{mode === "sign-up" ? "01. New account" : "01. Welcome back"}</p>
-            <h1 className="font-display mt-2 text-[28px] leading-none tracking-tight">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
+            <h1 className="font-display text-4xl font-medium leading-none tracking-[-0.03em]">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
             <p className="mt-1 text-sm text-ink-300">
               {demo ? "Sign in to open the labelled demo scenario." : mode === "sign-up" ? "Start testing business ideas against a model of the real market." : "Welcome back."}
             </p>
@@ -125,7 +122,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
             )}
           </p>
           {mode === "sign-in" && (
-            <p className="text-center text-[11px] text-ink-500">Forgot your password? Email-based reset is not enabled in this deployment; change it from Settings once signed in.</p>
+            <p className="text-center text-[11px] text-ink-500">Forgot your password? Contact support and we will help you get back in.</p>
           )}
         </form>
       </div>

@@ -15,10 +15,9 @@ export interface ReportContent {
   disclaimer: string;
 }
 
-function H({ n, children }: { n: number; children: React.ReactNode }) {
+function H({ children }: { n: number; children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 mt-8 flex items-baseline gap-2 border-b border-black/[0.07] pb-1.5 text-base font-semibold">
-      <span className="num text-xs text-ink-400">{String(n).padStart(2, "0")}</span>
+    <h2 className="mb-3 mt-10 break-after-avoid font-display text-2xl font-medium tracking-[-0.02em] text-ink-100">
       {children}
     </h2>
   );
@@ -61,6 +60,33 @@ function ShareBars({ data }: { data: Record<string, number | null | undefined> }
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The closing page: what the numbers mean and what to do next, in plain sentences built only from this report's figures. */
+function BottomLine({ c }: { c: ReportContent }) {
+  const d = c.decision;
+  const best = c.scenarios.find((s) => s.scenario.id === d.best_scenario_id && s.result?.finance) || c.scenarios.find((s) => s.result?.finance);
+  const r = best?.result as any;
+  if (!r) return null;
+  const mc = r.monte_carlo;
+  const risk = d.risks.find((x) => x.factor !== "Data gap");
+  const steps = d.next_actions.slice(0, 3);
+  return (
+    <section className="mt-10 break-inside-avoid bg-night p-6 text-white">
+      <h2 className="font-display text-3xl font-medium tracking-[-0.02em]">Bottom line and what to do</h2>
+      <p className="mt-3 text-[15px] leading-relaxed">
+        {d.headline} Under the best plan tested, &ldquo;{best!.scenario.name}&rdquo;, the model puts a typical month at {money(mc?.profit?.p50 ?? r.finance.operating_profit)}{mc ? `, within a range of ${money(mc.profit.p10)} to ${money(mc.profit.p90)}, with a ${pct(mc.prob_loss)} chance of a monthly loss` : ""}.
+        {r.finance.payback_months ? ` Startup costs would pay back in about ${num(r.finance.payback_months, 1)} months.` : " Startup costs do not pay back on these inputs."}
+        {risk ? ` The main risk: ${risk.text}` : ""}
+      </p>
+      {steps.length > 0 && (
+        <ol className="mt-4 list-decimal space-y-2 pl-5 text-[15px] leading-snug">
+          {steps.map((a, i) => <li key={i}><b>{a.action}</b> {a.why}</li>)}
+        </ol>
+      )}
+      <p className="mt-4 text-xs text-white/80">Before you sign, replace the example costs with real quotes and check the street in person.</p>
+    </section>
   );
 }
 
@@ -136,13 +162,12 @@ export function ReportView({ c }: { c: ReportContent }) {
   const prof = c.project.profile as Record<string, any>;
   const ran = c.scenarios.filter((s) => s.result);
   return (
-    <article className="print-light mx-auto max-w-4xl rounded-lg border border-black/[0.07] bg-ink-950 p-6 text-sm leading-relaxed text-ink-200 md:p-10">
+    <article className="print-light mx-auto max-w-4xl bg-ink-950 p-6 text-sm leading-relaxed text-ink-200 md:p-10">
       {c.project.is_demo && <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-800">DEMO SCENARIO — Illustrative market data; not verified live conditions.</div>}
       <header>
-        <div className="text-xsst text-ink-400">StrataIQ feasibility report</div>
-        <h1 className="mt-1 text-2xl font-semibold text-ink-100">{c.project.name}</h1>
-        <p className="mt-1 text-xs text-ink-400">Generated {when(c.generated_at)} · model {d.model_version || "—"}</p>
-        <p className="mt-3 rounded border border-black/[0.07] bg-ink-900 p-3 text-xs text-ink-300">{c.disclaimer}</p>
+        <div className="font-display text-lg font-medium text-ink-100">StrataIQ</div>
+        <h1 className="mt-5 font-display text-4xl font-medium leading-[1.02] tracking-[-0.03em] text-ink-100">{c.project.name}</h1>
+        <p className="mt-2 text-sm text-ink-300">Location feasibility report, generated {when(c.generated_at)}</p>
       </header>
 
       <Executive c={c} />
@@ -240,7 +265,8 @@ export function ReportView({ c }: { c: ReportContent }) {
       <H n={12}>Methodology and limitations</H>
       <p>Demand is estimated with a multinomial-logit customer-choice model over synthetic customer segments placed on a population grid, with an outside option, lognormal affordability, distance decay and capacity limits. Uncertainty is propagated by Monte Carlo over documented parameter ranges. Default behaviour parameters are not calibrated against observed sales; no accuracy figure is claimed. See /methodology for formulas.</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-ink-300">{(ran[0]?.result?.limitations || []).map((l) => <li key={l}>{l}</li>)}</ul>
-      <p className="mt-6 text-[11px] text-ink-500">Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0).</p>
+      <BottomLine c={c} />
+      <p className="mt-6 text-[11px] leading-snug text-ink-400">{c.disclaimer} Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Neighbourhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau.</p>
     </article>
   );
 }
