@@ -36,6 +36,7 @@ ELASTICITY = {
     "appointment": (1.0, 0.6, 1.4, "assumption", "No published India estimate"),
     "lodging": (1.5, 1.0, 2.0, "assumption", "No published India estimate"),
 }
+US_ELASTICITY_SCALE = 0.5
 TASTE_SIGMA = (0.3, 0.2, 0.45)  # log-sd of WTP among people with the same consumption (assumption)
 HEALTH_KEYS = {"dentist", "clinic", "physio", "diagnostics", "pharmacy", "optician"}
 
@@ -86,7 +87,9 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
     eps, eps_lo, eps_hi, eps_status, eps_src = _elasticity(arch, category_key)
     us = isinstance(ctx, income_us.UsIncomeContext)
     if us:
-        eps_status, eps_src = "assumption", f"No US estimate yet. Indian evidence used as a placeholder: {eps_src}"
+        # US incomes spread far wider than Indian spending, so the Indian slope would put top-income WTP near 5x the local price.
+        eps, eps_lo, eps_hi = eps * US_ELASTICITY_SCALE, eps_lo * US_ELASTICITY_SCALE, eps_hi * US_ELASTICITY_SCALE
+        eps_status, eps_src = "assumption", "No US estimate yet. Set so top-income willingness to pay stays near the archetype's assumed premium of about 2x; validate with field prices"
     nat = ctx.nat if us else national()
     x_ref = nat.median if us else _urban_median()
     labels = income_us.CLASS_LABELS if us else CLASS_LABELS

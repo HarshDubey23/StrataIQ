@@ -5,8 +5,11 @@ import numpy as np
 import pytest
 
 from app.categories.archetypes import ARCHETYPES
+from app.engine import model as em
+from app.engine.abm import run_abm
 from app.engine.economics import behaviour as eb
 from app.engine.economics import income_us as iu
+from app.engine.simulate import simulate
 
 # Household counts per bracket: poor, rich, and a national mix. Synthetic, shaped like ACS B19001.
 POOR = [300, 200, 150, 120, 100, 80, 70, 60, 50, 40, 30, 15, 8, 4, 2, 1]
@@ -92,3 +95,40 @@ def test_assemble_joins_files_and_skips_tiny_or_unlocated_tracts():
     assert d["id"].tolist() == ["A"]
     assert d["lat"][0] == 30.0 and d["hh_size"][0] == 2.0 and d["counts"].shape == (1, 16)
     assert float(d["nation_hh_size"]) == 2.5
+
+
+real_data = pytest.mark.skipif(iu.load_tracts() is None, reason="US tract extract not built")
+
+
+@real_data
+def test_real_extract_matches_published_national_median_and_known_places():
+    d = iu.load_tracts()
+    assert len(d["id"]) > 80_000
+    median_household = iu.BracketCurve(d["nation_counts"], d["nation_hh_size"]).median * 12 * float(d["nation_hh_size"])
+    assert median_household == pytest.approx(78_538, rel=0.02)  # ACS 2019-2023 published national median
+    median = lambda la, ln: iu.build_context([la], [ln], state=None).zone_curve[0].median  # noqa: E731
+    assert median(37.4613, -122.1975) > 4 * median(40.8176, -73.9182)  # Atherton CA vs South Bronx NY
+    assert iu.build_context([28.6315], [77.2167], state=None) is None  # New Delhi
+
+
+@real_data
+def test_real_us_catchment_runs_end_to_end_with_believable_prices():
+    arch = ARCHETYPES["membership"]
+    zones = [em.Zone(30.25 + 0.004 * i, -97.76 + 0.004 * j, 900.0) for i in range(4) for j in range(4)]
+    comps = [em.Competitor("c1", "Rival", 30.26, -97.75)]
+    biz = em.BusinessInputs(30.256, -97.754, price=49, rent=12000, payroll=14000)
+    ctx = iu.build_context([z.lat for z in zones], [z.lng for z in zones], state="Texas")
+    beh = eb.build(arch, "gym", ctx, len(zones))
+    # the top income class should pay more, but not several times the local price
+    wtp = [c["wtp_multiplier"] for c in beh.summary["classes"]]
+    assert wtp[0] < wtp[1] < wtp[2] < 3.0 and wtp[2] > 1.3 and 0.4 < wtp[0] < 1.0
+    arch2 = eb.apply(arch, beh)
+    assert simulate(arch2, zones, comps, biz, {}, mc_draws=40, seed=1, evidence=beh.params, seg_share_z=beh.zone_shares, with_sensitivity=False)["summary"]
+    params = em.ResolvedParams.from_archetype(arch2, {}, beh.params)
+    assert params.status["participation"] == "assumption"
+    out = run_abm(arch2, zones, comps, biz, params, 49.0, n_agents=600, days=14, seed=3, income=ctx, behaviour=beh)
+    cols = out["agents"]["columns"]
+    income = np.array([r[cols.index("mpce")] for r in out["agents"]["rows"]], float)
+    pay = np.array([r[cols.index("wtp")] for r in out["agents"]["rows"]], float)
+    assert (income > 0).all() and np.corrcoef(np.log(income), np.log(pay))[0, 1] > 0.3
+    assert 15 < np.median(pay) < 200  # dollars a month for a $49 gym, not rupee-scale numbers
