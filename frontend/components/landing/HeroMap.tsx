@@ -6,7 +6,7 @@
  *
  * The camera is scrubbed by scroll: `progress` (0..5, a ref so scrolling never re-renders React) is
  * interpolated between one camera per chapter. `scene` (the nearest whole chapter) switches layers:
- *   0 hero  1 the street  2 rivals rise  3 people appear  4 each one chooses  5 the answer
+ *   0 hero  1 rivals rise  2 the neighborhood  3 each one chooses  4 the answer
  * The crowd is a drawing, not the model: the real run uses the choice model inside the app.
  */
 import maplibregl, { type Map as MLMap } from "maplibre-gl";
@@ -49,7 +49,7 @@ interface Bin {
 }
 
 /** Illustrative crowd: homes around the street; some aren't buying today, the rest walk to the nearest-ish shop. */
-function makePeople(spot: Spot, comps: PreviewComp[], n = 1400): Person[] {
+function makePeople(spot: Spot, comps: PreviewComp[], n = 2200): Person[] {
   const r = rand(spot.lat * 1e4 + spot.lng * 1e3 + comps.length);
   const dests = [{ lat: spot.lat, lng: spot.lng, you: true }, ...comps.slice(0, 60).map((c) => ({ lat: c.lat, lng: c.lng, you: false }))];
   const kmLat = 1 / 111.32;
@@ -115,6 +115,9 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
   const deck = useRef<DeckHandle | null>(null);
   const [ready, setReady] = useState(false);
   const [shown, setShown] = useState(false);
+  // one stable array per street: a new array each frame would restart the pillar's rise forever
+  const site = useRef<Spot[]>([spot]);
+  if (site.current[0] !== spot) site.current = [spot];
   const state = useRef({ spot, comps, scene, people: [] as Person[], bins: [] as Bin[], walkers: [] as Person[], free: false, cur: CAMERAS[0] as Cam, t0: 0 });
   state.current.spot = spot;
   state.current.comps = comps;
@@ -166,35 +169,35 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
           }
           const sc = S.scene;
           const all = sc === 0;
-          const showComps = all || sc >= 2;
-          const showPeople = all || sc >= 3;
-          const choose = all || sc >= 4;
-          const showTrips = all || sc >= 4;
+          const showComps = all || sc >= 1;
+          const showPeople = all || sc >= 2;
+          const choose = all || sc >= 3;
+          const showTrips = all || sc >= 3;
           const t = (now / 22) % 1400;
           const pulse = (now / 12) % 260;
           const binMax = Math.max(1, ...S.bins.map((b) => b.n));
           const pc = (p: Person) => (!choose ? rgba(STONE, 235) : p.choice === "you" ? rgba(YOU, 255) : p.choice === "rival" ? rgba(BRICK, 240) : rgba(STONE, 110));
           d?.setLayers((DL) => [
             new DL.ScatterplotLayer({
-              id: "catchment", data: [S.spot], getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
-              getRadius: sc === 1 || sc === 5 ? 1500 : 0, getFillColor: rgba(WHITE, 16), getLineColor: rgba(WHITE, 200),
+              id: "catchment", data: site.current, getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
+              getRadius: sc === 1 || sc === 4 ? 1500 : 0, getFillColor: rgba(WHITE, 16), getLineColor: rgba(WHITE, 200),
               stroked: true, lineWidthMinPixels: 1.5, transitions: { getRadius: { duration: 1400, easing: easeOut } }, updateTriggers: { getRadius: sc },
             }),
             new DL.ColumnLayer({
-              id: "density", data: S.bins, diskResolution: 6, angle: 30, radius: 80, coverage: 0.86, extruded: true, wireframe: true,
-              getPosition: (b: Bin) => b.pos, getElevation: (b: Bin) => (sc === 3 ? 10 + (b.n / binMax) * 260 : 0),
-              getFillColor: rgba(WHITE, sc === 3 ? 28 : 0), getLineColor: rgba(WHITE, sc === 3 ? 170 : 0),
+              id: "density", data: S.bins, diskResolution: 4, angle: 45, radius: 80, coverage: 0.8, extruded: true, wireframe: true, material: false,
+              getPosition: (b: Bin) => b.pos, getElevation: (b: Bin) => (sc === 2 ? 10 + (b.n / binMax) * 240 : 0),
+              getFillColor: rgba(STONE, sc === 2 ? 235 : 0), getLineColor: [15, 31, 61, sc === 2 ? 200 : 0],
               transitions: { getElevation: { duration: 1300, easing: easeOut }, getFillColor: { duration: 600 }, getLineColor: { duration: 600 } },
-              updateTriggers: { getElevation: [sc, binMax], getFillColor: sc === 3, getLineColor: sc === 3 },
+              updateTriggers: { getElevation: [sc, binMax], getFillColor: sc === 2, getLineColor: sc === 2 },
             }),
             showTrips && new DL.TripsLayer({
               id: "trips", data: S.walkers, getPath: (x: Person) => x.path, getTimestamps: (x: Person) => x.ts,
-              getColor: (x: Person) => (x.choice === "you" ? YOU : BRICK), widthMinPixels: 2, trailLength: 80, currentTime: t,
-              fadeTrail: true, capRounded: true, jointRounded: true, opacity: sc === 5 ? 0.5 : 0.9,
+              getColor: (x: Person) => (x.choice === "you" ? YOU : BRICK), widthMinPixels: 3, trailLength: 90, currentTime: t,
+              fadeTrail: true, capRounded: true, jointRounded: true, opacity: sc === 4 ? 0.5 : 0.95,
             }),
             new DL.ScatterplotLayer({
-              id: "people", data: S.people, getPosition: (p: Person) => p.home, radiusUnits: "meters", radiusMinPixels: 0,
-              getRadius: showPeople ? 9 : 0, getFillColor: pc, stroked: false,
+              id: "people", data: S.people, getPosition: (p: Person) => p.home, radiusUnits: "meters", radiusMinPixels: showPeople ? 1.5 : 0,
+              getRadius: showPeople ? 13 : 0, getFillColor: pc, stroked: false,
               transitions: { getRadius: { duration: 900, easing: easeOut }, getFillColor: { duration: 900 } },
               updateTriggers: { getRadius: showPeople, getFillColor: choose },
             }),
@@ -205,14 +208,14 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
               transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: showComps },
             }),
             new DL.ScatterplotLayer({
-              id: "site-ring", data: [S.spot], getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
+              id: "site-ring", data: site.current, getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
               getRadius: 40 + pulse, getFillColor: [0, 0, 0, 0], getLineColor: rgba(YOU, Math.max(0, 240 - pulse * 0.92)),
               stroked: true, filled: false, lineWidthMinPixels: 2, updateTriggers: { getRadius: now, getLineColor: now },
             }),
             new DL.ColumnLayer({
-              id: "site", data: [S.spot], diskResolution: 4, angle: 45, radius: 34, extruded: true, wireframe: true, material: false, getLineColor: [15, 31, 61, 255],
-              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 5 ? 420 : 260, getFillColor: rgba(YOU, 255),
-              transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: sc === 5 },
+              id: "site", data: site.current, diskResolution: 4, angle: 45, radius: 34, extruded: true, wireframe: true, material: false, getLineColor: [15, 31, 61, 255],
+              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 4 ? 420 : 260, getFillColor: rgba(YOU, 255),
+              transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: sc === 4 },
             }),
           ].filter(Boolean));
           raf = requestAnimationFrame(loop);

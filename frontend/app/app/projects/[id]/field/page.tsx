@@ -206,11 +206,11 @@ export default function FieldResearch() {
               <div className="border-t border-black/[0.06] p-6">
                 <p className="text-xs text-ink-400">Researcher&apos;s field link — send it on WhatsApp. It only lets them add data to this project.</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <code className="num min-w-0 flex-1 truncate rounded-lg border border-black/10 bg-ink-950 px-3 py-2.5 font-mono text-[12px] text-ink-200">{link}</code>
+                  <code className="num min-w-0 flex-1 truncate rounded-md border border-black/10 bg-ink-950 px-3 py-2.5 font-mono text-[12px] text-ink-200">{link}</code>
                   <Button size="md" onClick={() => { void navigator.clipboard?.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1800); }}>
                     {copied ? <Check className="h-4 w-4 text-field" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy"}
                   </Button>
-                  <a href={link} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-black/10 px-3 text-sm text-ink-200 hover:border-black/25">
+                  <a href={link} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-md border border-black/10 px-3 text-sm text-ink-200 hover:border-black/25">
                     <ExternalLink className="h-4 w-4" /> Open field app
                   </a>
                 </div>

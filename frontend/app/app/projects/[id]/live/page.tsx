@@ -19,7 +19,7 @@ import type { MarketData, Run, SimResult } from "@/lib/types";
 const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => <div className="absolute inset-0 flex items-center justify-center bg-ink-950 text-sm text-ink-400">Loading live market…</div> });
 
 const MODE_LABEL: Record<string, string> = { walk: "Walk", two_wheeler: "Motorcycle", car: "Car", auto: "Taxi", bus: "Bus", metro: "Rail", cycle: "Bicycle" };
-const TT = { contentStyle: { background: "#FFFFFF", border: "1px solid #E7E4DC", borderRadius: 6, fontSize: 12 } };
+const TT = { contentStyle: { background: "#FFFFFF", border: "1px solid #d3dbe5", borderRadius: 6, fontSize: 12 } };
 
 export default function LiveMarket() {
   const { project: p, reload } = useProject();
@@ -213,7 +213,7 @@ export default function LiveMarket() {
           <>
             {/* top HUD */}
             <div className="pointer-events-none absolute left-3 right-14 top-3 z-10 flex flex-wrap items-start gap-2">
-              <div className="pointer-events-auto panel rounded-xl px-4 py-2.5 ">
+              <div className="pointer-events-auto panel rounded-md px-4 py-2.5 ">
                 <div className="flex items-center gap-2 text-[11px]st text-ink-400"><Activity className="h-3 w-3 text-accent" /> Live market simulation</div>
                 <div className="num mt-0.5 text-2xl font-semibold text-ink-100">Day {day + 1}<span className="ml-2 text-sm text-ink-400">week {Math.floor(day / 7) + 1} of {Math.ceil(abm.days / 7)}</span></div>
               </div>
@@ -228,15 +228,15 @@ export default function LiveMarket() {
                   "Real people (scaled up from the agents) who have bought from you at least once so far.",
                   "Share of people who need this today and know you exist. Ads, word of mouth and your signboard raise it.",
                   "Sales all the nearby competitors made on this simulated day.",
-                ][hi]} className="pointer-events-auto panel cursor-help rounded-xl px-3 py-2 ">
-                  <div className="text-[10px] text-ink-400">{l}</div>
-                  <div className="num text-lg font-semibold text-ink-100">{v}</div>
+                ][hi]} className="pointer-events-auto panel cursor-help rounded-md px-3 py-2 ">
+                  <div className="text-[12px] text-ink-300">{l}</div>
+                  <div className="num font-display text-[22px] leading-tight text-ink-100">{v}</div>
                 </div>
               ))}
               {abm.genome && (
-                <Link href={`/app/projects/${p.id}/genome`} className="pointer-events-auto rounded-lg border border-agent/40 bg-ink-950/90 px-3 py-2  hover:border-agent">
-                  <div className="flex items-center gap-1 text-[10px] text-agent"><Dna className="h-3 w-3" /> Agent genome</div>
-                  <div className="num text-lg font-semibold text-ink-100">{num(abm.n_agents)} × {abm.genome.per_agent}<span className="ml-1.5 text-xs font-normal text-ink-400">= {num(abm.genome.total_parameters)} params</span></div>
+                <Link href={`/app/projects/${p.id}/genome`} className="pointer-events-auto panel px-3 py-2 hover:bg-white">
+                  <div className="flex items-center gap-1 text-[12px] text-ink-300"><Dna className="h-3 w-3" /> Who they are</div>
+                  <div className="num font-display text-[22px] leading-tight text-ink-100">{num(abm.n_agents)} people</div>
                 </Link>
               )}
             </div>
@@ -248,7 +248,7 @@ export default function LiveMarket() {
             )}
 
             {/* controls */}
-            <div className="absolute bottom-6 left-3 right-14 z-10 flex flex-wrap items-center gap-2 panel rounded-xl p-2 ">
+            <div className="absolute bottom-6 left-3 right-14 z-10 flex flex-wrap items-center gap-2 panel rounded-md p-2 ">
               <Button size="sm" variant="primary" onClick={() => setPlaying((x) => !x)} aria-label={playing ? "Pause" : "Play"}>
                 {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
               </Button>
@@ -274,23 +274,23 @@ export default function LiveMarket() {
             </div>
 
             {/* legend */}
-            <div className="absolute bottom-32 left-3 z-10 max-w-xs panel rounded-xl p-3 text-[11px] text-ink-300 ">
+            <div className="absolute bottom-32 left-3 z-10 max-w-xs panel rounded-md p-3 text-[11px] text-ink-300 ">
               {colorMode === "choice" && (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-agent" /> In-market person (not yet your customer)</div>
-                  <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-accent" /> Your customer</div>
-                  <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-red-950" /> Not in this market</div>
-                  <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-300" /> Travelling to a competitor</div>
+                  <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full border border-night bg-stone" /> Looking to buy, not yet yours</div>
+                  <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full border border-night bg-you" /> Your customer</div>
+                  <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full border border-night bg-[#6f97cb]" /> Not looking right now</div>
+                  <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full border border-night bg-brick" /> Going to a rival</div>
                 </div>
               )}
               {colorMode === "segment" && abm.agents.segments.map((s, i) => {
                 const c = res?.income?.classes[i];
-                return <div key={s} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: ["#E5484D", "#D97706", "#7C3AED"][i] }} /> {c ? `${c.label} · ${pct(c.share)} here` : s}</div>;
+                return <div key={s} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: ["#A9C4E4", "#E98F86", "#F2C94C"][i] }} /> {c ? `${c.label} · ${pct(c.share)} here` : s}</div>;
               })}
               {colorMode === "mode" && abm.agents.modes.map((s, i) => <div key={s} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: ["#16A34A", "#0284C7", "#DB2777", "#CA8A04", "#EA580C", "#9333EA", "#65A30D"][i] }} /> {MODE_LABEL[s] || s}</div>)}
-              {colorMode === "age" && [["#60A5FA", "0–14"], ["#D93A1E", "15–29"], ["#D97706", "30–49"], ["#E5484D", "50+"]].map(([c, l]) => <div key={l} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: c }} /> {l}</div>)}
+              {colorMode === "age" && [["#60A5FA", "0–14"], ["#F2C94C", "15–29"], ["#E98F86", "30–49"], ["#A9C4E4", "50+"]].map(([c, l]) => <div key={l} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: c }} /> {l}</div>)}
               <div className="mt-1.5 border-t border-black/[0.07] pt-1.5 text-ink-500">
-                {num(abm.n_agents)} synthetic agents · each ≈ {num(abm.scale)} residents · {abm.genome ? `${abm.genome.per_agent} parameters each` : "profile per agent"}. Placed by {market?.snapshot?.population.source === "worldpop" ? "WorldPop" : "estimated"} density. Click any dot to X-ray its decision.
+                {num(abm.n_agents)} simulated customers, each standing for about {num(abm.scale)} residents. Click any dot to see why they decided.
               </div>
             </div>
           </>
@@ -326,8 +326,8 @@ export default function LiveMarket() {
               const agree = r >= 0.67 && r <= 1.5;
               return (
                 <div className={`rounded-md border p-2 text-[11px] ${agree ? "border-model/40 bg-model/5 text-ink-300" : "border-warn/40 bg-warn/5 text-ink-300"}`}>
-                  <span className="font-medium text-ink-100">Model agreement: {agree ? "consistent" : "models disagree"}</span> — agent simulation {num(a)} vs aggregate model {num(b)} {unit}
-                  {b > 0 ? ` (${r.toFixed(2)}×)` : ""}. {agree ? "Two independent methods land close together." : "Two independent methods differ; treat demand as highly uncertain and verify with the field survey."}
+                  <span className="font-medium text-ink-100">Two methods: {agree ? "they agree" : "they disagree"}.</span> Simulated customers give {num(a)} {unit}, the market model gives {num(b)}
+                  {b > 0 ? ` (${r.toFixed(2)}×)` : ""}. {agree ? "Two separate methods land close together." : "Treat demand as very uncertain, and check it on the street."}
                 </div>
               );
             })()}
@@ -335,7 +335,7 @@ export default function LiveMarket() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               {[
                 ["Month 3 " + unit, num(abm.monthly_units[abm.monthly_units.length - 1])],
-                ["Static model " + unit, num(res.summary.units_sold)],
+                ["Market model " + unit, num(res.summary.units_sold)],
                 ["Awareness (wk 12)", pct(abm.metrics.aware_final)],
                 ["Trial rate", pct(abm.metrics.trial_rate)],
                 ["Repeat share", pct(abm.metrics.repeat_share)],
@@ -343,40 +343,40 @@ export default function LiveMarket() {
                 ["Can afford you", pct(abm.metrics.afford_share)],
                 ["Ramp-up", abm.ramp_up_week ? `${abm.ramp_up_week} wk` : "—"],
               ].map(([l, v]) => (
-                <div key={l} className="rounded-xl border border-black/[0.07] bg-black/[0.025] p-2">
+                <div key={l} className="rounded-md border border-black/[0.07] bg-black/[0.025] p-2">
                   <div className="text-[10px] text-ink-400">{l}</div>
                   <div className="num text-sm font-semibold">{v}</div>
                 </div>
               ))}
             </div>
-            <div className="rounded-xl border border-black/[0.07] bg-black/[0.025] p-2">
+            <div className="rounded-md border border-black/[0.07] bg-black/[0.025] p-2">
               <div className="mb-1 flex items-center justify-between text-xs"><span className="font-medium text-ink-200">{membership ? "Members" : `Daily ${unit}`} — you{cmp ? <span className="ml-1.5 font-normal text-ink-400">(dashed = before)</span> : null}</span><Evidence kind="model" label="Simulated" /></div>
               <ResponsiveContainer width="100%" height={120}>
                 <ComposedChart data={dailyChart} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <CartesianGrid stroke="#E7E4DC" vertical={false} />
-                  <XAxis dataKey="d" stroke="#75716A" fontSize={10} />
-                  <YAxis stroke="#75716A" fontSize={10} width={36} />
+                  <CartesianGrid stroke="#d3dbe5" vertical={false} />
+                  <XAxis dataKey="d" stroke="#53617a" fontSize={10} />
+                  <YAxis stroke="#53617a" fontSize={10} width={36} />
                   <Tooltip {...TT} />
-                  <ReferenceLine x={day + 1} stroke="#D93A1E" />
-                  {capDay && <ReferenceLine y={capDay} stroke="#E5484D" strokeDasharray="4 3" label={{ value: "capacity", fill: "#E5484D", fontSize: 9, position: "insideTopRight" }} />}
-                  <Area dataKey="you" name="this strategy" stroke="#D93A1E" fill="#D93A1E" fillOpacity={0.15} isAnimationActive={false} />
+                  <ReferenceLine x={day + 1} stroke="#1d4f91" />
+                  {capDay && <ReferenceLine y={capDay} stroke="#e98f86" strokeDasharray="4 3" label={{ value: "capacity", fill: "#e98f86", fontSize: 9, position: "insideTopRight" }} />}
+                  <Area dataKey="you" name="this strategy" stroke="#1d4f91" fill="#1d4f91" fillOpacity={0.15} isAnimationActive={false} />
                   {cmp && <Line dataKey="before" name="before" stroke="#939eb3" strokeDasharray="4 3" dot={false} strokeWidth={1.5} isAnimationActive={false} />}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            <div className="rounded-xl border border-black/[0.07] bg-black/[0.025] p-2">
+            <div className="rounded-md border border-black/[0.07] bg-black/[0.025] p-2">
               <div className="mb-1 text-xs font-medium text-ink-200">Awareness of your business (%)</div>
               <ResponsiveContainer width="100%" height={90}>
                 <LineChart data={dailyChart} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <XAxis dataKey="d" stroke="#75716A" fontSize={10} />
-                  <YAxis stroke="#75716A" fontSize={10} width={28} domain={[0, 100]} />
+                  <XAxis dataKey="d" stroke="#53617a" fontSize={10} />
+                  <YAxis stroke="#53617a" fontSize={10} width={28} domain={[0, 100]} />
                   <Tooltip {...TT} />
-                  <ReferenceLine x={day + 1} stroke="#D93A1E" />
+                  <ReferenceLine x={day + 1} stroke="#1d4f91" />
                   <Line dataKey="aware" stroke="#C59BFF" dot={false} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div className="rounded-xl border border-black/[0.07] bg-black/[0.025] p-3 text-xs">
+            <div className="rounded-md border border-black/[0.07] bg-black/[0.025] p-3 text-xs">
               <div className="mb-2 font-medium text-ink-200">Monthly economics (agent simulation)</div>
               {abm.monthly_finance.map((m) => (
                 <div key={m.month} className="flex justify-between py-0.5">
@@ -386,7 +386,7 @@ export default function LiveMarket() {
               ))}
               <p className="mt-1.5 text-[10px] text-ink-500">Ramp-up from launch as awareness spreads. Steady-state static model: {money(res.finance.operating_profit, { compact: true })}/month.</p>
             </div>
-            <div className="rounded-xl border border-black/[0.07] bg-black/[0.025] p-3 text-xs">
+            <div className="rounded-md border border-black/[0.07] bg-black/[0.025] p-3 text-xs">
               <div className="mb-2 font-medium text-ink-200">Who your customers are</div>
               {Object.entries(abm.metrics.customer_segments).map(([k, v]) => (
                 <div key={k} className="mb-1">

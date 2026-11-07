@@ -141,7 +141,7 @@ export function QuickStart({ compact = false, autoFocus = false }: { compact?: b
               <Edit label="Budget to start" v={budget} set={setBudget} />
               <Edit label="Rent / month" v={rent} set={setRent} />
             </div>
-            <div className="rounded-xl border border-black/[0.07] bg-black/[0.02] p-3 text-xs">
+            <div className="rounded-md border border-black/[0.07] bg-black/[0.02] p-3 text-xs">
               <div className="mb-1 flex items-center gap-1.5 font-medium text-ink-200"><Lightbulb className="h-3.5 w-3.5 text-warn" /> Starter assumptions (change any later)</div>
               <ul className="list-disc space-y-0.5 pl-4 text-ink-400">{plan.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
             </div>

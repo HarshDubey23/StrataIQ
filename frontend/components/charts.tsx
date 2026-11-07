@@ -6,7 +6,7 @@ import type { SimResult } from "@/lib/types";
 
 const AX = { stroke: "#53617a", fontSize: 11 };
 const GRID = "#d3dbe5";
-const TT = { contentStyle: { background: "#FFFFFF", border: "1px solid #d3dbe5", borderRadius: 6, fontSize: 12 }, labelStyle: { color: "#34322E" } };
+const TT = { contentStyle: { background: "#FFFFFF", border: "1px solid #d3dbe5", borderRadius: 6, fontSize: 12 }, labelStyle: { color: "#38465f" } };
 
 function compactMoney(v: number) {
   return money(v, { compact: true }).replace(CUR, "");
@@ -57,7 +57,7 @@ export function Tornado({ data, base }: { data: NonNullable<SimResult["sensitivi
       <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 4 }}>
         <CartesianGrid stroke={GRID} horizontal={false} />
         <XAxis type="number" tickFormatter={(v) => (v > 0 ? "+" : "") + compactMoney(v)} {...AX} />
-        <YAxis type="category" dataKey="label" width={190} {...AX} tick={{ fill: "#34322E", fontSize: 11 }} />
+        <YAxis type="category" dataKey="label" width={190} {...AX} tick={{ fill: "#38465f", fontSize: 11 }} />
         <Tooltip
           {...TT}
           formatter={(_v, _n, p) => {
@@ -67,7 +67,7 @@ export function Tornado({ data, base }: { data: NonNullable<SimResult["sensitivi
         />
         <ReferenceLine x={0} stroke="#b9c4d2" />
         <Bar isAnimationActive={false} dataKey="range" fill="#0f1f3d" radius={2}>
-          {rows.map((r, i) => <Cell key={i} fill={r.raw.status === "user" ? "#f2c94c" : "#9AA8FF"} />)}
+          {rows.map((r, i) => <Cell key={i} fill={r.raw.status === "user" ? "#f2c94c" : "#a9c4e4"} />)}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

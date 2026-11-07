@@ -84,7 +84,7 @@ export function BestStrategy({ projectId, scenarioId, busy, onVerify, autoKey }:
 
   if (!data) {
     return (
-      <div className="rounded-xl border border-userdata/40 bg-userdata/[0.05] p-3 text-xs">
+      <div className="rounded-md border border-userdata/40 bg-userdata/[0.05] p-3 text-xs">
         <div className="mb-1 flex items-center gap-1.5 font-medium text-ink-100"><Wand2 className="h-3.5 w-3.5 text-userdata" /> Find my best strategy</div>
         <p className="mb-2 leading-relaxed text-ink-400">Tests hundreds of combinations of price, marketing and capacity (extra staff and rent included) and shows where profit peaks.</p>
         {err && <Notice tone="warn">{err}</Notice>}
@@ -103,7 +103,7 @@ export function BestStrategy({ projectId, scenarioId, busy, onVerify, autoKey }:
   const spendsDesc = [...data.spends].sort((a, b) => b - a);
   const gain = best.profit - cur.profit;
   return (
-    <div className="rounded-xl border border-userdata/40 bg-userdata/[0.05] p-3 text-xs">
+    <div className="rounded-md border border-userdata/40 bg-userdata/[0.05] p-3 text-xs">
       <div className="mb-1 flex items-center gap-1.5 font-medium text-ink-100"><Wand2 className="h-3.5 w-3.5 text-userdata" /> Best strategy found</div>
       <p className="leading-relaxed text-ink-300">
         {gain > 0 ? (
@@ -141,7 +141,7 @@ export function BestStrategy({ projectId, scenarioId, busy, onVerify, autoKey }:
         </div>
       )}
       {sel && pick && (
-        <div className="mt-2 rounded-xl border border-black/[0.07] bg-ink-900/60 p-2">
+        <div className="mt-2 rounded-md border border-black/[0.07] bg-ink-900/60 p-2">
           <div className="text-ink-300">{money(pick.price)} · {money(pick.marketing_spend)}/mo ads{best.capacity_scale !== 1 ? ` · capacity ×${best.capacity_scale}` : ""}</div>
           <div className="num mt-0.5 text-ink-100">{num(sel.units)} {data.unit}/mo · profit <b className={sel.profit >= 0 ? "text-model" : "text-danger"}>{money(sel.profit, { compact: true })}</b></div>
           <Button size="sm" variant="primary" className="mt-2 w-full" loading={busy} onClick={() => onVerify(changesFor({ ...pick, capacity_scale: best.capacity_scale }, cur))}

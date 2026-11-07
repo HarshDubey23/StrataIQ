@@ -224,7 +224,7 @@ export default function GenomePage() {
                 <div className="text-sm font-medium text-ink-100">{m.rows} sampled agents × {m.cols} parameters</div>
                 <div className="flex flex-wrap items-center gap-3 text-[11px] text-ink-400">
                   {Object.entries(GROUP_LABEL).map(([k, l]) => <span key={k} className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: GROUP_COLOR[k] }} />{l}</span>)}
-                  <span className="flex items-center gap-1">percentile <span className="h-2 w-16 rounded-sm" style={{ background: "linear-gradient(90deg,#2563eb,#f6f4ef,#fb923c,#E5484D)" }} /></span>
+                  <span className="flex items-center gap-1">percentile <span className="h-2 w-16 rounded-sm" style={{ background: "linear-gradient(90deg,#2563eb,#f6f4ef,#fb923c,#e98f86)" }} /></span>
                 </div>
               </div>
               <DnaCanvas m={m} onPick={setPick} />

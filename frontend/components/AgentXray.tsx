@@ -65,7 +65,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
   const channels = Object.keys(CHANNEL_LABEL);
 
   return (
-    <div className={cn("flex flex-col overflow-hidden rounded-xl border border-accent/40 bg-ink-950/95 shadow-2xl shadow-black/60 ", className)}>
+    <div className={cn("flex flex-col overflow-hidden rounded-md border border-accent/40 bg-ink-950/95 shadow-2xl shadow-black/60 ", className)}>
       <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
           <Dna className="h-4 w-4 text-agent" />
@@ -104,7 +104,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
             <div>
               <div className="mb-1.5 text-xs font-medium text-ink-200">Why this choice — utility by channel</div>
               {shown.length ? (
-                <div className="overflow-x-auto rounded-lg border border-black/[0.06]">
+                <div className="overflow-x-auto rounded-md border border-black/[0.06]">
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className="bg-ink-900 text-ink-400">

@@ -992,17 +992,17 @@ function VoiceDockInner() {
             )}
             {turns.map((t) => (
               <div key={t.ts + t.who} data-asked={t.who === "you" ? "" : undefined} className={cn("flex", t.who === "you" ? "justify-end" : "justify-start")}>
-                <div className={cn("max-w-[85%] rounded-xl px-3.5 py-2", t.who === "you" ? "bg-black/[0.07] text-ink-100" : "bg-accent-dim text-ink-100")}>{t.text}</div>
+                <div className={cn("max-w-[85%] rounded-md px-3.5 py-2", t.who === "you" ? "bg-black/[0.07] text-ink-100" : "bg-accent-dim text-ink-100")}>{t.text}</div>
               </div>
             ))}
             {interim && (
               <div className="flex justify-end">
-                <div className="max-w-[85%] rounded-xl bg-black/[0.04] px-3.5 py-2 italic text-ink-300">{interim}</div>
+                <div className="max-w-[85%] rounded-md bg-black/[0.04] px-3.5 py-2 italic text-ink-300">{interim}</div>
               </div>
             )}
           </div>
 
-          {err && <p className="mx-5 mt-2 rounded-xl bg-warn/10 px-3 py-2 text-xs text-warn">{err}</p>}
+          {err && <p className="mx-5 mt-2 rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">{err}</p>}
 
           <div className="flex flex-wrap gap-1.5 px-5 pt-3">
             {(projectId ? SUGGESTIONS.project : SUGGESTIONS.general).map((s) => (

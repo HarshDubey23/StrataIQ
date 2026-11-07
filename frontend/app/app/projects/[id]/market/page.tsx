@@ -201,7 +201,7 @@ export default function MarketPage() {
             <MapPinPlus className="h-3.5 w-3.5" /> {addMode ? "Click the map to place it" : "Add competitor"}
           </Button>
         </div>
-        <div className={cn("panel absolute bottom-8 left-3 z-10 rounded-xl text-xs transition-[width] duration-300", layersOpen ? "w-56 p-3" : "w-auto p-0")}>
+        <div className={cn("panel absolute bottom-8 left-3 z-10 rounded-md text-xs transition-[width] duration-300", layersOpen ? "w-56 p-3" : "w-auto p-0")}>
           <button
             onClick={() => setLayersOpen((x) => !x)}
             aria-expanded={layersOpen}

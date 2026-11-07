@@ -78,7 +78,7 @@ export default function Factors() {
 
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {Object.entries(STATUS).map(([k, s]) => (
-          <button key={k} onClick={() => setStatus(status === k ? "all" : k)} title={s.help} className={cn("rounded-lg border p-3 text-left transition-colors", status === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500", "bg-ink-900")}>
+          <button key={k} onClick={() => setStatus(status === k ? "all" : k)} title={s.help} className={cn("rounded-md border p-3 text-left transition-colors", status === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500", "bg-ink-900")}>
             <div className={cn("inline-flex rounded border px-1.5 py-px text-[10px] font-medium uppercase", s.cls)}>{s.label}</div>
             <div className="num mt-1.5 text-2xl font-semibold">{data.summary[k] || 0}</div>
           </button>
@@ -89,7 +89,7 @@ export default function Factors() {
         {Object.entries(data.domains).map(([k, label]) => {
           const ds = domStatus(k);
           return (
-            <button key={k} onClick={() => setDomain(domain === k ? "all" : k)} className={cn("rounded-lg border bg-ink-900 p-3 text-left", domain === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500")}>
+            <button key={k} onClick={() => setDomain(domain === k ? "all" : k)} className={cn("rounded-md border bg-ink-900 p-3 text-left", domain === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500")}>
               <div className="text-xs font-medium text-ink-200">{label}</div>
               <div className="num mt-1 text-sm"><span className="text-ink-100">{ds.filled}</span><span className="text-ink-500"> / {ds.total} with values</span></div>
               <div className="mt-1.5 h-1 rounded bg-ink-800"><div className="h-1 rounded bg-accent" style={{ width: `${(ds.filled / Math.max(1, ds.total)) * 100}%` }} /></div>

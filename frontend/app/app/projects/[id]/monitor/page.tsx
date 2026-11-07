@@ -67,12 +67,12 @@ export default function MonitorPage() {
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <ComposedChart data={data} margin={{ top: 10, right: 16, left: 4, bottom: 4 }}>
-                  <CartesianGrid stroke="#E7E4DC" vertical={false} />
-                  <XAxis dataKey="period" stroke="#75716A" fontSize={11} />
-                  <YAxis stroke="#75716A" fontSize={11} width={48} />
-                  <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #E7E4DC", fontSize: 12 }} />
-                  {f?.units_p10 != null && f?.units_p90 != null && <ReferenceArea y1={f.units_p10} y2={f.units_p90} fill="#0F766E" fillOpacity={0.08} />}
-                  {f && <ReferenceLine y={f.units} stroke="#0F766E" strokeDasharray="4 3" label={{ value: "forecast", fill: "#0F766E", fontSize: 10, position: "right" }} />}
+                  <CartesianGrid stroke="#d3dbe5" vertical={false} />
+                  <XAxis dataKey="period" stroke="#53617a" fontSize={11} />
+                  <YAxis stroke="#53617a" fontSize={11} width={48} />
+                  <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #d3dbe5", fontSize: 12 }} />
+                  {f?.units_p10 != null && f?.units_p90 != null && <ReferenceArea y1={f.units_p10} y2={f.units_p90} fill="#1d4f91" fillOpacity={0.08} />}
+                  {f && <ReferenceLine y={f.units} stroke="#1d4f91" strokeDasharray="4 3" label={{ value: "forecast", fill: "#1d4f91", fontSize: 10, position: "right" }} />}
                   <Line dataKey="actual" stroke="#C59BFF" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
               </ResponsiveContainer>
