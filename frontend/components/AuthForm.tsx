@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
-import { AtlasKey, BlockPlan, Logo } from "@/components/brand";
+import { BlockPlan, Logo } from "@/components/brand";
 import { Button, ErrorState, Field, Input } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import type { Project, User } from "@/lib/types";
@@ -83,12 +83,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     <div className="grid min-h-screen bg-paper lg:grid-cols-[1.15fr_1fr]">
       <div className="relative hidden overflow-hidden border-r border-night bg-atlas lg:block">
         <BlockPlan seed={14} cols={8} rows={8} draw className="absolute inset-0 h-full w-full" />
-        <div className="sheet rise absolute bottom-6 left-6 w-72 p-4" style={{ animationDelay: "500ms" }}>
-          <p className="font-display text-[22px] leading-tight">Every block tells you something. Every number says where it came from.</p>
-          <AtlasKey className="mt-4" />
-        </div>
+        <p className="sheet rise font-display absolute bottom-6 left-6 w-72 p-4 text-[24px] leading-tight" style={{ animationDelay: "500ms" }}>Test a location before you sign the lease.</p>
       </div>
-      <div className="flex items-center justify-center px-4 py-10">
+      <div className="flex flex-col">
+      <div className="h-28 overflow-hidden border-b border-night bg-atlas lg:hidden"><BlockPlan seed={14} cols={10} rows={2} draw className="h-full w-full" /></div>
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8">
           <Logo />
@@ -130,9 +129,10 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
             )}
           </p>
           {mode === "sign-in" && (
-            <p className="text-center text-[13px] text-ink-400">Forgot your password? Contact support and we will help you get back in.</p>
+            <p className="text-center text-[13px] text-ink-400">Forgot your password? {process.env.NEXT_PUBLIC_CONTACT_EMAIL ? <a className="underline underline-offset-4" href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Email support</a> : "Contact support"} and we will help you get back in.</p>
           )}
         </form>
+      </div>
       </div>
       </div>
     </div>

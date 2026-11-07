@@ -81,9 +81,9 @@ export default function Decisions() {
         </Notice>
       ) : null}
 
-      <section className={cn("wipe border border-night p-6 text-night", V.tone === "ok" ? "bg-moss" : V.tone === "danger" ? "bg-brick" : V.tone === "warn" ? "bg-you" : "bg-ink-800")}>
-        <div className="flex items-center gap-2 text-[15px] font-semibold"><V.icon className="h-5 w-5" /> {V.label}</div>
-        <p className="font-display mt-2 max-w-[44ch] text-[30px] leading-[1.1]">{d.headline}</p>
+      <section className={cn("wipe border border-night p-6 text-white", V.tone === "ok" ? "bg-ok" : V.tone === "danger" ? "bg-danger" : "bg-night")}>
+        <h1 className="font-display flex items-center gap-3 text-[40px] leading-[1.05]"><V.icon className="h-8 w-8 shrink-0" /> {V.label}</h1>
+        <p className="mt-2 max-w-[66ch] text-[16px] leading-snug">{d.headline}</p>
       </section>
 
       <div className="grid border-l border-t border-night bg-white sm:grid-cols-3 lg:grid-cols-6">
@@ -207,7 +207,7 @@ export default function Decisions() {
               <p className="mt-2 text-[11px] text-ink-500">How closely each assumption moved with profit across market scenarios. It shows association, not cause.</p>
             </Card>
           )}
-          <ButtonLink href={`/app/projects/${p.id}/report`} variant="next" size="lg" className="w-full">Create the report</ButtonLink>
+          <ButtonLink href={`/app/projects/${p.id}/report`} variant="primary" size="lg" className="w-full">Create the report</ButtonLink>
         </div>
       </div>
     </main>

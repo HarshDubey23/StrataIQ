@@ -17,7 +17,7 @@ const STATUS: Record<string, { label: string; cls: string; help: string }> = {
   user: { label: "User", cls: "border-userdata/40 bg-userdata/10 text-userdata", help: "Entered by you." },
   assumed: { label: "Assumed", cls: "border-ink-500 bg-ink-800 text-ink-200", help: "Documented model assumption (default or your override)." },
   simulated: { label: "Simulated", cls: "border-model/40 bg-model/10 text-model", help: "Produced by the simulation run." },
-  pending: { label: "Pending", cls: "border-sky-400/30 bg-sky-400/5 text-sky-700", help: "Computable once market data is loaded or the scenario is run." },
+  pending: { label: "Pending", cls: "border-stone/30 bg-stone/5 text-atlas", help: "Computable once market data is loaded or the scenario is run." },
   unavailable: { label: "No source yet", cls: "border-black/[0.07] bg-ink-900 text-ink-500", help: "Defined for future data. No source connected, so no value is invented." },
 };
 const ROLE: Record<string, string> = { agent: "Agent profile", choice: "Choice model", finance: "Economics", output: "Output", context: "Evidence", reserved: "Future data" };

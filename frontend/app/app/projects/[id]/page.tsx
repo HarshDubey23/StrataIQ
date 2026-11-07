@@ -38,7 +38,7 @@ export default function Overview() {
     <main className="rise mx-auto w-full max-w-7xl space-y-5 p-4 md:p-8">
       <MarketGlance project={p} />
       {next && (
-        <Link href={next.href} className="group flex items-center justify-between border border-night bg-you px-5 py-4 text-[15px] text-night transition-colors hover:bg-you-deep">
+        <Link href={next.href} className="group flex items-center justify-between border border-night bg-white px-5 py-4 text-[15px] text-night transition-colors hover:bg-ink-800">
           <span>Next step: <span className="font-semibold">{next.t}</span></span>
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>

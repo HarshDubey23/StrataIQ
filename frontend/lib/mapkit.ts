@@ -68,12 +68,13 @@ export function enhanceMap(m: MLMap, opts: { buildingsMinZoom?: number; building
     }
   }
   if (m.getSource("openmaptiles") && !m.getLayer("siq-3d-buildings")) {
+    safe(() => m.addLayer({ id: "siq-footprints", source: "openmaptiles", "source-layer": "building", type: "line", minzoom, paint: { "line-color": "#0f1f3d", "line-width": 1, "line-opacity": 0.8 } }));
     safe(() =>
       m.addLayer(
         {
           id: "siq-3d-buildings", source: "openmaptiles", "source-layer": "building", type: "fill-extrusion", minzoom,
           paint: {
-            "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#8fb0da", 20, "#b4cbe7", 60, "#d6e3f2", 160, "#f7f8fa"],
+            "fill-extrusion-color": "#f7f8fa",
             "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], minzoom, 0, minzoom + 1.5, ["coalesce", ["get", "render_height"], 6]],
             "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
             "fill-extrusion-opacity": opts.buildingOpacity ?? 0.9,
@@ -84,7 +85,7 @@ export function enhanceMap(m: MLMap, opts: { buildingsMinZoom?: number; building
       ),
     );
   }
-  safe(() => m.setLight({ anchor: "map", color: "#ffffff", intensity: 0.42, position: [1.3, 210, 40] }));
+  safe(() => m.setLight({ anchor: "map", color: "#dbe8f7", intensity: 0.16, position: [1.15, 210, 30] }));
   const anyMap = m as unknown as { setSky?: (s: Record<string, unknown>) => void };
   safe(() =>
     anyMap.setSky?.({

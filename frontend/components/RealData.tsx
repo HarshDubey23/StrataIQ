@@ -7,7 +7,7 @@ import type { IncomeEvidence, SimResult } from "@/lib/types";
 
 /* Real-data panels: who lives here (income mix from official data) and where every model parameter came from. */
 
-const CLASS_COLOR = ["#fb7185", "#fbbf24", "#C59BFF"];
+const CLASS_COLOR = ["#fb7185", "#fbbf24", "#1d4f91"];
 const AREA = US_MARKET ? "US" : "India";
 const METHOD_LABEL: Record<IncomeEvidence["method"], string> = {
   us_tract: "Household income of the census tract each zone sits in",

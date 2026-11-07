@@ -100,10 +100,12 @@ PREVIEW_CATS = {"gym", "cafe", "pizza", "restaurant", "pharmacy", "salon", "bake
 
 
 @router.get("/market/preview")
-async def preview(spot: str = Query(default="austin"), category: str = Query(default="cafe"), radius_m: int = Query(default=1600, ge=300, le=3000)):
-    if spot not in PREVIEW_SPOTS or category not in PREVIEW_CATS:
+async def preview(spot: str = Query(default="austin"), category: str = Query(default="cafe"), radius_m: int = Query(default=1600, ge=300, le=3000),
+                  lat: float | None = Query(default=None, ge=-85, le=85), lng: float | None = Query(default=None, ge=-180, le=180)):
+    custom = lat is not None and lng is not None
+    if (not custom and spot not in PREVIEW_SPOTS) or category not in PREVIEW_CATS:
         raise HTTPException(404, "Unknown preview")
-    sp = PREVIEW_SPOTS[spot]
+    sp = {"label": "", "lat": lat, "lng": lng} if custom else PREVIEW_SPOTS[spot]
     entry = next((e for e in TAXONOMY if e.key == category), None)
     if entry is None:
         raise HTTPException(404, "Unknown category")
@@ -117,6 +119,40 @@ async def preview(spot: str = Query(default="austin"), category: str = Query(def
             "source": {"name": " + ".join([prov.get("name") or ""] + [a["name"] for a in prov.get("also") or []]),
                        "retrieved_at": prov.get("retrieved_at"), "detail": prov.get("detail"), "from_cache": prov.get("from_cache"),
                        "attribution": " · ".join([prov.get("attribution") or ""] + [a["attribution"] for a in prov.get("also") or []])}}
+
+
+@router.get("/market/peek")
+async def peek(category: str = Query(default="gym"), q: str | None = Query(default=None, min_length=3, max_length=200),
+               lat: float | None = Query(default=None, ge=-85, le=85), lng: float | None = Query(default=None, ge=-180, le=180), label: str | None = Query(default=None, max_length=200)):
+    """Public first look at a US address: real Census figures around it, and the costs a founder would start from."""
+    from ..api.quickstart import ARCH_COSTS, ARCH_PRICE, TYPICAL_PRICE
+    from ..engine.economics import income_us
+
+    entry = next((e for e in TAXONOMY if e.key == category), None)
+    if entry is None or category not in PREVIEW_CATS:
+        raise HTTPException(404, "Unknown category")
+    if lat is None or lng is None:
+        if not q:
+            raise HTTPException(422, "Enter an address")
+        try:
+            found, _ = await osm.geocode(q, limit=1, cache=Cache(session_factory()), country_codes="us")
+        except ProviderError as e:
+            raise HTTPException(502, f"Address search is busy right now ({e.message[:100]})") from e
+        if not found:
+            raise HTTPException(404, "We could not find that address. Add the city and state.")
+        lat, lng, label = found[0]["lat"], found[0]["lng"], found[0]["display_name"]
+    data = income_us.load_tracts()
+    area = income_us.area_summary(data, lat, lng) if data is not None else None
+    if area is None:
+        raise HTTPException(422, "We only have Census data for US addresses right now.")
+    arch = ARCHETYPES[entry.archetype]
+    return {
+        "place": {"label": label or q or "", "lat": lat, "lng": lng},
+        "category": {"key": entry.key, "label": entry.label},
+        "area": {**area, "radius_miles": 2, "source": "U.S. Census ACS 2023 5-year and LODES jobs"},
+        "typical": {"price": float(TYPICAL_PRICE.get(entry.key, ARCH_PRICE[entry.archetype])), "unit": arch.unit_label, "per_day": entry.archetype != "membership",
+                    "variable_cost_ratio": arch.params["variable_cost_ratio"].value, **ARCH_COSTS[entry.archetype]},
+    }
 
 
 @router.get("/market/sources-check")

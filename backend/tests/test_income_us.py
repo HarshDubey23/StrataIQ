@@ -215,3 +215,20 @@ def test_income_does_not_decide_who_is_in_the_market():
     assert in_market.sum() > 100
     assert 0.6 < np.median(income[in_market]) / np.median(income) < 1.8
     assert out["steady_units"] > 40  # a $49 gym among 43,000 people should not be left with a handful of members
+
+
+def test_area_summary_counts_only_nearby_tracts_and_keeps_real_totals():
+    band = [0] * 34
+    band[5] = 1000
+    far = [0] * 34
+    far[5] = 99999
+    data = {"lat": np.array([30.0, 30.01, 40.0]), "lng": np.array([-97.0, -97.0, -97.0]), "age_sex": np.array([band, band, far]),
+            "counts": np.array([POOR, RICH, RICH]), "jobs": np.array([500, 700, 90000])}
+    a = iu.area_summary(data, 30.0, -97.0, radius_km=3.2)
+    # the tract 1,100 km away must not leak in
+    assert a["people"] == 2000 and a["jobs"] == 1200 and len(a["tracts"]) == 2
+    only_poor = iu.area_summary({**data, "counts": np.array([POOR, POOR, POOR])}, 30.0, -97.0)["median_household_income"]
+    only_rich = iu.area_summary({**data, "counts": np.array([RICH, RICH, RICH])}, 30.0, -97.0)["median_household_income"]
+    # medians land inside the ACS bracket range and in the right order
+    assert 0 < only_poor < 30000 < only_rich < 200000
+    assert iu.area_summary(data, 10.0, 10.0) is None

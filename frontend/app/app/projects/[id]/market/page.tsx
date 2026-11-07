@@ -212,7 +212,7 @@ export default function MarketPage() {
           {layersOpen && (
             [
               ["catchment", "Catchment", "border-accent"],
-              ["zones", "Population zones", "bg-[#6E5BFF]"],
+              ["zones", "Population zones", "bg-stone"],
               ["competitors", "Competitors", "bg-observed"],
               ["agents", "Synthetic customers", "bg-agent"],
               ["activity", "Activity points", "bg-assumption"],
@@ -234,7 +234,7 @@ export default function MarketPage() {
         </div>
         {loading && !refreshing && <div className="absolute right-14 top-3 z-10 rounded bg-ink-900/90 px-2 py-1"><Spinner label="Loading" /></div>}
         {(autoRunning || liveReady) && (
-          <div className="absolute inset-x-0 bottom-24 z-10 mx-auto w-fit rounded-md border border-accent/50 bg-ink-900/95 px-4 py-3 text-sm shadow-xl">
+          <div className="absolute inset-x-0 bottom-24 z-10 mx-auto w-fit rounded-md border border-accent/50 bg-ink-900/95 px-4 py-3 text-sm ">
             {autoRunning ? (
               <Spinner label="Simulating thousands of synthetic customers at real density…" />
             ) : (
@@ -247,7 +247,7 @@ export default function MarketPage() {
           </div>
         )}
         {refreshing && (
-          <div className="absolute inset-x-0 top-14 z-10 mx-auto w-fit max-w-md rounded-md border border-accent/40 bg-ink-900/95 px-4 py-3 text-sm shadow-xl">
+          <div className="absolute inset-x-0 top-14 z-10 mx-auto w-fit max-w-md rounded-md border border-accent/40 bg-ink-900/95 px-4 py-3 text-sm ">
             <Spinner label={`Loading live data from OpenStreetMap and WorldPop… ${elapsed}s`} />
             <p className="mt-1 text-xs text-ink-400">Competitors, buildings and population for the catchment. Public services can take up to a minute.</p>
           </div>
@@ -449,7 +449,7 @@ function PopulationFallback({ projectId, locationId, onSaved }: { projectId: str
   const [busy, setBusy] = useState(false);
   return (
     <div className="space-y-2">
-      <p className="text-xs text-amber-800">Official population data could not be loaded. Retry later, or enter your best figure for the catchment (labeled as user-entered).</p>
+      <p className="text-xs text-warn">Official population data could not be loaded. Retry later, or enter your best figure for the catchment (labeled as user-entered).</p>
       <div className="flex gap-2">
         <NumberInput value={pop} onChange={setPop} allowEmpty suffix="people" />
         <Button

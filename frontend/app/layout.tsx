@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* runs before paint, so a returning visitor never sees the opening sheet */}
         <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("siq-intro")||matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.dataset.seen="1"}catch(e){}` }} />
         {/* Entrance animations start hidden; without script the text must still show */}
-        <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}.curtain{display:none}`}</style></noscript>
+        <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}.curtain{display:none}.strip{clip-path:none!important}`}</style></noscript>
       </head>
       <body className="grain min-h-screen font-sans">
         {children}

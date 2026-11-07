@@ -372,7 +372,7 @@ export default function LiveMarket() {
                   <YAxis stroke="#53617a" fontSize={10} width={28} domain={[0, 100]} />
                   <Tooltip {...TT} />
                   <ReferenceLine x={day + 1} stroke="#1d4f91" />
-                  <Line dataKey="aware" stroke="#C59BFF" dot={false} strokeWidth={2} />
+                  <Line dataKey="aware" stroke="#1d4f91" dot={false} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

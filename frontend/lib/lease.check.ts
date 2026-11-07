@@ -50,7 +50,7 @@ assert.equal(occupancyCeiling("Coffee shop", "takeaway").share, 0.1);
 assert.equal(occupancyCeiling("Gym", "membership").share, 0.15);
 assert.equal(occupancyCeiling("Grocery store", "retail").share, 0.03);
 
-const letter = counterLetter({ address: "1 Main St", tenant: "", business: "a gym", offer: { ...t, baseRent: 40 }, counter: c, asks: { camCapPct: 5, camAudit: true, rentAtOpening: true, renewalYears: 5 }, fmt: (x) => `$${x}` });
+const letter = counterLetter({ address: "1 Main St", tenant: "", business: "a gym", offer: { ...t, baseRent: 40 }, counter: c, asks: { camCapPct: 5, camAudit: true, rentAtOpening: true, renewalYears: 5, guaranteeBurnOff: true }, fmt: (x) => `$${x}` });
 assert.ok(letter.includes("in place of the $40 proposed"));
 assert.ok(letter.includes("non-binding"));
 assert.ok(letter.includes("limited to 6 months"));

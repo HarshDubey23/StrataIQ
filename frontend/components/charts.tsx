@@ -100,7 +100,7 @@ export function ProfitHistogram({ mc }: { mc: NonNullable<SimResult["monte_carlo
         <XAxis dataKey="x" tickFormatter={compactMoney} {...AX} interval="preserveStartEnd" minTickGap={30} />
         <Tooltip {...TT} formatter={(v) => [`${v} draws`, "Count"]} labelFormatter={(l) => `Profit ≈ ${money(Number(l))}`} />
         <Bar isAnimationActive={false} dataKey="c">
-          {data.map((d, i) => <Cell key={i} fill={d.x < 0 ? "#e98f86" : "#1d4f91"} fillOpacity={0.8} />)}
+          {data.map((d, i) => <Cell key={i} fill={d.x < 0 ? "#b3261e" : "#1d4f91"} fillOpacity={0.8} />)}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

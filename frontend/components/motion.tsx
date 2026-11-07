@@ -213,7 +213,7 @@ export function FactItem({ fact }: { fact: Fact }) {
         {open && (
           <motion.div role="note" initial={still ? false : { opacity: 0, x: -14, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={still ? { opacity: 0 } : { opacity: 0, x: -8 }} transition={{ duration: 0.22, ease: EASE }}
             className="mt-1 lg:absolute lg:left-full lg:top-1/2 lg:mt-0 lg:w-[26rem] lg:-translate-y-1/2 lg:pl-3">
-            <div className="bg-atlas p-6 text-white">
+            <div className="border border-night bg-paper p-6 text-night">
               <h4 className="font-display text-[24px] leading-tight">{fact.label}</h4>
               <p className="mt-3 text-[16px] leading-[1.5]">{fact.detail}</p>
               {fact.source && <p className="mt-4 border-t border-white/20 pt-3 text-[14px]">Source: {fact.source}</p>}

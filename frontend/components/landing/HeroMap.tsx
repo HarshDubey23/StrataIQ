@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * Landing-page city, drawn as a fire atlas: real OpenStreetMap buildings and roads, real
- * competitors fetched live through the StrataIQ API, and an ILLUSTRATIVE crowd that walks to a shop.
+ * The landing city, one continuous shot over the real street.
  *
- * The camera is scrubbed by scroll: `progress` (0..5, a ref so scrolling never re-renders React) is
- * interpolated between one camera per chapter. `scene` (the nearest whole chapter) switches layers:
- *   0 hero  1 rivals rise  2 the neighborhood  3 each one chooses  4 the answer
- * The crowd is a drawing, not the model: the real run uses the choice model inside the app.
+ * Real: buildings, roads, rival locations and the population column on each Census tract.
+ * Drawn: the crowd in the decision scene. People are placed from real tract counts along real roads, but who chooses
+ * whom here only shows how the simulation works. The page says so where it appears.
+ *
+ * `progress` (a ref, so scrolling never re-renders React) scrubs the camera and the decision wave.
+ * Scenes: 0 your address  1 rivals rise  2 the Census  3 customers decide  4 what has to be true
  */
 import maplibregl, { type Map as MLMap } from "maplibre-gl";
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
@@ -15,22 +16,30 @@ import { attachDeck, enhanceMap, pickStyle, type DeckHandle } from "@/lib/mapkit
 import type { PreviewComp, Spot } from "./spots";
 
 export type { Spot, PreviewComp };
+export interface Tract {
+  lat: number;
+  lng: number;
+  people: number;
+}
 
 type Cam = { zoom: number; pitch: number; bearing: number };
 const CAMERAS: Cam[] = [
-  { zoom: 15.1, pitch: 64, bearing: -30 },
-  { zoom: 15.8, pitch: 8, bearing: 0 },
-  { zoom: 15.5, pitch: 70, bearing: 50 },
-  { zoom: 14.3, pitch: 55, bearing: 10 },
-  { zoom: 15.1, pitch: 66, bearing: 110 },
-  { zoom: 14.0, pitch: 48, bearing: 190 },
+  { zoom: 15.3, pitch: 62, bearing: -30 },
+  { zoom: 15.7, pitch: 50, bearing: 10 },
+  { zoom: 13.6, pitch: 58, bearing: 40 },
+  { zoom: 14.9, pitch: 66, bearing: 95 },
+  { zoom: 14.2, pitch: 45, bearing: 170 },
 ];
 
-const WHITE: [number, number, number] = [255, 255, 255];
-const YOU: [number, number, number] = [242, 201, 76];
-const BRICK: [number, number, number] = [233, 143, 134];
-const STONE: [number, number, number] = [207, 224, 245];
-const rgba = (c: [number, number, number], a: number) => [c[0], c[1], c[2], a] as [number, number, number, number];
+type RGB = [number, number, number];
+const WHITE: RGB = [255, 255, 255];
+const YOU: RGB = [242, 201, 76];
+const BRICK: RGB = [233, 143, 134];
+const STONE: RGB = [207, 224, 245];
+const INK: [number, number, number, number] = [15, 31, 61, 255];
+// full ambient, no shading: printed color, not lit plastic
+const FLAT = { ambient: 1, diffuse: 0, shininess: 0, specularColor: [0, 0, 0] as RGB };
+const rgba = (c: RGB, a: number) => [c[0], c[1], c[2], a] as [number, number, number, number];
 
 function rand(seed: number) {
   let s = Math.abs(Math.round(seed)) % 2147483647 || 7;
@@ -45,26 +54,70 @@ interface Person {
   path: [number, number][];
   ts: number[];
 }
-interface Bin {
-  pos: [number, number];
-  n: number;
+
+/** Points along the roads that are currently loaded. */
+function roadPoints(m: MLMap): [number, number][] {
+  const out: [number, number][] = [];
+  try {
+    for (const f of m.querySourceFeatures("openmaptiles", { sourceLayer: "transportation" })) {
+      const c = f.properties?.class;
+      if (c === "motorway" || c === "rail" || c === "transit" || c === "trunk") continue;
+      const lines = f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.type === "MultiLineString" ? f.geometry.coordinates : [];
+      for (const l of lines) {
+        for (let i = 1; i < l.length; i++) {
+          const [a, b] = [l[i - 1], l[i]];
+          out.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], [a[0], a[1]]);
+        }
+      }
+    }
+  } catch {
+    /* source not ready: people fall back to their tract */
+  }
+  return out;
 }
 
-/** Illustrative crowd: homes around the street; some aren't buying today, the rest walk to the nearest-ish shop. */
-function makePeople(spot: Spot, comps: PreviewComp[], n = 2200): Person[] {
+/** The crowd: placed by real tract counts, on real roads once they have loaded. Their choices are illustrative. */
+function makePeople(spot: Spot, comps: PreviewComp[], tracts: Tract[], roads: [number, number][], n = 2400): Person[] {
   const r = rand(spot.lat * 1e4 + spot.lng * 1e3 + comps.length);
   const dests = [{ lat: spot.lat, lng: spot.lng, you: true }, ...comps.slice(0, 60).map((c) => ({ lat: c.lat, lng: c.lng, you: false }))];
   const kmLat = 1 / 111.32;
   const kmLng = 1 / (111.32 * Math.cos((spot.lat * Math.PI) / 180));
+  const total = tracts.reduce((s, t) => s + t.people, 0);
+  const pick = (): [number, number] => {
+    let x = spot.lng;
+    let y = spot.lat;
+    if (total > 0) {
+      let u = r() * total;
+      const t = tracts.find((k) => (u -= k.people) <= 0) ?? tracts[0];
+      x = t.lng + (r() - 0.5) * 1.1 * kmLng;
+      y = t.lat + (r() - 0.5) * 1.1 * kmLat;
+    } else {
+      const a = r() * Math.PI * 2;
+      const d = 0.12 + Math.pow(r(), 0.7) * 1.7;
+      x += Math.cos(a) * d * kmLng;
+      y += Math.sin(a) * d * kmLat;
+    }
+    if (!roads.length) return [x, y];
+    // the nearest of a few random road points keeps this fast and on a street
+    let best = roads[Math.floor(r() * roads.length)];
+    let bd = Infinity;
+    for (let i = 0; i < 40; i++) {
+      const c = roads[Math.floor(r() * roads.length)];
+      const dd = Math.hypot(c[0] - x, c[1] - y);
+      if (dd < bd) {
+        bd = dd;
+        best = c;
+      }
+    }
+    return [best[0], best[1]];
+  };
   const out: Person[] = [];
   for (let i = 0; i < n; i++) {
-    const a = r() * Math.PI * 2;
-    const d = 0.12 + Math.pow(r(), 0.7) * 1.7;
-    const home: [number, number] = [spot.lng + Math.cos(a) * d * kmLng, spot.lat + Math.sin(a) * d * kmLat];
+    const home = pick();
     let best = dests[0];
     let bs = Infinity;
     for (const dst of dests) {
-      const dd = Math.hypot((dst.lng - home[0]) / kmLng, (dst.lat - home[1]) / kmLat) * (0.6 + r() * 0.9) * (dst.you ? 0.85 : 1);
+      const dd = Math.hypot((dst.lng - home[0]) / kmLng, (dst.lat - home[1]) / kmLat) * (0.6 + r() * 0.9) * (dst.you ? 0.8 : 1);
       if (dd < bs) {
         bs = dd;
         best = dst;
@@ -76,7 +129,7 @@ function makePeople(spot: Spot, comps: PreviewComp[], n = 2200): Person[] {
     const dur = 120 + bs * 90;
     out.push({
       home,
-      d,
+      d: Math.hypot((home[0] - spot.lng) / kmLng, (home[1] - spot.lat) / kmLat),
       choice: none ? "none" : best.you ? "you" : "rival",
       path: none ? [] : [home, mid, [best.lng, best.lat]],
       ts: none ? [] : [t0, t0 + dur * 0.5, t0 + dur],
@@ -85,45 +138,36 @@ function makePeople(spot: Spot, comps: PreviewComp[], n = 2200): Person[] {
   return out;
 }
 
-function binPeople(people: Person[], spot: Spot, cellKm = 0.22): Bin[] {
-  const kmLat = 1 / 111.32;
-  const kmLng = 1 / (111.32 * Math.cos((spot.lat * Math.PI) / 180));
-  const m = new Map<string, Bin>();
-  for (const p of people) {
-    const gx = Math.round((p.home[0] - spot.lng) / (cellKm * kmLng));
-    const gy = Math.round((p.home[1] - spot.lat) / (cellKm * kmLat));
-    const k = `${gx}:${gy}`;
-    const b = m.get(k);
-    if (b) b.n++;
-    else m.set(k, { pos: [spot.lng + gx * cellKm * kmLng, spot.lat + gy * cellKm * kmLat], n: 1 });
-  }
-  return [...m.values()];
-}
-
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
+const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
 
 function camAt(p: number): Cam {
   const i = Math.max(0, Math.min(CAMERAS.length - 1, Math.floor(p)));
   const j = Math.min(CAMERAS.length - 1, i + 1);
-  const k = smooth(Math.max(0, Math.min(1, p - i)));
+  const k = smooth(clamp01(p - i));
   const a = CAMERAS[i];
   const b = CAMERAS[j];
   return { zoom: a.zoom + (b.zoom - a.zoom) * k, pitch: a.pitch + (b.pitch - a.pitch) * k, bearing: a.bearing + (b.bearing - a.bearing) * k };
 }
 
-export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Spot; comps: PreviewComp[]; scene?: number; progress?: MutableRefObject<number> }) {
+export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress, crosshair = false }: { spot: Spot; comps: PreviewComp[]; tracts?: Tract[]; scene?: number; progress?: MutableRefObject<number>; crosshair?: boolean }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const deck = useRef<DeckHandle | null>(null);
   const [ready, setReady] = useState(false);
   const [shown, setShown] = useState(false);
-  // one stable array per street: a new array each frame would restart the pillar's rise forever
+  const [roads, setRoads] = useState<[number, number][]>([]);
+  const hLine = useRef<HTMLDivElement>(null);
+  const vLine = useRef<HTMLDivElement>(null);
+  const read = useRef<HTMLDivElement>(null);
+  // stable arrays: a new array each frame would restart every transition forever
   const site = useRef<Spot[]>([spot]);
   if (site.current[0] !== spot) site.current = [spot];
-  const state = useRef({ spot, comps, scene, people: [] as Person[], bins: [] as Bin[], walkers: [] as Person[], free: false, riseAt: 0, riseFor: null as PreviewComp[] | null, chooseAt: 0, wasChoose: false, cur: CAMERAS[0] as Cam, t0: 0 });
+  const state = useRef({ spot, comps, tracts, scene, people: [] as Person[], walkers: [] as Person[], free: false, riseAt: 0, riseFor: null as PreviewComp[] | null, cur: CAMERAS[0] as Cam, t0: 0 });
   state.current.spot = spot;
   state.current.comps = comps;
+  state.current.tracts = tracts;
   state.current.scene = scene;
 
   useEffect(() => {
@@ -136,24 +180,28 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
       try {
         // start high and flat; the first flight is the descent into the street
         m = new maplibregl.Map({
-          container: el.current, style, center: [spot.lng, spot.lat], zoom: 12, pitch: 0, bearing: -80, interactive: false,
+          container: el.current, style, center: [spot.lng, spot.lat], zoom: 11.5, pitch: 0, bearing: -80, interactive: false,
           attributionControl: { compact: true }, maxPitch: 80, fadeDuration: 0, pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
         });
       } catch {
         return;
       }
       map.current = m;
-      // the headline sheet covers the left side, so the site sits in the open part of the map
-      if (window.innerWidth >= 1024) m.setPadding({ left: Math.min(760, window.innerWidth * 0.5), top: 0, right: 0, bottom: 0 });
-      // recolour as soon as the style is parsed (not after every tile), so the base style's grey never shows
+      // the story's words sit on the left, so the site stays in the open part of the map
+      if (window.innerWidth >= 1024) m.setPadding({ left: Math.min(620, window.innerWidth * 0.42), top: 0, right: 0, bottom: 0 });
+      if (crosshair) m.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "top-right");
       let painted = false;
       const paint = () => {
         if (painted || !m.isStyleLoaded()) return;
         painted = true;
-        enhanceMap(m, { buildingsMinZoom: 12 });
+        enhanceMap(m, { buildingsMinZoom: 12, buildingOpacity: 1 });
         requestAnimationFrame(() => setShown(true));
       };
       m.on("styledata", paint);
+      m.on("idle", () => {
+        const pts = roadPoints(m);
+        if (pts.length > 200) setRoads((old) => (old.length ? old : pts));
+      });
       m.on("load", async () => {
         paint();
         const d = await attachDeck(m);
@@ -162,78 +210,72 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
         setReady(true);
         const loop = (now: number) => {
           const S = state.current;
-          // scroll scrubs the camera; a slow drift keeps the city alive when the page is still
+          const p = progress?.current ?? S.scene;
           if (S.free && !m.isMoving()) {
-            const target = camAt(progress?.current ?? S.scene);
+            const target = camAt(p);
             const c = S.cur;
             const k = 0.075;
             S.cur = { zoom: c.zoom + (target.zoom - c.zoom) * k, pitch: c.pitch + (target.pitch - c.pitch) * k, bearing: c.bearing + (target.bearing - c.bearing) * k };
-            m.jumpTo({ center: [S.spot.lng, S.spot.lat], zoom: S.cur.zoom, pitch: S.cur.pitch, bearing: S.cur.bearing + (now - S.t0) * 0.0016 });
+            // a slow drift keeps the city alive when the page is still
+            m.jumpTo({ center: [S.spot.lng, S.spot.lat], zoom: S.cur.zoom, pitch: S.cur.pitch, bearing: S.cur.bearing + (now - S.t0) * 0.0014 });
           }
           const sc = S.scene;
-          const all = sc === 0;
-          const showComps = all || sc >= 1;
-          const showPeople = all || sc >= 2;
-          const choose = all || sc >= 3;
-          const showTrips = all || sc >= 3;
-          if (S.riseFor !== S.comps) { S.riseFor = S.comps; S.riseAt = now; }
-          if (choose && !S.wasChoose) S.chooseAt = now + (all ? 2600 : 200);
-          S.wasChoose = choose;
+          const showPeople = sc >= 3;
+          if (S.riseFor !== S.comps) {
+            S.riseFor = S.comps;
+            S.riseAt = now;
+          }
           const riseAge = now - S.riseAt;
-          const rising = riseAge < 3200;
-          const riseStep = rising ? Math.round(riseAge / 33) : -1;
-          const waveAge = now - S.chooseAt;
-          const waving = choose && waveAge < 2600;
-          const waveStep = waving ? Math.round(Math.max(0, waveAge) / 80) : -1;
+          const riseStep = riseAge < 3200 ? Math.round(riseAge / 33) : -1;
+          // scrolling through the scene is what makes people decide, nearest first
+          const reach = clamp01(p - 2.6) * 3.2;
+          const reachStep = Math.round(reach * 20);
           const kmLat = 111.32;
           const kmLng = 111.32 * Math.cos((S.spot.lat * Math.PI) / 180);
           const t = (now / 22) % 1400;
           const pulse = (now / 12) % 260;
-          const binMax = Math.max(1, ...S.bins.map((b) => b.n));
-          const pc = (p: Person) => (!choose || p.d * 1200 > waveAge ? rgba(STONE, 235) : p.choice === "you" ? rgba(YOU, 255) : p.choice === "rival" ? rgba(BRICK, 240) : rgba(STONE, 110));
+          const tMax = Math.max(1, ...S.tracts.map((x) => x.people));
+          const color = (x: Person) => (x.d > reach ? rgba(STONE, 150) : x.choice === "you" ? rgba(YOU, 255) : x.choice === "rival" ? rgba(WHITE, 255) : rgba(STONE, 90));
           d?.setLayers((DL) => [
             new DL.ScatterplotLayer({
               id: "catchment", data: site.current, getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
-              getRadius: sc === 1 || sc === 4 ? 1500 : 0, getFillColor: rgba(WHITE, 16), getLineColor: rgba(WHITE, 200),
-              stroked: true, lineWidthMinPixels: 1.5, transitions: { getRadius: { duration: 1400, easing: easeOut } }, updateTriggers: { getRadius: sc },
+              getRadius: sc === 1 || sc === 2 || sc === 4 ? 3219 : 0, getFillColor: rgba(WHITE, 14), getLineColor: rgba(WHITE, 230), stroked: true, lineWidthMinPixels: 2,
+              transitions: { getRadius: { duration: 1400, easing: easeOut } }, updateTriggers: { getRadius: sc },
             }),
             new DL.ColumnLayer({
-              id: "density", data: S.bins, diskResolution: 4, angle: 45, radius: 80, coverage: 0.8, extruded: true, wireframe: true, material: false,
-              getPosition: (b: Bin) => b.pos, getElevation: (b: Bin) => (sc === 2 ? 10 + (b.n / binMax) * 240 : 0),
-              getFillColor: rgba(STONE, sc === 2 ? 235 : 0), getLineColor: [15, 31, 61, sc === 2 ? 200 : 0],
-              transitions: { getElevation: { duration: 1300, easing: easeOut }, getFillColor: { duration: 600 }, getLineColor: { duration: 600 } },
-              updateTriggers: { getElevation: [sc, binMax], getFillColor: sc === 2, getLineColor: sc === 2 },
+              id: "tracts", data: S.tracts, diskResolution: 4, angle: 45, radius: 150, extruded: true, wireframe: true, material: FLAT,
+              getPosition: (x: Tract) => [x.lng, x.lat], getElevation: (x: Tract) => (sc === 2 ? 40 + (x.people / tMax) * 620 : 0),
+              getFillColor: rgba(BRICK, sc === 2 ? 255 : 0), getLineColor: [15, 31, 61, sc === 2 ? 255 : 0],
+              transitions: { getElevation: { duration: 1300, easing: easeOut } }, updateTriggers: { getElevation: [sc, tMax], getFillColor: sc === 2, getLineColor: sc === 2 },
             }),
-            showTrips && new DL.TripsLayer({
-              id: "trips", data: S.walkers, getPath: (x: Person) => x.path, getTimestamps: (x: Person) => x.ts,
-              getColor: (x: Person) => (x.choice === "you" ? YOU : BRICK), widthMinPixels: 3, trailLength: 90, currentTime: t,
-              fadeTrail: true, capRounded: true, jointRounded: true, opacity: sc === 4 ? 0.5 : 0.95,
+            showPeople && new DL.TripsLayer({
+              id: "trips", data: S.walkers.filter((x) => x.d <= reach), getPath: (x: Person) => x.path, getTimestamps: (x: Person) => x.ts,
+              getColor: (x: Person) => (x.choice === "you" ? YOU : WHITE), widthMinPixels: 2.5, trailLength: 90, currentTime: t, fadeTrail: true, capRounded: true, jointRounded: true, opacity: sc === 4 ? 0.45 : 0.95,
+              updateTriggers: { getPath: reachStep },
             }),
             new DL.ScatterplotLayer({
-              id: "people", data: S.people, getPosition: (p: Person) => p.home, radiusUnits: "meters", radiusMinPixels: showPeople ? 1.5 : 0,
-              getRadius: showPeople ? 13 : 0, getFillColor: pc, stroked: false,
-              transitions: { getRadius: { duration: 900, easing: easeOut } },
-              updateTriggers: { getRadius: showPeople, getFillColor: [choose, waveStep] },
+              id: "people", data: S.people, getPosition: (x: Person) => x.home, radiusUnits: "meters", radiusMinPixels: showPeople ? 2.5 : 0,
+              getRadius: showPeople ? 16 : 0, getFillColor: color, stroked: false,
+              transitions: { getRadius: { duration: 900, easing: easeOut } }, updateTriggers: { getRadius: showPeople, getFillColor: reachStep },
             }),
             new DL.ColumnLayer({
-              id: "comps", data: S.comps, diskResolution: 4, angle: 45, radius: 13, extruded: true, wireframe: true, material: false,
+              id: "comps", data: S.comps, diskResolution: 4, angle: 45, radius: 16, extruded: true, wireframe: true, material: FLAT,
               getPosition: (c: PreviewComp) => [c.lng, c.lat],
               // each rival rises in turn, spreading out from your site
               getElevation: (c: PreviewComp) => {
                 const km = Math.hypot((c.lat - S.spot.lat) * kmLat, (c.lng - S.spot.lng) * kmLng);
-                return 75 * easeOut(Math.max(0, Math.min(1, (riseAge - 300 - km * 900) / 700)));
+                return (sc === 1 ? 150 : 90) * easeOut(clamp01((riseAge - 300 - km * 900) / 700));
               },
-              getFillColor: rgba(BRICK, 255), getLineColor: [15, 31, 61, 255],
-              updateTriggers: { getElevation: riseStep },
+              getFillColor: rgba(BRICK, 255), getLineColor: INK, updateTriggers: { getElevation: [riseStep, sc === 1] },
             }),
             new DL.ScatterplotLayer({
               id: "site-ring", data: site.current, getPosition: (s: Spot) => [s.lng, s.lat], radiusUnits: "meters",
-              getRadius: 40 + pulse, getFillColor: [0, 0, 0, 0], getLineColor: rgba(YOU, Math.max(0, 240 - pulse * 0.92)),
-              stroked: true, filled: false, lineWidthMinPixels: 2, updateTriggers: { getRadius: now, getLineColor: now },
+              getRadius: 60 + pulse, getFillColor: [0, 0, 0, 0], getLineColor: rgba(YOU, Math.max(0, 255 - pulse * 0.98)),
+              stroked: true, filled: false, lineWidthMinPixels: 3, updateTriggers: { getRadius: now, getLineColor: now },
             }),
             new DL.ColumnLayer({
-              id: "site", data: site.current, diskResolution: 4, angle: 45, radius: 34, extruded: true, wireframe: true, material: false, getLineColor: [15, 31, 61, 255],
-              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 4 ? 420 : 260, getFillColor: rgba(YOU, 255),
+              id: "site", data: site.current, diskResolution: 4, angle: 45, radius: 42, extruded: true, wireframe: true, material: FLAT,
+              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 4 ? 620 : 420, getFillColor: rgba(YOU, 255), getLineColor: INK,
               transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: sc === 4 },
             }),
           ].filter(Boolean));
@@ -252,13 +294,14 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // new street → new illustrative crowd
   useEffect(() => {
-    const people = makePeople(spot, comps);
+    const people = makePeople(spot, comps, tracts, roads);
     state.current.people = people;
     state.current.walkers = people.filter((p) => p.choice !== "none");
-    state.current.bins = binPeople(people, spot);
-  }, [spot, comps]);
+  }, [spot, comps, tracts, roads]);
+
+  // a new street throws away the old street's roads
+  useEffect(() => setRoads([]), [spot]);
 
   // the descent (on load and when the street changes), then hand the camera to the scroll
   useEffect(() => {
@@ -267,7 +310,7 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
     const S = state.current;
     S.free = false;
     const cam = camAt(progress?.current ?? S.scene);
-    m.flyTo({ center: [spot.lng, spot.lat], ...cam, duration: 4000, curve: 1.15, essential: true });
+    m.flyTo({ center: [spot.lng, spot.lat], ...cam, duration: 3800, curve: 1.2, essential: true });
     const done = () => {
       S.cur = { zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing() };
       S.t0 = performance.now();
@@ -280,9 +323,33 @@ export default function HeroMap({ spot, comps, scene = 0, progress }: { spot: Sp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, spot]);
 
+  // the surveyor's crosshair: real coordinates under the cursor
+  useEffect(() => {
+    if (!crosshair || !window.matchMedia("(pointer: fine)").matches) return;
+    const on = (e: PointerEvent) => {
+      if (hLine.current) hLine.current.style.transform = `translateY(${e.clientY}px)`;
+      if (vLine.current) vLine.current.style.transform = `translateX(${e.clientX}px)`;
+      const m = map.current;
+      if (read.current && m) {
+        const c = m.unproject([e.clientX, e.clientY]);
+        read.current.style.transform = `translate(${e.clientX + 12}px, ${e.clientY + 12}px)`;
+        read.current.textContent = `${Math.abs(c.lat).toFixed(4)}° ${c.lat >= 0 ? "N" : "S"}  ${Math.abs(c.lng).toFixed(4)}° ${c.lng >= 0 ? "E" : "W"}`;
+      }
+    };
+    window.addEventListener("pointermove", on, { passive: true });
+    return () => window.removeEventListener("pointermove", on);
+  }, [crosshair]);
+
   return (
     <div className="absolute inset-0" aria-hidden>
-      <div ref={el} style={{ position: "absolute", inset: 0, opacity: shown ? 1 : 0, transition: "opacity 1.4s cubic-bezier(.16,1,.3,1)" }} />
+      <div ref={el} style={{ position: "absolute", inset: 0, opacity: shown ? 1 : 0, transition: "opacity 1.2s cubic-bezier(.16,1,.3,1)" }} />
+      {crosshair && (
+        <div className="pointer-events-none absolute inset-0 hidden overflow-hidden [@media(pointer:fine)]:block">
+          <div ref={hLine} className="absolute inset-x-0 top-0 h-px bg-white/45" />
+          <div ref={vLine} className="absolute inset-y-0 left-0 w-px bg-white/45" />
+          <div ref={read} className="num absolute left-0 top-0 whitespace-pre bg-night px-1.5 py-0.5 text-[12px] text-white" />
+        </div>
+      )}
     </div>
   );
 }

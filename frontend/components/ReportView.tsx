@@ -24,15 +24,15 @@ function H({ children }: { n: number; children: React.ReactNode }) {
 }
 
 const VERDICT: Record<string, { label: string; tone: string }> = {
-  potentially_viable: { label: "Can work under these inputs", tone: "bg-moss" },
-  financially_challenging: { label: "Loses money as planned", tone: "bg-brick" },
-  high_uncertainty: { label: "Too uncertain to call yet", tone: "bg-you" },
+  potentially_viable: { label: "Can work under these inputs", tone: "bg-ok text-white" },
+  financially_challenging: { label: "Loses money as planned", tone: "bg-danger text-white" },
+  high_uncertainty: { label: "Too uncertain to call yet", tone: "bg-night text-white" },
 };
 
-function Kpi({ label, value, note }: { label: string; value: string; note?: string }) {
+function Kpi({ label, value, note, swatch = "bg-stone", kind = "Estimated" }: { label: string; value: string; note?: string; swatch?: string; kind?: string }) {
   return (
     <div className="border-b border-r border-night bg-white p-4">
-      <div className="text-[13px] text-ink-300">{label}</div>
+      <div className="flex items-center justify-between gap-2 text-[13px] text-ink-300">{label}<span title={kind} aria-label={kind} className={`h-2.5 w-3.5 shrink-0 border border-night ${swatch}`} /></div>
       <div className="num mt-1 font-display text-[30px] leading-none text-ink-100">{value}</div>
       {note && <div className="mt-1.5 text-[12px] text-ink-400">{note}</div>}
     </div>
@@ -107,7 +107,7 @@ function Executive({ c }: { c: ReportContent }) {
   const ramp = (abm?.weekly || []).map((w: any) => ({ ...w, units: (w.units / last) * (r.summary.modeled_demand_units / (membership ? 1 : 30 / 7)) }));
   return (
     <>
-      <div className={`mt-6 border border-night p-5 text-night ${verdict?.tone ?? "bg-ink-800"}`}>
+      <div className={`mt-6 border border-night p-5 ${verdict?.tone ?? "bg-night text-white"}`}>
         <div className="font-display text-[32px] leading-tight">{verdict?.label ?? "Result"}</div>
         <p className="mt-1 text-[15px] leading-snug">{d.headline}</p>
       </div>
@@ -152,12 +152,12 @@ function MiniMap({ loc, snap, comps }: { loc: Location; snap: ReportContent["loc
   const sx = (x: number) => ((x - x0) / (x1 - x0 || 1)) * W;
   const sy = (y: number) => W - ((y - y0) / (y1 - y0 || 1)) * W;
   return (
-    <svg viewBox={`-10 -10 ${W + 20} ${W + 20}`} className="h-56 w-56 shrink-0 rounded border border-black/[0.07] bg-ink-900" role="img" aria-label="Catchment and competitors">
-      <polygon points={ring.map((c) => `${sx(c[0])},${sy(c[1])}`).join(" ")} fill="rgba(34,211,238,0.07)" stroke="#1d4f91" strokeDasharray="4 3" />
+    <svg viewBox={`-10 -10 ${W + 20} ${W + 20}`} className="h-56 w-56 shrink-0 border border-night bg-atlas" role="img" aria-label="Catchment and competitors">
+      <polygon points={ring.map((c) => `${sx(c[0])},${sy(c[1])}`).join(" ")} fill="rgba(255,255,255,0.08)" stroke="#ffffff" strokeDasharray="4 3" />
       {comps.filter((c) => c.active).map((c) => (
-        <circle key={c.id} cx={sx(c.lng)} cy={sy(c.lat)} r={4} fill={c.source === "user" ? "#C59BFF" : "#e98f86"} stroke="#FFFFFF" />
+        <circle key={c.id} cx={sx(c.lng)} cy={sy(c.lat)} r={4} fill={c.source === "user" ? "#f2c94c" : "#e98f86"} stroke="#0f1f3d" />
       ))}
-      <circle cx={sx(loc.lng)} cy={sy(loc.lat)} r={6} fill="#1d4f91" stroke="#FFFFFF" strokeWidth={2} />
+      <circle cx={sx(loc.lng)} cy={sy(loc.lat)} r={7} fill="#f2c94c" stroke="#0f1f3d" strokeWidth={1.5} />
     </svg>
   );
 }
@@ -168,7 +168,7 @@ export function ReportView({ c }: { c: ReportContent }) {
   const ran = c.scenarios.filter((s) => s.result);
   return (
     <article className="print-light mx-auto max-w-4xl bg-ink-950 p-6 text-sm leading-relaxed text-ink-200 md:p-10">
-      {c.project.is_demo && <div className="mb-4 rounded border border-amber-500/40 bg-you/200/10 px-3 py-2 text-xs font-medium text-amber-800">DEMO SCENARIO — Illustrative market data; not verified live conditions.</div>}
+      {c.project.is_demo && <div className="mb-4 border border-dashed border-night bg-white px-3 py-2 text-[13px] font-medium">Demo scenario: illustrative market data, not verified live conditions.</div>}
       <header>
         <div className="print-only font-display text-lg font-medium text-ink-100">StrataIQ</div>
         <h1 className="mt-5 font-display text-4xl font-medium leading-[1.02] tracking-[-0.03em] text-ink-100">{c.project.name}</h1>
@@ -178,11 +178,10 @@ export function ReportView({ c }: { c: ReportContent }) {
       <Executive c={c} />
 
       <H n={1}>Business concept</H>
-      <p><b>{c.project.category.label}</b> — modeled as <b>{c.archetype.label}</b> ({c.archetype.unit_label} per month).</p>
+      <p><b>{c.project.category.label}</b>, tested as a {c.archetype.label.toLowerCase()} business, counted in {c.archetype.unit_label} a month.</p>
       {prof.description && <p className="mt-1">{prof.description}</p>}
       {Array.isArray(prof.positioning) && prof.positioning.length > 0 && <p className="mt-1 text-ink-300">Claimed positioning (unverified): {prof.positioning.join(", ")}.</p>}
-      <p className="mt-1 text-xs text-ink-400">Competitor search tags: {c.project.category.filters.join(" OR ")} ({c.project.category.method} match)</p>
-
+      
       <H n={2}>Geographic area</H>
       <div className="space-y-4">
         {c.locations.map(({ location: l, snapshot: s }) => (
@@ -192,8 +191,8 @@ export function ReportView({ c }: { c: ReportContent }) {
               <div className="font-medium text-ink-100">{l.label}</div>
               <div className="text-xs text-ink-300">{l.address}</div>
               <div className="text-xs">Catchment: {s?.catchment_method === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${distance(l.catchment.radius_km)} straight-line radius`}</div>
-              {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "user-entered" : s.population.source}; placement: {s.population.method})</div> : <div className="text-xs text-warn">Population unavailable</div>}
-              {s && <div className="text-xs">Data coverage: {s.coverage.level} — {s.coverage.note}</div>}
+              {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "entered by you" : "estimated from buildings"})</div> : <div className="text-xs text-warn">Population unavailable</div>}
+              {s && <div className="text-xs">Map coverage: {s.coverage.level}. {s.coverage.note}</div>}
             </div>
           </div>
         ))}
@@ -205,7 +204,7 @@ export function ReportView({ c }: { c: ReportContent }) {
         <tbody>
           {c.locations.flatMap(({ location: l, snapshot: s }) => (s?.sources || []).map((src, i) => (
             <tr key={`${l.id}-${i}`} className="border-t border-black/[0.06]">
-              <td className="py-1">{src.name}</td><td>{src.layer}</td><td>{when(src.retrieved_at)}</td><td>{src.source_updated_at || "not reported"}</td><td>{src.license}</td>
+              <td className="py-1 pr-3">{src.name}</td><td className="pr-3">{src.layer}</td><td className="pr-3">{when(src.retrieved_at)}</td><td>{src.source_updated_at ? (/^\d{4}-\d{2}-\d{2}T/.test(src.source_updated_at) ? when(src.source_updated_at) : src.source_updated_at) : "not reported"}</td><td>{src.license}</td>
             </tr>
           )))}
         </tbody>
@@ -241,14 +240,14 @@ export function ReportView({ c }: { c: ReportContent }) {
       {ran.map(({ scenario: s, result: r }) => r?.summary && r.finance && (
         <div key={s.id} className="mb-3">
           <div className="font-medium text-ink-100">{s.name}{s.is_baseline && " (baseline)"}</div>
-          <p className="text-xs">Price {money(r.summary.price)} · modeled demand {num(r.summary.modeled_demand_units)} {r.unit_label ?? c.archetype.unit_label}/month (capacity {num(r.summary.capacity_units)}) · revenue {money(r.finance.revenue)} · operating cost {money((r.finance.fixed_cost || 0) + (r.finance.variable_cost || 0))} · <b>operating profit {money(r.finance.operating_profit)}</b> · break-even {num(r.finance.break_even_units)} units · payback {r.finance.payback_months ? `${num(r.finance.payback_months, 1)} months` : "not reached"}.</p>
+          <p className="text-xs">Price {money(r.summary.price)} · modeled demand {num(r.summary.modeled_demand_units)} {r.unit_label ?? c.archetype.unit_label}/month (capacity {num(r.summary.capacity_units)}) · revenue {money(r.finance.revenue)} · operating cost {money((r.finance.fixed_cost || 0) + (r.finance.variable_cost || 0))} · <b>operating profit {money(r.finance.operating_profit)}</b> · break-even at {num(r.finance.break_even_units)} {r.unit_label ?? c.archetype.unit_label} · payback {r.finance.payback_months ? `${num(r.finance.payback_months, 1)} months` : "not reached"}.</p>
           {r.monte_carlo && <p className="text-xs text-ink-400">Across {num(r.monte_carlo.draws)} market scenarios: bad month {money(r.monte_carlo.profit.p10)}, typical month {money(r.monte_carlo.profit.p50)}, good month {money(r.monte_carlo.profit.p90)}. Chance of a monthly loss: {pct(r.monte_carlo.prob_loss)}.</p>}
         </div>
       ))}
 
       <H n={8}>Scenario comparison</H>
       <table className="w-full text-xs">
-        <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">Rank</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Units</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">Chance of loss</th></tr></thead>
+        <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">Rank</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Sales</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">Chance of loss</th></tr></thead>
         <tbody>{d.ranking.map((r) => <tr key={r.scenario_id} className="border-t border-black/[0.06]"><td className="py-1">{r.rank}</td><td>{r.name}</td><td className="text-right">{num(r.units)}</td><td className="text-right">{money(r.profit)}</td><td className="text-right">{pct(r.prob_loss)}</td></tr>)}</tbody>
       </table>
       <p className="mt-2"><b>Result:</b> {d.headline}</p>
@@ -260,16 +259,16 @@ export function ReportView({ c }: { c: ReportContent }) {
       <ul className="list-disc space-y-1 pl-5">{(d.gaps || []).map((g) => <li key={g.key}>{g.text}</li>)}{!(d.gaps || []).length && <li>No critical data gaps were flagged by the rules; local verification is still recommended.</li>}</ul>
 
       <H n={11}>Recommended next actions</H>
-      <ol className="list-decimal space-y-1 pl-5">{d.next_actions.map((a, i) => <li key={i}>{a.action} <span className="text-ink-400">— {a.why}</span></li>)}</ol>
+      <ol className="list-decimal space-y-1 pl-5">{d.next_actions.map((a, i) => <li key={i}>{a.action} <span className="text-ink-400">{a.why}</span></li>)}</ol>
       {d.recommendations.length > 0 && (
         <ul className="mt-3 space-y-2">
-          {d.recommendations.map((r, i) => <li key={i} className="rounded border border-black/[0.07] p-2 text-xs"><b>{r.action}</b> {r.reason} Reconsider if: {r.reconsider_if}</li>)}
+          {d.recommendations.map((r, i) => <li key={i} className="border border-ink-600 bg-white p-3 text-[13px]"><b>{r.action}</b> {r.reason} Think again if: {r.reconsider_if}</li>)}
         </ul>
       )}
 
       <H n={12}>Methodology and limitations</H>
       <p>The demand figure is a planning estimate. In a test against a year of reported alcohol sales at 5,546 Texas bars and restaurants, location data explained under 3% of the difference between individual venues, so your concept, size and operation can move real sales far from this figure.</p>
-      <p>Demand is estimated with a multinomial-logit customer-choice model over synthetic customer segments placed on a population grid, with an outside option, lognormal affordability, distance decay and capacity limits. Uncertainty is propagated by Monte Carlo over documented parameter ranges. Default behaviour parameters are not calibrated against observed sales; no accuracy figure is claimed. See /methodology for formulas.</p>
+      <p>Demand comes from a customer-choice model: simulated people, placed where the population data puts them, weigh price, distance and what they can afford, and can choose you, a rival or nothing. We rerun it across market scenarios to get the range. How people react to price and quality are starting estimates that have not been checked against real sales.</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-ink-300">{(ran[0]?.result?.limitations || []).map((l) => <li key={l}>{l}</li>)}</ul>
       <BottomLine c={c} />
       <p className="mt-6 text-[11px] leading-snug text-ink-400">{c.disclaimer} Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Neighborhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau.</p>

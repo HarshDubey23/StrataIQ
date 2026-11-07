@@ -73,7 +73,7 @@ export default function MonitorPage() {
                   <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #d3dbe5", fontSize: 12 }} />
                   {f?.units_p10 != null && f?.units_p90 != null && <ReferenceArea y1={f.units_p10} y2={f.units_p90} fill="#1d4f91" fillOpacity={0.08} />}
                   {f && <ReferenceLine y={f.units} stroke="#1d4f91" strokeDasharray="4 3" label={{ value: "forecast", fill: "#1d4f91", fontSize: 10, position: "right" }} />}
-                  <Line dataKey="actual" stroke="#C59BFF" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line dataKey="actual" stroke="#1d4f91" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             )}

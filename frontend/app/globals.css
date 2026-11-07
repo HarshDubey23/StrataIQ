@@ -337,6 +337,9 @@ html.lenis body {
 .maplibregl-ctrl-attrib a {
   color: var(--color-ink-300) !important;
 }
+.maplibregl-ctrl-top-right {
+  top: 72px;
+}
 .maplibregl-ctrl-scale {
   background: rgb(255 255 255 / 0.7) !important;
   color: var(--color-ink-300) !important;
@@ -418,4 +421,11 @@ select {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-ink-600) transparent;
+}
+
+.maplibregl-ctrl-scale {
+  background: var(--color-paper) !important;
+  border: 1px solid var(--color-night) !important;
+  color: var(--color-night) !important;
+  font-weight: 600;
 }

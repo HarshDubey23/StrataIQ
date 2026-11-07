@@ -289,7 +289,7 @@ export default function LiveMap(p: LiveMapProps) {
       <style>{"@keyframes siqpulse{0%{box-shadow:0 0 0 0 rgba(29,79,145,.6)}70%{box-shadow:0 0 0 18px rgba(29,79,145,0)}100%{box-shadow:0 0 0 0 rgba(29,79,145,0)}}"}</style>
       <div ref={el} style={{ position: "absolute", inset: 0 }} />
       {!ready && !note && <div className="absolute inset-0 flex items-center justify-center bg-ink-950 text-sm text-ink-400">Loading live market…</div>}
-      {note && <div className="absolute left-3 top-3 rounded bg-ink-900/90 px-2 py-1 text-xs text-amber-800">{note}</div>}
+      {note && <div className="absolute left-3 top-3 rounded bg-ink-900/90 px-2 py-1 text-xs text-warn">{note}</div>}
     </div>
   );
 }

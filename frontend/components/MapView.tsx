@@ -450,7 +450,7 @@ export default function MapView(props: Props) {
       {/* inline style: maplibre's .maplibregl-map sets position:relative, which would override a utility class */}
       <div ref={el} style={{ position: "absolute", inset: 0 }} />
       {!ready && !styleNote && <div className="absolute inset-0 flex items-center justify-center bg-ink-900 text-sm text-ink-400">Loading map…</div>}
-      {styleNote && <div className="absolute left-2 top-2 rounded bg-ink-900/90 px-2 py-1 text-xs text-amber-800">{styleNote}</div>}
+      {styleNote && <div className="absolute left-2 top-2 rounded bg-ink-900/90 px-2 py-1 text-xs text-warn">{styleNote}</div>}
     </div>
   );
 }

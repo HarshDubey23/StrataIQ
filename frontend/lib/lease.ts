@@ -99,6 +99,7 @@ export interface Asks {
   camAudit: boolean;
   rentAtOpening: boolean;
   renewalYears: number | null;
+  guaranteeBurnOff: boolean;
 }
 
 /** A plain, non-binding counterproposal the founder can edit and send. */
@@ -113,7 +114,7 @@ export function counterLetter(p: { address: string; tenant: string; business: st
     a.rentAtOpening ? "Rent start: rent begins on the earlier of the day we open for business or the date we receive our certificate of occupancy." : null,
     a.camCapPct != null ? `Operating expenses: controllable CAM increases capped at ${a.camCapPct}% a year.` : null,
     a.camAudit ? "Audit: tenant may review the landlord's CAM records once a year." : null,
-    c.guarantee === "capped" ? `Personal guarantee: limited to ${c.capMonths} months of rent, and ending once the tenant has paid on time for 24 months.` : c.guarantee === "none" ? "Personal guarantee: none." : null,
+    c.guarantee === "capped" ? `Personal guarantee: limited to ${c.capMonths} months of rent${a.guaranteeBurnOff ? ", and ending once the tenant has paid on time for 24 months" : ""}.` : c.guarantee === "none" ? "Personal guarantee: none." : null,
     a.renewalYears ? `Renewal: one option to renew for ${a.renewalYears} years, exercisable by the tenant.` : null,
   ].filter(Boolean) as string[];
   return [

@@ -88,7 +88,7 @@ function DnaCanvas({ m, onPick }: { m: GenomeMatrix; onPick: (agent: number) => 
         aria-label="Market DNA matrix: rows are synthetic agents, columns are the 615 genome parameters"
       />
       {hover && (
-        <div className="pointer-events-none absolute z-10 w-64 rounded-md border border-ink-600 bg-ink-950/95 p-2 text-[11px] shadow-xl" style={{ left: Math.min(hover.x + 14, (wrap.current?.clientWidth || 600) - 270), top: hover.y + 14 }}>
+        <div className="pointer-events-none absolute z-10 w-64 rounded-md border border-ink-600 bg-ink-950/95 p-2 text-[11px] " style={{ left: Math.min(hover.x + 14, (wrap.current?.clientWidth || 600) - 270), top: hover.y + 14 }}>
           <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: GROUP_COLOR[m.groups[hover.r]] }} /> Agent #{m.agent_index[hover.r].toLocaleString(LOCALE)} · {GROUP_LABEL[m.groups[hover.r]]}</div>
           {hp ? (
             <>

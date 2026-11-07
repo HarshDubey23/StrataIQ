@@ -17,6 +17,9 @@ RULES = [
     ("POST", re.compile(r"/(assistant/\w+|ask|explain|try-price)$"), "paid", 30, 60),
     ("POST", re.compile(r"/field/[^/]+/(records|submit)$"), "field", 60, 60),
 ]
+# these two call public map services for anyone, signed in or not
+PUBLIC_MAP = [("GET", re.compile(r"/market/(peek|preview)$"), "public_map", 30, 60)]
+RULES += PUBLIC_MAP
 WRITE = ("write", 120, 60)
 READ = ("read", 600, 60)
 MAX_TRACKED = 100_000

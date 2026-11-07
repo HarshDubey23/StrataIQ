@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Logo href="/app" tone="dark" />
       </div>
       <div className="px-4">
-        <Link href="/app/projects/new" className="flex h-10 items-center justify-between border border-night bg-you px-3 text-sm font-semibold text-night transition-colors hover:bg-you-deep">
+        <Link href="/app/projects/new" className="flex h-10 items-center justify-between border border-white px-3 text-sm font-semibold text-white transition-colors hover:bg-atlas-deep">
           New analysis <Plus className="h-4 w-4" />
         </Link>
       </div>

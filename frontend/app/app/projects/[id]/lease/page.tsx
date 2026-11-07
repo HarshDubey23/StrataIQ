@@ -12,10 +12,10 @@ import type { SimResult } from "@/lib/types";
 
 type Run = { result?: SimResult } & Partial<SimResult>;
 const SPRING = { type: "spring", stiffness: 260, damping: 30 } as const;
-const sf = (x: number) => `$${x.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+const sf = (x: number) => `$${Number.isInteger(x) ? x.toLocaleString("en-US") : x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Where the offer, your counter and your walk-away rent sit on one scale. The offer handle can be dragged. */
-function RentScale({ offer, walk, comfort, counter, noRent, onOffer }: { offer: number; walk: number; comfort: number; counter: number; noRent: boolean; onOffer: (v: number) => void }) {
+function RentScale({ offer, walk, comfort, counter, noRent, onOffer, offerLabel }: { offer: number; walk: number; comfort: number; counter: number; noRent: boolean; onOffer: (v: number) => void; offerLabel: string }) {
   const still = useReducedMotion();
   const top = Math.max(10, Math.ceil(Math.max(offer, walk, counter) * 1.3));
   const at = (v: number) => `${Math.max(0, Math.min(100, (v / top) * 100))}%`;
@@ -27,13 +27,13 @@ function RentScale({ offer, walk, comfort, counter, noRent, onOffer }: { offer: 
   );
   return (
     <div className="px-14 pb-9 pt-[4.5rem]">
-      <div className="relative h-12 border border-night bg-white">
-        <div className="absolute inset-0 bg-brick" />
-        {!noRent && <motion.div className="absolute inset-y-0 left-0 bg-[#cfe5d4]" initial={false} animate={{ width: at(walk) }} transition={still ? { duration: 0 } : SPRING} />}
-        {!noRent && <motion.div className="absolute inset-y-0 left-0 bg-moss" initial={false} animate={{ width: at(Math.max(0, comfort)) }} transition={still ? { duration: 0 } : SPRING} />}
-        {!noRent && <Mark v={walk} label="Walk away" tone="bg-white" row="-top-16" />}
+      <div className="relative h-12 border border-night bg-white focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-night">
+        <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(135deg, #0f1f3d 0 1px, transparent 1px 7px)" }} />
+        {!noRent && <motion.div className="absolute inset-y-0 left-0 bg-[#dbe6f3]" initial={false} animate={{ width: at(walk) }} transition={still ? { duration: 0 } : SPRING} />}
+        {!noRent && <motion.div className="absolute inset-y-0 left-0 bg-stone" initial={false} animate={{ width: at(Math.max(0, comfort)) }} transition={still ? { duration: 0 } : SPRING} />}
+        {!noRent && <Mark v={walk} label="Walk away" tone="bg-stone" row="-top-16" />}
         <Mark v={counter} label="Your counter" tone="bg-you" row="-bottom-8" />
-        <Mark v={offer} label="Their offer" tone="bg-brick" row="-top-8" />
+        <Mark v={offer} label={offerLabel} tone="bg-white" row="-top-8" />
         <input type="range" min={0} max={top} step={0.5} value={offer} onChange={(e) => onOffer(Number(e.target.value))} aria-label="Their offered rent per square foot per year" className="absolute inset-0 h-full w-full cursor-ew-resize opacity-0" />
       </div>
     </div>
@@ -56,7 +56,7 @@ function MonthLots({ t }: { t: LeaseTerms }) {
               const at = m < guaranteed;
               return (
                 <div key={i} title={`Month ${m + 1}: ${money(monthRent(t, m))}${at ? ", you personally owe this" : ""}`} style={{ transitionDelay: `${m * 9}ms` }}
-                  className={cn("relative h-7 border border-night transition-colors duration-300 motion-reduce:transition-none", at ? "bg-brick" : "bg-white")}>
+                  className={cn("relative h-7 border border-night transition-colors duration-300 motion-reduce:transition-none", at ? "bg-danger" : "bg-white")}>
                   {free && <span aria-hidden className="absolute inset-x-0 bottom-0 h-2.5 bg-you" />}
                 </div>
               );
@@ -65,7 +65,7 @@ function MonthLots({ t }: { t: LeaseTerms }) {
         ))}
       </div>
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px]">
-        <li className="flex items-center gap-2"><span aria-hidden className="h-3 w-4 border border-night bg-brick" /> You personally owe it</li>
+        <li className="flex items-center gap-2"><span aria-hidden className="h-3 w-4 border border-night bg-danger" /> You personally owe it</li>
         <li className="flex items-center gap-2"><span aria-hidden className="h-3 w-4 border border-night bg-white" /> The business owes it</li>
         <li className="flex items-center gap-2"><span aria-hidden className="h-3 w-4 border border-night bg-you" /> Free base rent</li>
       </ul>
@@ -105,7 +105,7 @@ export default function LeaseCounter() {
   const [offer, setOffer] = useState<LeaseTerms | null>(null);
   const [counter, setCounter] = useState<LeaseTerms | null>(null);
   const [edited, setEdited] = useState(false);
-  const [asks, setAsks] = useState<Asks>({ camCapPct: 5, camAudit: true, rentAtOpening: true, renewalYears: 5 });
+  const [asks, setAsks] = useState<Asks>({ camCapPct: 5, camAudit: true, rentAtOpening: true, renewalYears: 5, guaranteeBurnOff: true });
   const [view, setView] = useState<"offer" | "counter">("offer");
   const [tenant, setTenant] = useState("");
   const [note, setNote] = useState<string | null>(null);
@@ -131,7 +131,7 @@ export default function LeaseCounter() {
       if (saved?.offer && saved?.counter) {
         setOffer(saved.offer);
         setCounter(saved.counter);
-        if (saved.asks) setAsks(saved.asks);
+        if (saved.asks) setAsks({ guaranteeBurnOff: true, ...saved.asks });
         setTenant(saved.tenant || "");
         setEdited(true);
         return;
@@ -162,6 +162,8 @@ export default function LeaseCounter() {
 
   const a = analyze(offer, biz, ceiling.share);
   const over = !a.noRentWorks && offer.baseRent > a.walkAwayRent;
+  const asking = edited ? "They are asking" : "Example offer:";
+  const named = edited ? "Their" : "The example";
   const saved = totalCost(offer) - totalCost(counter) + (counter.tiPerSqft - offer.tiPerSqft) * counter.sqft;
   const riskOffer = guaranteeExposure(offer);
   const riskCounter = guaranteeExposure(counter);
@@ -196,7 +198,7 @@ export default function LeaseCounter() {
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-5 p-4 md:p-8">
-      <section className={cn("wipe no-print border border-night p-6 text-night md:p-8", a.noRentWorks || over ? "bg-brick" : a.occupancyShare != null && a.occupancyShare > ceiling.share ? "bg-you" : "bg-moss")}>
+      <section className={cn("wipe no-print border border-night p-6 md:p-8", a.noRentWorks || over ? "bg-danger text-white" : a.occupancyShare != null && a.occupancyShare > ceiling.share ? "bg-night text-white" : "bg-ok text-white")}>
         {a.noRentWorks ? (
           <h1 className="font-display max-w-[24ch] text-[44px] leading-[1.02]">No rent works at this forecast.</h1>
         ) : (
@@ -206,10 +208,10 @@ export default function LeaseCounter() {
           {a.noRentWorks
             ? `Your other costs already take more than forecast sales can cover. To take this space at ${sf(offer.baseRent)}, sales must reach ${money(a.salesNeeded)} a month. Change the plan first, or walk.`
             : over
-              ? `They are asking ${sf(offer.baseRent)}. Above ${sf(a.walkAwayRent)}, forecast sales no longer cover your costs. At their rent you need ${money(a.salesNeeded)} a month, about ${num(a.unitsNeeded)} ${res!.unit_label}. Push back, or look at another space.`
+              ? `${asking} ${sf(offer.baseRent)}. Above ${sf(a.walkAwayRent)}, forecast sales no longer cover your costs. At their rent you need ${money(a.salesNeeded)} a month, about ${num(a.unitsNeeded)} ${res!.unit_label}. Push back, or look at another space.`
               : a.occupancyShare != null && a.occupancyShare > ceiling.share
-                ? `Their ${sf(offer.baseRent)} still breaks even at the forecast, but rent and CAM would take ${pct(a.occupancyShare)} of sales, against a rule of thumb of ${pct(ceiling.share)}. You have little room for error, so ask for free months and a smaller guarantee.`
-                : `Their ${sf(offer.baseRent)} is inside your limit. You still have room to ask for free months and a smaller personal guarantee.`}
+                ? `${named} ${sf(offer.baseRent)} still breaks even at the forecast, but rent and CAM would take ${pct(a.occupancyShare)} of sales, against a rule of thumb of ${pct(ceiling.share)}. You have little room for error, so ask for free months and a smaller guarantee.`
+                : `${named} ${sf(offer.baseRent)} is inside your limit. You still have room to ask for free months and a smaller personal guarantee.`}
         </p>
       </section>
 
@@ -220,17 +222,20 @@ export default function LeaseCounter() {
               <h2 className="font-display text-[22px]">Their offer</h2>
               <Evidence kind={edited ? "user" : "assumption"} label={edited ? "Yours" : "Estimated"} />
             </div>
-            {!edited && <p className="mb-3 mt-1 text-[13px] text-ink-300">Filled from your plan. Replace these with the landlord&apos;s real numbers.</p>}
+            {!edited && <p className="mb-3 mt-1 text-[13px] text-ink-300">These are examples from your plan, on an assumed 2,000 sq ft. Enter the landlord&apos;s real numbers.</p>}
             <div className="mt-3"><TermInputs t={offer} set={editOffer} full /></div>
           </section>
-          <section className="border border-night bg-you/25 p-5">
-            <h2 className="font-display text-[22px]">Your counter</h2>
+          <section className="border border-night bg-white">
+            <h2 className="font-display border-b border-night bg-you px-5 py-3 text-[22px]">Your counter</h2>
+            <div className="p-5">
             <div className="mt-3"><TermInputs t={counter} set={editCounter} full={false} /></div>
             <div className="mt-4 space-y-2 border-t border-night pt-3 text-[14px]">
               <label className="flex items-center gap-2"><input type="checkbox" checked={asks.rentAtOpening} onChange={(e) => editAsks({ rentAtOpening: e.target.checked })} /> Rent starts when you can open</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={asks.camCapPct != null} onChange={(e) => editAsks({ camCapPct: e.target.checked ? 5 : null })} /> Cap CAM increases at 5% a year</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={asks.camAudit} onChange={(e) => editAsks({ camAudit: e.target.checked })} /> Right to audit CAM yearly</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={asks.renewalYears != null} onChange={(e) => editAsks({ renewalYears: e.target.checked ? 5 : null })} /> Option to renew for 5 years</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={asks.guaranteeBurnOff} onChange={(e) => editAsks({ guaranteeBurnOff: e.target.checked })} /> End the guarantee after 24 on-time months</label>
+            </div>
             </div>
           </section>
         </div>
@@ -238,19 +243,19 @@ export default function LeaseCounter() {
         <div className="space-y-5">
           <section className="border border-night bg-white p-5">
             <h2 className="font-display text-[22px]">Rent per square foot, per year</h2>
-            <RentScale offer={offer.baseRent} walk={Math.max(0, a.walkAwayRent)} comfort={a.comfortRent} counter={counter.baseRent} noRent={a.noRentWorks} onOffer={(v) => editOffer({ baseRent: v })} />
-            <p className="text-[13px] text-ink-300">Drag the bar to test a different offer. Dark green keeps rent and CAM at or under {pct(ceiling.share)} of forecast sales, a common rule of thumb for {ceiling.group}. Light green still breaks even at the forecast. Pink does not.</p>
+            <RentScale offer={offer.baseRent} walk={Math.max(0, a.walkAwayRent)} comfort={a.comfortRent} counter={counter.baseRent} noRent={a.noRentWorks} onOffer={(v) => editOffer({ baseRent: v })} offerLabel={edited ? "Their offer" : "Example"} />
+            <p className="text-[13px] text-ink-300">Drag the bar to test a different offer. The solid part keeps rent and CAM at or under {pct(ceiling.share)} of forecast sales, a common rule of thumb for {ceiling.group}. The pale part still breaks even at the forecast. The hatched part does not.</p>
 
             <div className="mt-5 grid gap-4 border-t border-ink-600 pt-4 md:grid-cols-[1fr_1fr]">
               <div className="space-y-2.5">
                 <h3 className="text-[14px] font-semibold">What this rent demands from sales</h3>
-                {[["Sales you need a month", a.salesNeeded, "bg-brick"], ["Forecast sales a month", biz.revenue, "bg-stone"]].map(([l, v, c]) => (
+                {[["Sales you need a month", Math.round(a.salesNeeded), "bg-you"], ["Forecast sales a month", biz.revenue, "bg-stone"]].map(([l, v, c]) => (
                   <div key={l as string}>
                     <div className="flex justify-between text-[13px]"><span>{l}</span><span className="num font-semibold">{money(v as number)}</span></div>
                     <div className="mt-1 h-4 border border-night bg-white"><motion.div className={cn("h-full", c as string)} initial={false} animate={{ width: `${((v as number) / barTop) * 100}%` }} transition={SPRING} /></div>
                   </div>
                 ))}
-                <p className="text-[12px] text-ink-400">The forecast is a planning estimate. The sales you need comes from your costs and is firm.</p>
+                <p className="text-[12px] text-ink-400">The forecast is a planning estimate. The sales you need comes from your own costs, so it moves only when they do.</p>
               </div>
               <div className="grid grid-cols-2 gap-px bg-night p-px">
                 {[
@@ -283,10 +288,11 @@ export default function LeaseCounter() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-[22px]">Your counteroffer, ready to send</h2>
               <div className="flex gap-2">
-                <Button size="sm" variant="next" onClick={copy}>{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copied" : "Copy letter"}</Button>
+                <Button size="sm" variant="primary" onClick={copy} disabled={!edited} title={edited ? undefined : "Enter the landlord's real offer first"}>{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copied" : "Copy letter"}</Button>
                 <Button size="sm" onClick={() => window.print()}><Printer className="h-3.5 w-3.5" /> Print</Button>
               </div>
             </div>
+            {!edited && <p className="mt-2 border border-dashed border-night bg-white px-3 py-2 text-[14px]">This draft uses example numbers. Enter the landlord&apos;s offer above before you send anything.</p>}
             <div className="mt-3 max-w-xs"><Field label="Sign as" htmlFor="tenant"><input id="tenant" value={tenant} onChange={(e) => { setTenant(e.target.value); setEdited(true); setNote(null); }} placeholder="Your name or company" className="h-10 w-full border border-ink-500 bg-white px-3 text-sm" /></Field></div>
             <Textarea value={letter} onChange={(e) => setNote(e.target.value)} aria-label="Counteroffer letter" rows={15} className="mt-3 font-[inherit] leading-relaxed" />
             <p className="mt-2 text-[13px] text-ink-300">This is a starting draft, not legal advice. Have a commercial real estate attorney read the lease before you sign.</p>

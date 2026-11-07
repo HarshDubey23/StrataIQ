@@ -77,6 +77,23 @@ def nearest_tract(zone_lats: np.ndarray, zone_lngs: np.ndarray, tract_lats: np.n
     return near[best], np.sqrt(d[np.arange(zone_lats.size), best])
 
 
+def area_summary(data: dict, lat: float, lng: float, radius_km: float = 3.2) -> dict | None:
+    """What the Census says about the tracts around a point, or None outside the extract. Tracts count by their centroid."""
+    dy = (np.asarray(data["lat"], float) - lat) * 111.32
+    dx = (np.asarray(data["lng"], float) - lng) * 111.32 * np.cos(np.radians(lat))
+    near = np.flatnonzero(np.hypot(dx, dy) <= radius_km)
+    if near.size == 0:
+        return None
+    people = data["age_sex"][near].sum(1).astype(float)
+    counts = data["counts"][near].sum(0)
+    return {
+        "people": int(people.sum()),
+        "median_household_income": round(BracketCurve(counts, 1.0).median * 12),
+        "jobs": int(data["jobs"][near].sum()),
+        "tracts": [{"lat": float(data["lat"][k]), "lng": float(data["lng"][k]), "people": int(p)} for k, p in zip(near, people)],
+    }
+
+
 def zone_people(data: dict, idx: np.ndarray) -> dict:
     """Each zone's tract, as the shares agents are drawn from. All figures are ACS 5-year estimates."""
     age_sex = data["age_sex"][idx].astype(float)

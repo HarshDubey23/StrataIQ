@@ -197,7 +197,7 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
                     </div>
                   </>
                 ) : (
-                  <span className="text-ink-500">Hover a cell. Color = where this agent sits in the population: <span className="text-blue-400">low</span> · median · <span className="text-orange-400">high</span>.</span>
+                  <span className="text-ink-500">Hover a cell. Color = where this agent sits in the population: <span className="text-blue-400">low</span> · median · <span className="text-warn">high</span>.</span>
                 )}
               </div>
             </div>
