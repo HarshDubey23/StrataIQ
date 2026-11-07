@@ -46,8 +46,7 @@ export async function atlasStyle(): Promise<StyleSpecification | string> {
     const source = "openmaptiles";
     keep.push(
       { id: "siq-buildings-flat", source, "source-layer": "building", type: "fill", minzoom: 14, layout: { visibility: "none" }, paint: { "fill-color": "#cfe0f5", "fill-outline-color": "#0f1f3d" } },
-      { id: "siq-footprints", source, "source-layer": "building", type: "line", minzoom: 13, paint: { "line-color": "#0f1f3d", "line-width": 1, "line-opacity": 0.8 } },
-      { id: "siq-buildings-3d", source, "source-layer": "building", type: "fill-extrusion", minzoom: 13, paint: { "fill-extrusion-color": "#f7f8fa", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false } },
+      { id: "siq-buildings-3d", source, "source-layer": "building", type: "fill-extrusion", minzoom: 14, paint: { "fill-extrusion-color": "#f7f8fa", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false } },
     );
     return { ...s, layers: keep, light: { anchor: "map", color: "#dbe8f7", intensity: 0.16, position: [1.15, 210, 30] }, glyphs: undefined, sprite: undefined };
   } catch {

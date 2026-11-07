@@ -121,15 +121,6 @@ async def preview(spot: str = Query(default="austin"), category: str = Query(def
                        "attribution": " · ".join([prov.get("attribution") or ""] + [a["attribution"] for a in prov.get("also") or []])}}
 
 
-@router.get("/market/suggest")
-async def suggest(q: str = Query(min_length=3, max_length=120)):
-    """Public address suggestions while someone types. A slow or failed lookup just shows none: typing still works."""
-    try:
-        return {"results": await osm.suggest_places(q, Cache(session_factory()))}
-    except Exception:  # noqa: BLE001
-        return {"results": []}
-
-
 @router.get("/market/peek")
 async def peek(category: str = Query(default="gym"), q: str | None = Query(default=None, min_length=3, max_length=200),
                lat: float | None = Query(default=None, ge=-85, le=85), lng: float | None = Query(default=None, ge=-180, le=180), label: str | None = Query(default=None, max_length=200)):

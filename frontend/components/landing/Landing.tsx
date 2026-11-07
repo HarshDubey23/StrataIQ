@@ -13,6 +13,7 @@ import { SPOTS, type PreviewComp, type Spot } from "./spots";
 import type { Tract } from "./HeroMap";
 import { money, num } from "@/lib/format";
 import { deviceTier, type Tier } from "@/lib/device";
+import { suggestPlaces, type Place } from "@/lib/places";
 
 const HeroMap = dynamic(() => import("./HeroMap"), { ssr: false, loading: () => null });
 const AtlasLite = dynamic(() => import("./AtlasLite"), { ssr: false, loading: () => null });
@@ -56,7 +57,6 @@ async function ensureSession(): Promise<void> {
   if (!g.ok) throw new Error("The server is waking up. Try again in a few seconds.");
 }
 
-type Place = { label: string; lat: number; lng: number };
 const RECENT = "siq-recent-places";
 function readRecent(): Place[] {
   try {
@@ -80,8 +80,8 @@ function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: 
     const ctl = new AbortController();
     // waits for a pause in typing, and each new letter cancels the last request
     const t = setTimeout(() => {
-      fetch(`/api/v1/market/suggest?q=${encodeURIComponent(q)}`, { signal: ctl.signal }).then((r) => (r.ok ? r.json() : { results: [] })).then((j) => {
-        setFound(j.results);
+      suggestPlaces(q, ctl.signal).then((list) => {
+        setFound(list);
         setSearched(q);
       }).catch(() => undefined);
     }, 200);

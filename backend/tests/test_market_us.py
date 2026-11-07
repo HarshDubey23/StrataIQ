@@ -76,21 +76,3 @@ def test_every_landing_place_and_business_works_on_the_backend():
     assert set(spots) <= set(PREVIEW_SPOTS) and set(spots) <= set(LIVE_SPOTS_US) | set(LIVE_SPOTS_IN)
     assert set(cats) <= PREVIEW_CATS
 
-
-def test_photon_suggestions_keep_us_addresses_once_and_read_as_one_line():
-    from app.providers.osm import parse_photon_suggest
-
-    def feat(lng, lat, **p):
-        return {"geometry": {"coordinates": [lng, lat]}, "properties": p}
-
-    out = parse_photon_suggest({"features": [
-        feat(-97.76, 30.25, countrycode="US", housenumber="1402", street="South Lamar Boulevard", city="Austin", state="Texas"),
-        feat(-97.76, 30.25, countrycode="US", housenumber="1402", street="South Lamar Boulevard", city="Austin", state="Texas"),
-        feat(0.1, 51.5, countrycode="GB", street="Lamar Road", city="London"),
-        feat(-112.07, 33.45, countrycode="us", name="Phoenix", city="Phoenix", state="Arizona"),
-        {"geometry": None, "properties": {"countrycode": "US", "name": "Broken"}},
-    ]})
-    assert out == [
-        {"label": "1402 South Lamar Boulevard, Austin, Texas", "lat": 30.25, "lng": -97.76},
-        {"label": "Phoenix, Arizona", "lat": 33.45, "lng": -112.07},
-    ]

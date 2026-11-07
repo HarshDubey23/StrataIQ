@@ -1,5 +1,6 @@
 // Run: node --experimental-strip-types lib/lease.check.ts
 import assert from "node:assert/strict";
+import { parseSuggestions } from "./places.ts";
 import { analyze, counterLetter, guaranteeExposure, monthRent, occupancyCeiling, openingCounter, totalCost, type LeaseTerms } from "./lease.ts";
 
 const t: LeaseTerms = { sqft: 2000, baseRent: 30, nnn: 6, termYears: 2, increasePct: 0, freeMonths: 0, tiPerSqft: 0, guarantee: "full", capMonths: 6 };
@@ -55,4 +56,14 @@ assert.ok(letter.includes("in place of the $40 proposed"));
 assert.ok(letter.includes("non-binding"));
 assert.ok(letter.includes("limited to 6 months"));
 assert.ok(letter.includes("[Your name]"));
+const feat = (lng: number, lat: number, p: Record<string, string>) => ({ geometry: { coordinates: [lng, lat] }, properties: p });
+const places = parseSuggestions([
+  feat(-97.76, 30.25, { countrycode: "US", housenumber: "1402", street: "South Lamar Boulevard", city: "Austin", state: "Texas" }),
+  feat(-97.76, 30.25, { countrycode: "US", housenumber: "1402", street: "South Lamar Boulevard", city: "Austin", state: "Texas" }),
+  feat(81.8, 25.4, { countrycode: "IN", name: "Prayagraj" }),
+  feat(-112.07, 33.45, { countrycode: "us", name: "Phoenix", city: "Phoenix", state: "Arizona" }),
+  { properties: { countrycode: "US", name: "No geometry" } },
+]);
+// repeats and places outside the US drop out, and each result reads as one line
+assert.deepEqual(places, [{ label: "1402 South Lamar Boulevard, Austin, Texas", lat: 30.25, lng: -97.76 }, { label: "Phoenix, Arizona", lat: 33.45, lng: -112.07 }]);
 console.log("lease math ok");

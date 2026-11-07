@@ -142,7 +142,6 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
       const setBuildings = (low: boolean) => {
         m.setLayoutProperty("siq-buildings-3d", "visibility", low ? "none" : "visible");
         m.setLayoutProperty("siq-buildings-flat", "visibility", low ? "visible" : "none");
-        m.setLayoutProperty("siq-footprints", "visibility", low ? "none" : "visible");
       };
       m.on("load", () => {
         if (cancelled) return;
