@@ -63,7 +63,7 @@ Click any agent to see its genome, the utility of each option split into channel
 
 ## What makes it different
 
-- **Real spending power, not guesses.** Each agent's monthly spend comes from MoSPI **HCES 2023-24** consumption deciles for its state × rural/urban, placed tile by tile with Meta's **Relative Wealth Index** (weighted by WorldPop) through percentile rank matching. The area's real rich/poor mix drives willingness to pay and participation. ([details](docs/research/REAL_DATA_SOURCES.md))
+- **Real spending power, not guesses.** Each agent's monthly spend comes from MoSPI **HCES 2023-24** consumption deciles for its state × rural/urban. The state and rural/urban mix drives willingness to pay and participation. ([details](docs/research/REAL_DATA_SOURCES.md))
 - **Real road distance.** Every population zone is routed to the site and competitors over OpenStreetMap roads (OSRM). If routing fails, the run says so and falls back to straight-line × circuity.
 - **615-parameter Agent Genome.** 16 correlated latent traits conditioned on age and income, 46 real-geometry measurements and 553 generated parameters — every one consumed by the model and audited in tests. ([GENOME.md](docs/GENOME.md))
 - **A defensible model.** Vectorised multinomial logit with an outside option (Huff gravity is a special case), lognormal affordability by segment, distance decay, marketing awareness, capacity limits, seeded Monte Carlo → P10/P50/P90 profit and P(loss). ([MODEL.md](docs/MODEL.md))
@@ -80,7 +80,7 @@ Browser ── Next.js 15 (frontend/) ── /api/* proxy ──► FastAPI (bac
                                                       ├─ factors/     615-factor intelligence engine with evidence mapping
                                                       ├─ categories/  open business taxonomy and resolver
                                                       ├─ providers/   Nominatim, Overpass, Foursquare, WorldPop, OSRM/openrouteservice
-                                                      ├─ data/        HCES 2023-24 tables, India wealth grid
+                                                      ├─ data/        HCES 2023-24 tables
                                                       └─ PostgreSQL + PostGIS (geography columns, GIST indexes)
 ```
 
@@ -136,7 +136,7 @@ first visit after a quiet spell takes about a minute. Vercel still works too (`b
 ## Data and licences
 
 Map data © OpenStreetMap contributors (ODbL) · Population © WorldPop, University of Southampton (CC BY 4.0) ·
-Consumption © MoSPI HCES 2023-24 · Relative Wealth Index © Meta Data for Good / Chi et al. 2022 (CC BY-NC 4.0, non-commercial) ·
+Consumption © MoSPI HCES 2023-24 ·
 State boundaries © geoBoundaries (CC BY 4.0) · Routing © OSRM / FOSSGIS, openrouteservice by HeiGIT ·
 Tiles © OpenFreeMap / OpenMapTiles. OSM contributor usernames are discarded.
 

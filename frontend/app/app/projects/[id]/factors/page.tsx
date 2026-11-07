@@ -10,7 +10,7 @@ import type { FactorsResponse } from "@/lib/types";
 
 const STATUS: Record<string, { label: string; cls: string; help: string }> = {
   computed: { label: "Computed", cls: "border-observed/40 bg-observed/10 text-observed", help: "Derived from live data for this location (OpenStreetMap, WorldPop, geometry)." },
-  official: { label: "Official data", cls: "border-ok/40 bg-ok/10 text-ok", help: "From an official statistic for this place (e.g. MoSPI HCES 2023-24, MoSPI NHTS 2025-26), mapped with Meta's Relative Wealth Index." },
+  official: { label: "Official data", cls: "border-ok/40 bg-ok/10 text-ok", help: "From an official statistic for this place (e.g. MoSPI HCES 2023-24, MoSPI NHTS 2025-26)." },
   derived: { label: "Derived", cls: "border-model/40 bg-model/10 text-model", help: "Computed from real data for this place (e.g. the area's income mix) with a documented formula." },
   industry: { label: "Industry report", cls: "border-observed/40 bg-observed/10 text-observed", help: "Anchored to a published industry figure (e.g. gym membership 0.8% of India, Deloitte & HFA 2025)." },
   literature: { label: "Published research", cls: "border-userdata/40 bg-userdata/10 text-userdata", help: "Anchored to a peer-reviewed estimate." },

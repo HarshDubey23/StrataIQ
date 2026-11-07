@@ -167,7 +167,7 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
     female = rng.random(N) < fem_p[band]
     mpce = income_z = None
     if income is not None:
-        # real-data income: national consumption rank from Meta RWI tile x HCES 2023-24 curve (see economics/income.py)
+        # real-data income: consumption rank on the HCES 2023-24 curve (see economics/income.py)
         mpce, u = income.draw(np.random.default_rng(seed + 211), zi)
         seg = np.digitize(u, INCOME_CLASS_EDGES[1:-1])
         income_z = ndtri(np.clip(u, 1e-6, 1 - 1e-6))

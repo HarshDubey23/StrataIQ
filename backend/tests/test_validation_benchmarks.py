@@ -1,4 +1,4 @@
-"""Scientific benchmark tests and empirical validation suite comparing StratIq against 4 industry baselines.
+"""Synthetic identification check comparing StratIq with 4 baselines. Ground truth comes from StratIq itself: not real-world validation.
 
 Baselines evaluated:
 1. Radius Population Multiplier (Demographic proportional allocation)

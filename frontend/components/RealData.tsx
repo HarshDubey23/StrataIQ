@@ -10,7 +10,7 @@ import type { IncomeEvidence, SimResult } from "@/lib/types";
 const CLASS_COLOR = ["#fb7185", "#fbbf24", "#C59BFF"];
 const METHOD_LABEL: Record<IncomeEvidence["method"], string> = {
   rwi_rank: "Local wealth tiles (Meta RWI, 2.4 km) ranked on India's official consumption curve",
-  state_curve: "State consumption curve (no local wealth tile here)",
+  state_curve: "State consumption curve",
   national_sector_curve: "All-India rural/urban curve (no state curve available)",
 };
 

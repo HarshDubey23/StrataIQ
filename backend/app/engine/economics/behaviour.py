@@ -3,7 +3,7 @@
 Segments are no longer fixed archetype constants. For a catchment:
 
 * segment share per zone = share of that zone's simulated residents in India's bottom 40 % / middle 40 % / top 20 % of
-  monthly per-capita consumption (HCES 2023-24 x Meta RWI rank, see income.py);
+  monthly per-capita consumption (HCES 2023-24, see income.py);
 * willingness to pay scales with real consumption: WTP_i = p_ref * (x_i / x_ref)^eps_c, where x_ref is urban India's
   median MPCE (HCES 2023-24 Table 3.1, P50) and eps_c is the income elasticity of spending on the category (Engel
   elasticity; health from Dubey 2020, others literature ranges). A segment's median WTP multiplier and the log-spread of

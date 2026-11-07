@@ -22,6 +22,8 @@ class Settings:
     app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
     database_url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", "postgresql+psycopg://strataiq:strataiq@localhost:5432/strataiq"))
     jwt_secret: str = field(default_factory=lambda: os.getenv("JWT_SECRET", "dev-insecure-change-me"))
+    # Shared with the Next.js proxy, which alone may tell the API who the real client is (rate limits).
+    proxy_secret: str = field(default_factory=lambda: os.getenv("PROXY_SECRET", ""))
     jwt_ttl_hours: int = field(default_factory=lambda: int(os.getenv("JWT_TTL_HOURS", "168")))
     cookie_secure: bool = field(default_factory=lambda: _bool(os.getenv("COOKIE_SECURE"), False))
     cors_origins: list[str] = field(default_factory=lambda: _list(os.getenv("CORS_ORIGINS"), ["http://localhost:3000"]))
@@ -75,4 +77,6 @@ def get_settings() -> Settings:
     s = Settings()
     if s.app_env == "production" and s.jwt_secret.startswith("dev-"):
         raise RuntimeError("JWT_SECRET must be set in production")
+    if s.app_env == "production" and not s.proxy_secret:
+        raise RuntimeError("PROXY_SECRET must be set in production, or all visitors share one rate limit")
     return s
