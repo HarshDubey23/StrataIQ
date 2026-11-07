@@ -655,7 +655,7 @@ export interface SourceRecord {
 
 /** Real-data income layer for the catchment (HCES 2023-24 x Meta RWI rank matching). */
 export interface IncomeEvidence {
-  method: "rwi_rank" | "state_curve" | "national_sector_curve";
+  method: "us_tract" | "rwi_rank" | "state_curve" | "national_sector_curve";
   state: string | null;
   sector: string;
   curve: string;

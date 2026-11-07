@@ -19,6 +19,7 @@ from ..engine import model as em
 from ..engine import genome as gm
 from ..engine.abm import build_population, cache_get, cache_put, run_abm
 from ..engine.economics import behaviour as eb
+from ..engine.economics import income_us as eu
 from ..engine.economics import income as ei
 from ..engine.simulate import SimulationError, simulate
 from ..models import CandidateLocation, Competitor, MarketSnapshot, Project, Scenario, SimulationRun, utcnow
@@ -202,7 +203,7 @@ def field_summary(db: Session, project: Project):
     return field_evidence([{"kind": r.kind, "data": r.data} for r in recs], frequency_fixed=bool(fq and fq.low == fq.high))
 
 
-EVIDENCE_VERSION = "real-data-1"  # bump when the evidence layer changes (part of the run's input hash)
+EVIDENCE_VERSION = "real-data-2"  # bump when the evidence layer changes (part of the run's input hash)
 
 
 class MarketInputs:
@@ -224,7 +225,12 @@ class MarketInputs:
         self.income = self.behaviour = None
         self.arch = arch
         india = adm.get("country_code") in ("IN", "", None)
-        if self.zones and india:
+        us_ctx = eu.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], pop_meta["us_income"], state=adm.get("state")) if self.zones and pop_meta.get("us_income") else None
+        if us_ctx:
+            self.income = us_ctx
+            self.behaviour = eb.build(arch, category_key, us_ctx, len(self.zones), age_sex=pop_meta.get("age_sex"), seed=seed)
+            self.arch = eb.apply(arch, self.behaviour)
+        elif self.zones and india:
             ctx = ei.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state"), sector=adm.get("settlement"))
             if ctx.method.startswith("rwi") or adm.get("country_code") == "IN":
                 self.income = ctx

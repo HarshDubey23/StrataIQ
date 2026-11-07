@@ -20,6 +20,7 @@ from dataclasses import dataclass, replace
 import numpy as np
 
 from ...categories.archetypes import Archetype, Segment
+from . import income_us
 from .income import CLASS_EDGES, CLASS_KEYS, IncomeContext, curve, national
 
 CLASS_LABELS = ("Bottom 40% of India by spend", "Middle 40%", "Top 20%")
@@ -83,7 +84,13 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
     zi = np.repeat(np.arange(n_zones), samples_per_zone)
     x, u = ctx.draw(rng, zi)
     eps, eps_lo, eps_hi, eps_status, eps_src = _elasticity(arch, category_key)
-    x_ref = _urban_median()
+    us = isinstance(ctx, income_us.UsIncomeContext)
+    if us:
+        eps_status, eps_src = "assumption", f"No US estimate yet. Indian evidence used as a placeholder: {eps_src}"
+    nat = ctx.nat if us else national()
+    x_ref = nat.median if us else _urban_median()
+    labels = income_us.CLASS_LABELS if us else CLASS_LABELS
+    edges = income_us.HIST_EDGES if us else HIST_EDGES
     mult = (x / x_ref) ** eps
 
     cls = np.digitize(u, CLASS_EDGES[1:-1])  # 0,1,2
@@ -100,20 +107,21 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
         wtp = float(np.median(m)) if m.size else float(base.wtp_multiplier)
         if m.size > 5:
             within.append(np.log(m).std())
-        segs.append(Segment(key, CLASS_LABELS[k], float(glob[k]), round(wtp, 4), base.price_sensitivity, base.distance_tolerance))
+        segs.append(Segment(key, labels[k], float(glob[k]), round(wtp, 4), base.price_sensitivity, base.distance_tolerance))
     s_inc = float(np.mean(within)) if within else 0.0
     sigma = float(np.clip(np.hypot(s_inc, TASTE_SIGMA[0]), 0.12, 0.9))
     lo, hi = np.hypot(s_inc, TASTE_SIGMA[1]), np.hypot(s_inc, TASTE_SIGMA[2])
 
     params: dict[str, tuple] = {"wtp_sigma": (sigma, float(lo), float(hi), "derived",
                                               f"WTP spread inside a consumption class = sqrt(income part {s_inc:.2f}^2 + taste part "
-                                              f"{TASTE_SIGMA[0]}^2). Income part from simulated residents' HCES-based MPCE x elasticity {eps:g}; "
+                                              f"{TASTE_SIGMA[0]}^2). Income part from simulated residents' official income or spend data x elasticity {eps:g}; "
                                               "taste part is an assumption")}
     # national reference for income-scaled participation
-    nat = national()
     xn = nat.ppf((np.arange(4000) + 0.5) / 4000)
     lift = float(mult.mean() / ((xn / x_ref) ** eps).mean())
-    if category_key in PARTICIPATION:
+    if us:
+        pass  # India's published rates do not transfer; the archetype's labelled assumption stays until US evidence is added
+    elif category_key in PARTICIPATION:
         (v, lo, hi), status, src = PARTICIPATION[category_key]
         params["participation"] = (v * lift, lo * lift, hi * lift, status,
                                    f"{src}; scaled x{lift:.2f} for this catchment's income mix (elasticity {eps:g})")
@@ -123,7 +131,7 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
             v = COACHING[ctx.sector] * kids
             params["participation"] = (v, v * 0.85, v * 1.15, "derived",
                                        f"{COACHING['source']} x school-age share {kids:.1%} of residents (WorldPop age structure)")
-    if category_key in FREQUENCY:
+    if category_key in FREQUENCY and not us:
         (v, lo, hi), status, src = FREQUENCY[category_key]
         params["frequency"] = (v, lo, hi, status, src)
 
@@ -133,15 +141,15 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
         "between_tile_loading": ctx.loading, "provenance": ctx.provenance,
         "median_mpce": round(float(np.median(x))), "mean_mpce": round(float(x.mean())),
         "p10_mpce": round(float(np.percentile(x, 10))), "p90_mpce": round(float(np.percentile(x, 90))),
-        "india_median_mpce": round(float(nat.ppf(0.5))), "x_ref": round(x_ref), "x_ref_note": X_REF_NOTE,
+        "india_median_mpce": round(float(nat.ppf(0.5))), "x_ref": round(x_ref), "x_ref_note": income_us.X_REF_NOTE if us else X_REF_NOTE,
         "classes": [{"key": k, "label": lab, "share": round(float(glob[i]), 4), "india_share": round(CLASS_EDGES[i + 1] - CLASS_EDGES[i], 2),
                      "mpce_range": [round(float(nat.ppf(max(CLASS_EDGES[i], 1e-3)))), round(float(nat.ppf(min(CLASS_EDGES[i + 1], 0.999))))],
                      "wtp_multiplier": segs[i].wtp_multiplier}
-                    for i, (k, lab) in enumerate(zip(CLASS_KEYS, CLASS_LABELS))],
+                    for i, (k, lab) in enumerate(zip(CLASS_KEYS, labels))],
         "elasticity": {"value": eps, "low": eps_lo, "high": eps_hi, "status": eps_status, "source": eps_src},
         "participation_lift": round(lift, 3),
-        "histogram": _hist(x),
-        "national_histogram": _hist(nat.ppf(nat_u)),
+        "histogram": _hist(x, edges),
+        "national_histogram": _hist(nat.ppf(nat_u), edges),
     }
     return BehaviourEvidence(tuple(segs), zone_shares, params, (eps, eps_lo, eps_hi), x_ref, summary)
 
@@ -153,10 +161,10 @@ def _urban_median() -> float:
 HIST_EDGES = [0, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7500, 10000, 15000, 25000, 1e9]
 
 
-def _hist(x: np.ndarray) -> list[dict]:
-    h, _ = np.histogram(x, bins=HIST_EDGES)
+def _hist(x: np.ndarray, edges: list[float] = HIST_EDGES) -> list[dict]:
+    h, _ = np.histogram(x, bins=edges)
     h = h / max(h.sum(), 1)
-    return [{"lo": HIST_EDGES[i], "hi": HIST_EDGES[i + 1] if HIST_EDGES[i + 1] < 1e8 else None, "share": round(float(v), 4)} for i, v in enumerate(h)]
+    return [{"lo": edges[i], "hi": edges[i + 1] if edges[i + 1] < 1e8 else None, "share": round(float(v), 4)} for i, v in enumerate(h)]
 
 
 def apply(arch: Archetype, ev: BehaviourEvidence | None) -> Archetype:
