@@ -225,7 +225,7 @@ class MarketInputs:
         self.income = self.behaviour = None
         self.arch = arch
         india = adm.get("country_code") in ("IN", "", None)
-        us_ctx = eu.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], pop_meta["us_income"], state=adm.get("state")) if self.zones and pop_meta.get("us_income") else None
+        us_ctx = eu.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state")) if self.zones and get_settings().market == "US" else None
         if us_ctx:
             self.income = us_ctx
             self.behaviour = eb.build(arch, category_key, us_ctx, len(self.zones), age_sex=pop_meta.get("age_sex"), seed=seed)

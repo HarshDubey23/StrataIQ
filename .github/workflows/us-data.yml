@@ -1,0 +1,34 @@
+name: Build US tract data
+
+# Downloads the Census Bureau's public bulk files, which are too large for slow connections, and commits a compact extract.
+on:
+  workflow_dispatch:
+  push:
+    branches: [production-ready]
+    paths:
+      - backend/scripts/build_us_tracts.py
+      - .github/workflows/us-data.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy
+      - run: python backend/scripts/build_us_tracts.py backend/app/data/us_tracts_acs2023.npz
+      - run: ls -la backend/app/data
+      - name: Commit
+        run: |
+          git config user.name "HarshDubey23"
+          git config user.email "191850210+HarshDubey23@users.noreply.github.com"
+          git add backend/app/data/us_tracts_acs2023.npz
+          git diff --cached --quiet && exit 0
+          git commit -m "data: build US census tract income extract (ACS 2023)"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

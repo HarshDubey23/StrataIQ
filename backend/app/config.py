@@ -26,7 +26,6 @@ class Settings:
     proxy_secret: str = field(default_factory=lambda: os.getenv("PROXY_SECRET", ""))
     # One deployment sells in one market: it sets currency, starter costs, map search and demo places.
     market: str = field(default_factory=lambda: os.getenv("MARKET", "US").upper())
-    census_api_key: str = field(default_factory=lambda: os.getenv("CENSUS_API_KEY", ""))
     jwt_ttl_hours: int = field(default_factory=lambda: int(os.getenv("JWT_TTL_HOURS", "168")))
     cookie_secure: bool = field(default_factory=lambda: _bool(os.getenv("COOKIE_SECURE"), False))
     cors_origins: list[str] = field(default_factory=lambda: _list(os.getenv("CORS_ORIGINS"), ["http://localhost:3000"]))

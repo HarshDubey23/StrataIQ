@@ -1,4 +1,5 @@
-import asyncio
+import importlib.util
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -6,16 +7,17 @@ import pytest
 from app.categories.archetypes import ARCHETYPES
 from app.engine.economics import behaviour as eb
 from app.engine.economics import income_us as iu
-from app.providers import census
-from app.providers.http import ProviderError
 
 # Household counts per bracket: poor, rich, and a national mix. Synthetic, shaped like ACS B19001.
 POOR = [300, 200, 150, 120, 100, 80, 70, 60, 50, 40, 30, 15, 8, 4, 2, 1]
 RICH = [5, 5, 5, 5, 10, 10, 15, 15, 20, 40, 80, 180, 220, 200, 240, 300]
 NATION = [60, 40, 40, 40, 40, 40, 40, 40, 40, 70, 100, 130, 100, 70, 80, 90]
-DATA = {"year": 2023, "national": {"counts": NATION, "hh_size": 2.5, "pop": 1000},
-        "tracts": [{"id": "p", "lat": 30.0, "lng": -97.0, "counts": POOR, "hh_size": 3.0, "pop": 4000},
-                   {"id": "r", "lat": 30.1, "lng": -97.0, "counts": RICH, "hh_size": 2.2, "pop": 4000}]}
+DATA = {"lat": np.array([30.0, 30.1]), "lng": np.array([-97.0, -97.0]), "counts": np.array([POOR, RICH]), "hh_size": np.array([3.0, 2.2]),
+        "nation_counts": np.array(NATION), "nation_hh_size": np.float32(2.5), "year": np.int32(2023)}
+
+spec = importlib.util.spec_from_file_location("build_us_tracts", Path(__file__).parents[1] / "scripts" / "build_us_tracts.py")
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
 
 
 def test_curve_reproduces_published_brackets_on_a_monthly_per_person_scale():
@@ -27,17 +29,15 @@ def test_curve_reproduces_published_brackets_on_a_monthly_per_person_scale():
 
 
 def test_empty_brackets_still_give_a_monotonic_inverse():
-    c = iu.BracketCurve([100] + [0] * 14 + [100], 2.0)
-    x = c.ppf(np.linspace(0, 1, 50))
+    x = iu.BracketCurve([100] + [0] * 14 + [100], 2.0).ppf(np.linspace(0, 1, 50))
     assert (np.diff(x) >= 0).all() and x[0] == 0
 
 
 def test_zones_take_their_nearest_tract_and_draws_follow_it():
-    ctx = iu.build_context([30.001, 30.099], [-97.0, -97.0], DATA, state="Texas")
+    ctx = iu.build_context([30.001, 30.099], [-97.0, -97.0], state="Texas", data=DATA)
     assert ctx.method == "us_tract" and ctx.provenance[0]["source"] == "us_census"
-    rng = np.random.default_rng(1)
     zi = np.repeat([0, 1], 20000)
-    x, u = ctx.draw(rng, zi)
+    x, u = ctx.draw(np.random.default_rng(1), zi)
     assert np.median(x[zi == 0]) == pytest.approx(iu.BracketCurve(POOR, 3.0).median, rel=0.03)
     assert np.median(x[zi == 1]) == pytest.approx(iu.BracketCurve(RICH, 2.2).median, rel=0.03)
     assert ((u >= 0) & (u <= 1)).all()
@@ -46,8 +46,8 @@ def test_zones_take_their_nearest_tract_and_draws_follow_it():
 
 def test_rich_and_poor_neighbourhoods_get_different_segments_and_wtp():
     arch = ARCHETYPES["membership"]
-    poor = eb.build(arch, "gym", iu.build_context([30.0], [-97.0], DATA, state="Texas"), 1, seed=1)
-    rich = eb.build(arch, "gym", iu.build_context([30.1], [-97.0], DATA, state="Texas"), 1, seed=1)
+    poor = eb.build(arch, "gym", iu.build_context([30.0], [-97.0], state="Texas", data=DATA), 1, seed=1)
+    rich = eb.build(arch, "gym", iu.build_context([30.1], [-97.0], state="Texas", data=DATA), 1, seed=1)
     premium = [i for i, s in enumerate(poor.segments) if s.key == "premium"][0]
     assert rich.zone_shares[0, premium] > poor.zone_shares[0, premium] + 0.3
     assert rich.summary["participation_lift"] > poor.summary["participation_lift"]
@@ -59,54 +59,36 @@ def test_rich_and_poor_neighbourhoods_get_different_segments_and_wtp():
     assert rich.summary["elasticity"]["status"] == "assumption"
 
 
-def test_no_tracts_means_no_income_layer():
-    assert iu.build_context([30.0], [-97.0], {"tracts": []}, state=None) is None
+def test_places_outside_the_data_get_no_income_layer():
+    assert iu.build_context([28.6], [77.2], state=None, data=DATA) is None  # New Delhi
+    assert iu.build_context([31.5], [-97.0], state=None, data=DATA) is None  # in the search box but far from any tract
+    assert iu.build_context([], [], state=None, data=DATA) is None
 
 
-def _row(counts, hh="2.5", pop="1000"):
-    return dict(zip(census.VARIABLES, [str(c) for c in counts] + [hh, pop]))
+ACS_TEXT = """GEO_ID|B19001_E001|B19001_M001|B19001_E002|B19001_M002
+0100000US|100|1|60|1
+0400000US48|50|1|30|1
+1400000US48453001100|40|1|25|1
+1400000US48453001200|null|1|25|1
+1400000US48453001300|-666666666|1|25|1
+"""
 
 
-def test_suppressed_or_near_empty_tracts_are_dropped():
-    h = census.VARIABLES
-    assert census.parse_row(h, list(_row(POOR).values()))["hh_size"] == 2.5
-    assert census.parse_row(h, list(_row(POOR, hh="-666666666").values())) is None
-    assert census.parse_row(h, list(_row([-666666666] + POOR[1:]).values())) is None
-    assert census.parse_row(h, list(_row([1] * 16).values())) is None
+def test_acs_parser_keeps_nation_and_tracts_and_drops_suppressed_rows():
+    assert build.parse_acs(ACS_TEXT, ["B19001_E001", "B19001_E002"]) == {"0100000US": [100.0, 60.0], "1400000US48453001100": [40.0, 25.0]}
 
 
-def test_us_income_joins_tracts_to_acs_rows(monkeypatch):
-    monkeypatch.setenv("CENSUS_API_KEY", "k")
-    from app.config import get_settings
-    get_settings.cache_clear()
-
-    async def fake(url, params):
-        if url == census.TIGER_URL:
-            attrs = [{"GEOID": "48453001100", "STATE": "48", "COUNTY": "453", "TRACT": "001100", "CENTLAT": "+30.27", "CENTLON": "-097.74"},
-                     {"GEOID": "48453009999", "STATE": "48", "COUNTY": "453", "TRACT": "009999", "CENTLAT": "+30.30", "CENTLON": "-097.70"}]
-            return {"features": [{"attributes": a} for a in attrs]}
-        if params["for"] == "us:1":
-            return [[*census.VARIABLES, "us"], [*_row(NATION).values(), "1"]]
-        return [[*census.VARIABLES, "state", "county", "tract"], [*_row(RICH).values(), "48", "453", "001100"],
-                [*_row(POOR, hh="-666666666").values(), "48", "453", "009999"]]
-
-    monkeypatch.setattr(census, "_get_json", fake)
-    try:
-        data, prov = asyncio.run(census.us_income(30.27, -97.74, 2.0))
-    finally:
-        get_settings.cache_clear()
-    assert [t["id"] for t in data["tracts"]] == ["48453001100"]
-    assert data["tracts"][0]["lat"] == 30.27 and data["tracts"][0]["lng"] == -97.74
-    assert data["national"]["counts"] == [float(c) for c in NATION]
-    assert "tracts" in prov["detail"]
+def test_gazetteer_parser_reads_padded_columns():
+    text = "USPS\tGEOID\tALAND\tINTPTLAT\tINTPTLONG   \nTX\t48453001100\t1\t 30.27\t -97.74\n"
+    assert build.parse_gazetteer(text) == {"48453001100": (30.27, -97.74)}
 
 
-def test_missing_key_fails_clearly(monkeypatch):
-    monkeypatch.delenv("CENSUS_API_KEY", raising=False)
-    from app.config import get_settings
-    get_settings.cache_clear()
-    try:
-        with pytest.raises(ProviderError, match="CENSUS_API_KEY"):
-            asyncio.run(census.us_income(30.27, -97.74, 2.0))
-    finally:
-        get_settings.cache_clear()
+def test_assemble_joins_files_and_skips_tiny_or_unlocated_tracts():
+    t = build.TRACT
+    income = {build.NATION: [100.0] * 16, t + "A": [10.0] * 16, t + "TINY": [1.0] * 16, t + "LOST": [10.0] * 16, t + "NOSIZE": [10.0] * 16}
+    size = {build.NATION: [2.5], t + "A": [2.0], t + "TINY": [2.0], t + "LOST": [2.0]}
+    places = {"A": (30.0, -97.0), "TINY": (30.0, -97.0), "NOSIZE": (30.0, -97.0)}
+    d = build.assemble(income, size, places)
+    assert d["id"].tolist() == ["A"]
+    assert d["lat"][0] == 30.0 and d["hh_size"][0] == 2.0 and d["counts"].shape == (1, 16)
+    assert float(d["nation_hh_size"]) == 2.5

@@ -41,7 +41,7 @@ SOURCES: dict[str, dict] = {
         "name": "US Census ACS 5-year and TIGERweb",
         "kind": "official_aggregate_estimate",
         "license": "US government public data",
-        "attribution": "U.S. Census Bureau. This product uses the Census Bureau Data API but is not endorsed or certified by the Census Bureau.",
+        "attribution": "U.S. Census Bureau. Not endorsed or certified by the Census Bureau.",
         "url": "https://www.census.gov/programs-surveys/acs",
         "coverage_note": "Survey estimates pooled over five years, not a live count.",
     },

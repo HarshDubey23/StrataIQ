@@ -12,7 +12,6 @@ from ..categories.archetypes import get_archetype
 from ..config import get_settings
 from ..categories.taxonomy import ACTIVITY_KINDS, CONTEXT_FILTERS, classify_poi
 from ..engine.geo import circle_polygon, haversine_km, hex_grid, km_to_deg_lat, km_to_deg_lng, points_in_polygon
-from ..providers import census
 from ..providers import osm, population, routing
 from ..providers.http import Cache, ProviderError
 from ..providers.registry import provenance
@@ -227,17 +226,14 @@ async def build_snapshot(*, lat: float, lng: float, catchment: dict, category: d
         except asyncio.TimeoutError as e:
             raise ProviderError(what, f"no response within {int(seconds)} s") from e
 
-    async def income_task():
-        return await census.us_income(lat, lng, radius_km, cache) if get_settings().market == "US" else (None, None)
-
     # Layers run concurrently; each races the Overpass mirrors. Competitors also fall back to Photon/Nominatim.
     k = 0.55 if get_settings().serverless else 1.0  # serverless requests must finish well inside the platform limit
     kp = 0.85 if get_settings().serverless else 1.0  # WorldPop is slow but it is the official population figure: give it longer
     results = await asyncio.gather(bounded(comp_task(), 95 * k, "overpass"), bounded(bld_task(), 110 * k, "overpass"),
                                    bounded(ctx_task(), 110 * k, "overpass"), bounded(pop_task(), 100 * kp, "worldpop"),
                                    bounded(agesex_task(), 100 * kp, "worldpop"), bounded(admin_task(), 30, "nominatim"),
-                                   bounded(income_task(), 60, "census"), return_exceptions=True)
-    names = ["competitors", "buildings", "context", "population", "age_sex", "admin", "us_income"]
+                                   return_exceptions=True)
+    names = ["competitors", "buildings", "context", "population", "age_sex", "admin"]
     vals = {}
     for nm, res in zip(names, results):
         if isinstance(res, Exception):
@@ -275,8 +271,6 @@ async def build_snapshot(*, lat: float, lng: float, catchment: dict, category: d
     pop_meta["n_buildings"] = len(vals["buildings"] or [])
     if vals.get("age_sex"):
         pop_meta["age_sex"] = vals["age_sex"]
-    if vals.get("us_income"):
-        pop_meta["us_income"] = vals["us_income"]
     if vals.get("admin"):
         adm = dict(vals["admin"])
         if adm.get("settlement") is None and total_pop:
