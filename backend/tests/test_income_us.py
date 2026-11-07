@@ -21,7 +21,7 @@ YOUNG = [0, 0, 0, 100, 900, 900, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 OLD = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 400, 400, 200, 100]
 DATA = {"lat": np.array([30.0, 30.1]), "lng": np.array([-97.0, -97.0]), "counts": np.array([POOR, RICH]), "hh_size": np.array([3.0, 2.2]),
         "age_sex": np.array([YOUNG + [2 * x for x in YOUNG], OLD + OLD]), "modes": np.array([[800, 0, 100, 0, 100, 0, 0], [0, 0, 1000, 0, 0, 0, 0]]),
-        "employed": np.array([5000, 100]), "college": np.array([3000, 0]),
+        "employed": np.array([5000, 100]), "college": np.array([3000, 0]), "jobs": np.array([900, 30]),
         "nation_counts": np.array(NATION), "nation_hh_size": np.float32(2.5), "year": np.int32(2023)}
 
 spec = importlib.util.spec_from_file_location("build_us_tracts", Path(__file__).parents[1] / "scripts" / "build_us_tracts.py")
@@ -103,6 +103,13 @@ def test_real_commute_shares_are_reproduced_by_agents():
     assert out["age_source"] == "us_census_tract" and "commute mode" in out["life"]["data_based"]
 
 
+def test_jobs_add_up_by_tract_and_are_shared_across_its_zones():
+    text = "w_geocode,C000,CA01\n480019501001005,20,4\n480019501001006,5,1\n480019502001001,7,2\n"
+    assert build.tract_jobs(text) == {"48001950100": 25, "48001950200": 7}
+    ctx = iu.build_context([30.0, 30.001, 30.1], [-97.0, -97.0, -97.0], state="Texas", data=DATA)
+    assert ctx.people["zone_jobs"].tolist() == [450, 450, 30]
+
+
 def test_people_tables_group_and_join_correctly():
     assert build.group_age_sex(list(range(46)))[:5] == [0, 1, 2, 3 + 4, 5 + 6 + 7]
     assert build.group_age_sex(list(range(46)))[16] == 21 + 22 and build.group_age_sex(list(range(46)))[17] == 23
@@ -145,7 +152,7 @@ def test_assemble_joins_files_and_skips_tiny_or_unlocated_tracts():
     assert float(d["nation_hh_size"]) == 2.5
 
 
-real_data = pytest.mark.skipif(iu.load_tracts() is None, reason="US tract extract not built")
+real_data = pytest.mark.skipif(iu.load_tracts() is None or "jobs" not in iu.load_tracts(), reason="US tract extract not built")
 
 
 @real_data
@@ -159,6 +166,8 @@ def test_real_extract_matches_published_national_median_and_known_places():
     transit = lambda la, ln: (lambda m: m[4:6].sum() / m.sum())(iu.build_context([la], [ln], state=None).people["modes"][0])  # noqa: E731
     assert transit(40.8176, -73.9182) > 0.3 > transit(33.45, -90.65)  # South Bronx rides transit, the Mississippi Delta does not
     assert iu.build_context([28.6315], [77.2167], state=None) is None  # New Delhi
+    jobs = lambda la, ln: iu.build_context([la], [ln], state=None).people["zone_jobs"][0]  # noqa: E731
+    assert jobs(30.2672, -97.7431) > 5 * jobs(33.45, -90.65)  # Downtown Austin vs the Mississippi Delta
 
 
 @real_data

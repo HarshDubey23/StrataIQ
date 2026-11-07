@@ -203,7 +203,9 @@ def field_summary(db: Session, project: Project):
     return field_evidence([{"kind": r.kind, "data": r.data} for r in recs], frequency_fixed=bool(fq and fq.low == fq.high))
 
 
-EVIDENCE_VERSION = "real-data-2"  # bump when the evidence layer changes (part of the run's input hash)
+EVIDENCE_VERSION = "real-data-3"
+WORKER_RESIDENT_SHARE = 0.3  # assumption: a local worker buys about 30% as much here as a resident does
+ACTIVITY_EQUIVALENT = 120.0  # residents per activity point, the model's default  # bump when the evidence layer changes (part of the run's input hash)
 
 
 class MarketInputs:
@@ -227,6 +229,10 @@ class MarketInputs:
         india = adm.get("country_code") in ("IN", "", None)
         us_ctx = eu.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state")) if self.zones and get_settings().market == "US" else None
         if us_ctx:
+            if arch.demand_base == "residents_and_activity":
+                # People who work here buy here too. Census jobs by tract, counted as a share of a resident.
+                for z, jobs in zip(self.zones, us_ctx.people["zone_jobs"]):
+                    z.activity += float(jobs) * WORKER_RESIDENT_SHARE / ACTIVITY_EQUIVALENT
             self.income = us_ctx
             self.behaviour = eb.build(arch, category_key, us_ctx, len(self.zones), age_sex=pop_meta.get("age_sex"), seed=seed)
             self.arch = eb.apply(arch, self.behaviour)

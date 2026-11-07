@@ -84,7 +84,9 @@ def zone_people(data: dict, idx: np.ndarray) -> dict:
     bands = age_sex[:, :17] + age_sex[:, 17:]
     adults = 0.4 * bands[:, 3] + bands[:, 4:13].sum(1)  # about 18 to 64; two fifths of the 15-19 band are 18 or 19
     young = np.maximum(0.4 * bands[:, 3] + bands[:, 4], 1.0)  # about 18 to 24
-    return {"age_sex": age_sex, "modes": modes, "hh_size": data["hh_size"][idx].astype(float),
+    # shortcut: a tract's jobs are shared evenly among zones in the catchment, so a partly covered tract counts in full; use block-level jobs if edges matter.
+    _, inverse, zones_in_tract = np.unique(idx, return_inverse=True, return_counts=True)
+    return {"age_sex": age_sex, "modes": modes, "hh_size": data["hh_size"][idx].astype(float), "zone_jobs": data["jobs"][idx] / zones_in_tract[inverse],
             "employed_rate": np.clip(data["employed"][idx] / np.maximum(adults, 1.0), 0.0, 0.98),
             "college_rate": np.clip(data["college"][idx] / young, 0.0, 0.95)}
 
