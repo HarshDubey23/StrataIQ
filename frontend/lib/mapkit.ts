@@ -45,7 +45,7 @@ function safe(fn: () => void) {
 }
 
 /** Survey-blueprint palette for the landing city: one blue field, white line work. */
-export const BP = { field: "#D93A1E", water: "#2236D6", park: "#3A55FF", line: "#FFFFFF" };
+export const BP = { field: "#0B1B3A", water: "#14306B", park: "#12284F", line: "#FFFFFF" };
 
 /** Landing look: the street as a blueprint. Fills vanish into the blue, roads become white lines,
  *  buildings become glassy pale-blue blocks with white footprints, labels go. */

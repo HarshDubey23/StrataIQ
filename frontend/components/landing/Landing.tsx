@@ -205,7 +205,7 @@ export default function Landing() {
   return (
     <div className="lp2 bg-paper text-night lg:grid lg:grid-cols-[minmax(0,46fr)_minmax(0,54fr)]">
       {/* The fixed half: the real street, changing with the story beside it */}
-      <div className="sticky top-0 z-0 order-2 h-[44svh] overflow-hidden bg-night lg:h-svh">
+      <div className="sticky top-0 z-0 order-2 h-[30svh] overflow-hidden bg-night lg:h-svh">
         <HeroMap spot={spot} comps={comps} scene={scene} progress={progress} />
       </div>
 
@@ -219,8 +219,8 @@ export default function Landing() {
           </nav>
         </header>
 
-        <section data-scene className="max-w-[46ch] pb-24 pt-[8svh] lg:min-h-[calc(100svh-5rem)]">
-          <WordsIn as="h1" text="Test the location before you sign." className="font-display text-[clamp(2.75rem,1.6rem+4.2vw,5.25rem)] font-normal leading-[0.97] tracking-[-0.03em]" />
+        <section data-scene className="max-w-[46ch] pb-24 pt-[3svh] lg:min-h-[calc(100svh-5rem)] lg:pt-[8svh]">
+          <WordsIn as="h1" text="Test the location before you sign." className="font-display text-[clamp(2.5rem,1.4rem+3vw,4.25rem)] font-normal leading-[0.97] tracking-[-0.03em]" />
           <Reveal delay={0.25}>
             <p className="mt-7 text-[19px] leading-[1.45]">
               See the real competitors, the people who live nearby, and how many customers a day you need to break even. The first look is free.
@@ -244,7 +244,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[14svh]">
+        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
           <WordsIn text="Every rival, counted live." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">Pick a neighbourhood and a business. This list comes from OpenStreetMap right now, not from a saved example.</p>
@@ -273,7 +273,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[14svh]">
+        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
           <WordsIn text="Know who lives nearby." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">
@@ -282,7 +282,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[14svh]">
+        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
           <WordsIn text="Simulated customers decide." className={HEAD} />
           <Reveal delay={0.15}>
             <p className="mt-6 text-[18px] leading-[1.5]">
@@ -291,7 +291,7 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section data-scene className="max-w-[46ch] py-[14svh]">
+        <section data-scene className="max-w-[46ch] py-[10svh] lg:py-[14svh]">
           <WordsIn text="Get numbers you can check." className={HEAD} />
           <Reveal delay={0.15}>
             <ul className="mt-6 space-y-3 text-[18px] leading-[1.45]">

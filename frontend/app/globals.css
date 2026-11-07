@@ -12,7 +12,7 @@
 */
 @theme {
   --font-sans: var(--font-archivo), var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Clash Grotesk", var(--font-archivo), ui-sans-serif, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, sans-serif;
   --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
   --font-mono: var(--font-jbmono), ui-monospace, SFMono-Regular, monospace;
   --font-deva: var(--font-tiro), serif;
@@ -82,7 +82,7 @@ body {
 /* the landing's wide Archivo, carried into the app (unlayered, so it outranks font-medium) */
 .font-display {
   font-family: var(--font-display);
-  font-stretch: 118%;
+  font-stretch: 100%;
   font-weight: 650;
   letter-spacing: -0.035em;
 }
