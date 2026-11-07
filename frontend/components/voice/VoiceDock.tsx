@@ -18,6 +18,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { cn } from "@/components/ui";
 import { readPage, readScreen, sendStrategy } from "@/lib/screen";
+import { US_MARKET } from "@/lib/format";
 import { route, type Tools } from "./route";
 import { GLOSSARY } from "@/components/Journey";
 import { quickCreate } from "@/components/QuickStart";
@@ -82,9 +83,12 @@ async function jfetch<T>(url: string, init?: RequestInit & { json?: unknown }): 
   return body as T;
 }
 
-const SUGGESTIONS = {
-  project: ["Screen pe kya dikh raha hai?", "Best location kahan hai?", "Rent 80 hazaar kar do", "Field researcher bhejo", "Profit kaise badhega?", "Report bana do"],
-  general: ["Mujhe Indiranagar me café kholna hai", "Live demo dikhao", "Mere projects kholo", "StrataIQ kya karta hai?"],
+const SUGGESTIONS = US_MARKET ? {
+  project: ["What's on this screen?", "Where's the best location?", "Set rent to 8,000", "How can profit grow?"],
+  general: ["I want to open a cafe in Austin", "Show me a live demo", "Open my projects", "What does StrataIQ do?"],
+} : {
+  project: ["What is on this screen?", "What is the best location?", "Set rent to 8000", "Request a field researcher", "How do I raise profit?", "Make the report"],
+  general: ["I want to open a cafe in South Austin", "Show the live demo", "Show my projects", "What does StrataIQ do?"],
 };
 
 function VoiceDockInner() {
@@ -118,6 +122,15 @@ function VoiceDockInner() {
   const [engine, setEngine] = useState<Engine>("browser");
   const [phase, setPhase] = useState<Phase>("idle");
   const [turns, setTurns] = useState<Turn[]>([]);
+  const chatRef = useRef<HTMLDivElement>(null);
+  // Bring the latest question to the top of the chat, with its answer below it.
+  useEffect(() => {
+    const box = chatRef.current;
+    if (!box) return;
+    const asked = box.querySelectorAll<HTMLElement>("[data-asked]");
+    const latest = asked[asked.length - 1];
+    box.scrollTo({ top: latest ? latest.offsetTop - box.offsetTop : box.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, [turns.length]);
   const [interim, setInterim] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
@@ -413,7 +426,7 @@ function VoiceDockInner() {
     },
     onDisconnect: () => {
       const refused = wantRealtime.current && !agentSpoke.current && (!connectedAt.current || Date.now() - connectedAt.current < 10_000);
-      if (refused) fallbackRef.current("Realtime voice abhi available nahi hai (ElevenLabs credits/limit), isliye browser voice pe chal raha hoon.");
+      if (refused) fallbackRef.current("Live voice is unavailable right now, so I am using your browser's voice.");
       else setPhase("idle");
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -453,7 +466,7 @@ function VoiceDockInner() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const pick = () => {
       const score = (v: SpeechSynthesisVoice) =>
-        (v.lang === "en-IN" ? 12 : v.lang === "hi-IN" ? 11 : v.lang.startsWith("en") ? 2 : 0) +
+        (US_MARKET ? (v.lang === "en-US" ? 12 : v.lang.startsWith("en") ? 4 : 0) : v.lang === "en-IN" ? 12 : v.lang === "hi-IN" ? 11 : v.lang.startsWith("en") ? 2 : 0) +
         (/natural|neural|online/i.test(v.name) ? 8 : 0) + (/google/i.test(v.name) ? 3 : 0) + (/neerja|swara|prabhat|madhur/i.test(v.name) ? 2 : 0);
       voiceRef.current = [...window.speechSynthesis.getVoices()].sort((x, y) => score(y) - score(x))[0] || null;
     };
@@ -658,7 +671,7 @@ function VoiceDockInner() {
           h.push({ role: "tool", content: String(out).slice(0, 6000), toolCallId: tc.id, ...(isError ? { isError: true } : {}) });
         }
       }
-      return "Ye kaam thoda lamba ho gaya. Ek baar phir bolo, main wahin se continue karta hoon.";
+      return "That took longer than expected. Ask once more and I will pick up where I left off.";
     },
     [push, speak, tools],
   );
@@ -681,7 +694,7 @@ function VoiceDockInner() {
         history.current = []; // a half-finished tool exchange must not be replayed
         if (toolRan.current) {
           // the action already happened; running the fallback router would do it twice
-          const msg = "Kaam kar diya hai, screen pe dekh lo. Bas jawab bolne me dikkat aayi — kuch aur poochna ho to bolo.";
+          const msg = US_MARKET ? "That's done, it's on your screen. I had trouble reading the answer aloud, so ask me again if you need more." : "Kaam kar diya hai, screen pe dekh lo. Bas jawab bolne me dikkat aayi — kuch aur poochna ho to bolo.";
           push("strata", msg);
           await speak(msg);
           return;
@@ -692,7 +705,8 @@ function VoiceDockInner() {
           push("strata", line);
           void speak(line);
         };
-        const ans = await route(q, tools as unknown as Tools, { projectOpen: !!pidRef.current, say });
+        // shortcut: the built-in fallback router only understands Hinglish, so US visitors skip it; add English rules if Speko downtime hurts.
+        const ans = US_MARKET ? null : await route(q, tools as unknown as Tools, { projectOpen: !!pidRef.current, say });
         if (ans) {
           push("strata", ans);
           await speak(ans);
@@ -729,7 +743,7 @@ function VoiceDockInner() {
     const rec = new SR();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = "en-IN"; // keeps Hinglish in Latin script, which the backend intent router understands
+    rec.lang = US_MARKET ? "en-US" : "en-IN"; // en-IN keeps Hinglish in Latin script, which the backend intent router understands
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (ev: any) => {
       let fin = "";
@@ -859,7 +873,7 @@ function VoiceDockInner() {
         } catch (e) {
           console.warn("realtime voice failed, falling back to browser voice", e);
           wantRealtime.current = false;
-          setErr("Realtime voice abhi available nahi hai, isliye browser voice pe chal raha hoon.");
+          setErr("Live voice is unavailable right now, so I am using your browser's voice.");
         }
       }
       setEngine("browser");
@@ -960,7 +974,7 @@ function VoiceDockInner() {
           <div className="flex items-center gap-4 px-5 pt-5">
             <Orb level={level} phase={phase} size={64} />
             <div className="min-w-0 flex-1">
-              <div className="font-display text-xl font-medium tracking-tight" aria-live="polite">{statusText[phase]}</div>
+              <div className="font-display text-xl font-medium " aria-live="polite">{statusText[phase]}</div>
               <div className="mt-0.5 text-xs text-ink-400">
                 {engine === "realtime" ? "ElevenLabs realtime" : "Speko voice"} · {projectId ? "reading this project's live data" : "no project open"}
               </div>
@@ -970,25 +984,25 @@ function VoiceDockInner() {
             </button>
           </div>
 
-          <div className="mt-4 max-h-64 space-y-2.5 overflow-y-auto px-5 pb-1 text-[13.5px] leading-relaxed">
+          <div ref={chatRef} className="relative mt-4 max-h-64 space-y-2.5 overflow-y-auto px-5 pb-1 text-[13.5px] leading-relaxed">
             {turns.length === 0 && !interim && (
               <p className="text-ink-400">
-                Bas bolo — Hinglish, Hindi ya English. Strata khud project banata hai, data load karta hai, plan badalta hai, researcher bhejta hai aur report banata hai. Har number simulation se aata hai, guess se nahi.
+                {US_MARKET ? "Just talk. Strata creates the project, loads the data, changes your plan and runs the numbers for you." : "Bas bolo — Hinglish, Hindi ya English."} {!US_MARKET && `Strata khud project banata hai, data load karta hai, plan badalta hai, researcher bhejta hai aur report banata hai. Har number simulation se aata hai, guess se nahi.`}
               </p>
             )}
             {turns.map((t) => (
-              <div key={t.ts + t.who} className={cn("flex", t.who === "you" ? "justify-end" : "justify-start")}>
-                <div className={cn("max-w-[85%] rounded-xl px-3.5 py-2", t.who === "you" ? "bg-black/[0.07] text-ink-100" : "bg-accent-dim text-ink-100")}>{t.text}</div>
+              <div key={t.ts + t.who} data-asked={t.who === "you" ? "" : undefined} className={cn("flex", t.who === "you" ? "justify-end" : "justify-start")}>
+                <div className={cn("max-w-[85%] rounded-md px-3.5 py-2", t.who === "you" ? "bg-black/[0.07] text-ink-100" : "bg-accent-dim text-ink-100")}>{t.text}</div>
               </div>
             ))}
             {interim && (
               <div className="flex justify-end">
-                <div className="max-w-[85%] rounded-xl bg-black/[0.04] px-3.5 py-2 italic text-ink-300">{interim}</div>
+                <div className="max-w-[85%] rounded-md bg-black/[0.04] px-3.5 py-2 italic text-ink-300">{interim}</div>
               </div>
             )}
           </div>
 
-          {err && <p className="mx-5 mt-2 rounded-xl bg-warn/10 px-3 py-2 text-xs text-warn">{err}</p>}
+          {err && <p className="mx-5 mt-2 rounded-md bg-warn/10 px-3 py-2 text-xs text-warn">{err}</p>}
 
           <div className="flex flex-wrap gap-1.5 px-5 pt-3">
             {(projectId ? SUGGESTIONS.project : SUGGESTIONS.general).map((s) => (
@@ -1043,15 +1057,15 @@ function VoiceDockInner() {
 
       <button
         onClick={() => (open ? (active ? void stop() : void start()) : (setOpen(true), void start()))}
-        className="group pointer-events-auto flex items-center rounded-full border border-black/[0.08] bg-white/90 p-1.5 shadow-[0_1px_2px_rgba(13,16,40,.05),0_18px_40px_-16px_rgba(13,16,40,.35)] backdrop-blur-xl transition-[border-color,transform] duration-500 hover:-translate-y-0.5 hover:border-accent/40"
+        className="group pointer-events-auto flex items-center rounded-full border border-black/[0.08] bg-white/90 p-1.5 shadow-[0_1px_2px_rgba(13,16,40,.05),0_18px_40px_-16px_rgba(13,16,40,.35)] -xl transition-[border-color,transform] duration-500 hover:-translate-y-0.5 hover:border-accent/40"
         aria-label={active ? "Stop voice analyst" : "Talk to Strata, the voice analyst"}
-        title="Strata se baat karo · press V"
+        title="Talk to Strata · press V"
       >
         <Orb level={level} phase={phase} size={40} />
         {/* compact by default so it never covers page actions; the label slides out on hover or while talking */}
         <span className={cn("overflow-hidden whitespace-nowrap text-left transition-[max-width,padding] duration-500", active ? "max-w-60 pl-3 pr-3" : "max-w-0 group-hover:max-w-60 group-hover:pl-3 group-hover:pr-3")}>
-          <span className="block text-[13px] font-medium text-ink-100">{active ? statusText[phase] : "Strata se baat karo"}</span>
-          <span className="block text-[11px] text-ink-400">{active ? "tap to stop" : "press V · Hinglish"}</span>
+          <span className="block text-[13px] font-medium text-ink-100">{active ? statusText[phase] : "Talk to Strata"}</span>
+          <span className="block text-[11px] text-ink-400">{active ? "tap to stop" : (US_MARKET ? "press V to talk" : "press V · Hinglish")}</span>
         </span>
       </button>
     </div>
@@ -1080,7 +1094,7 @@ function Orb({ level, phase, size }: { level: number; phase: Phase; size: number
         style={{
           inset: size * 0.12,
           background: "radial-gradient(circle at 35% 30%, #ffffff 0%, #c9d2ff 18%, #2F49FF 45%, #1d2366 85%, #0b0e2e 100%)",
-          boxShadow: "inset 0 -6px 14px rgba(0,0,0,.45), 0 0 24px rgba(47,73,255,.45)",
+          boxShadow: "inset 0 -6px 14px rgba(0,0,0,.45), 0 0 24px rgba(29,79,145,.45)",
           animation: phase === "idle" ? "orb-breathe 4s ease-in-out infinite" : undefined,
         }}
       />

@@ -10,14 +10,14 @@ import type { FactorsResponse } from "@/lib/types";
 
 const STATUS: Record<string, { label: string; cls: string; help: string }> = {
   computed: { label: "Computed", cls: "border-observed/40 bg-observed/10 text-observed", help: "Derived from live data for this location (OpenStreetMap, WorldPop, geometry)." },
-  official: { label: "Official data", cls: "border-ok/40 bg-ok/10 text-ok", help: "From an official statistic for this place (e.g. MoSPI HCES 2023-24, MoSPI NHTS 2025-26), mapped with Meta's Relative Wealth Index." },
+  official: { label: "Official data", cls: "border-ok/40 bg-ok/10 text-ok", help: "From an official statistic for this place (e.g. MoSPI HCES 2023-24, MoSPI NHTS 2025-26)." },
   derived: { label: "Derived", cls: "border-model/40 bg-model/10 text-model", help: "Computed from real data for this place (e.g. the area's income mix) with a documented formula." },
   industry: { label: "Industry report", cls: "border-observed/40 bg-observed/10 text-observed", help: "Anchored to a published industry figure (e.g. gym membership 0.8% of India, Deloitte & HFA 2025)." },
   literature: { label: "Published research", cls: "border-userdata/40 bg-userdata/10 text-userdata", help: "Anchored to a peer-reviewed estimate." },
   user: { label: "User", cls: "border-userdata/40 bg-userdata/10 text-userdata", help: "Entered by you." },
   assumed: { label: "Assumed", cls: "border-ink-500 bg-ink-800 text-ink-200", help: "Documented model assumption (default or your override)." },
   simulated: { label: "Simulated", cls: "border-model/40 bg-model/10 text-model", help: "Produced by the simulation run." },
-  pending: { label: "Pending", cls: "border-sky-400/30 bg-sky-400/5 text-sky-700", help: "Computable once market data is loaded or the scenario is run." },
+  pending: { label: "Pending", cls: "border-stone/30 bg-stone/5 text-atlas", help: "Computable once market data is loaded or the scenario is run." },
   unavailable: { label: "No source yet", cls: "border-black/[0.07] bg-ink-900 text-ink-500", help: "Defined for future data. No source connected, so no value is invented." },
 };
 const ROLE: Record<string, string> = { agent: "Agent profile", choice: "Choice model", finance: "Economics", output: "Output", context: "Evidence", reserved: "Future data" };
@@ -69,7 +69,7 @@ export default function Factors() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Factor Intelligence Engine</h2>
-          <p className="text-sm text-ink-300">{data.counts.total} factors across {Object.keys(data.domains).length} domains, each labelled with where its value comes from.</p>
+          <p className="text-sm text-ink-300">{data.counts.total} factors across {Object.keys(data.domains).length} domains, each labeled with where its value comes from.</p>
         </div>
         <Select value={sid} onChange={(e) => setSid(e.target.value)} className="w-auto" aria-label="Scenario">
           {scenarios.map((s) => <option key={s.id} value={s.id}>{s.name}{s.is_baseline ? " (baseline)" : ""}</option>)}
@@ -78,7 +78,7 @@ export default function Factors() {
 
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {Object.entries(STATUS).map(([k, s]) => (
-          <button key={k} onClick={() => setStatus(status === k ? "all" : k)} title={s.help} className={cn("rounded-lg border p-3 text-left transition-colors", status === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500", "bg-ink-900")}>
+          <button key={k} onClick={() => setStatus(status === k ? "all" : k)} title={s.help} className={cn("rounded-md border p-3 text-left transition-colors", status === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500", "bg-ink-900")}>
             <div className={cn("inline-flex rounded border px-1.5 py-px text-[10px] font-medium uppercase", s.cls)}>{s.label}</div>
             <div className="num mt-1.5 text-2xl font-semibold">{data.summary[k] || 0}</div>
           </button>
@@ -89,7 +89,7 @@ export default function Factors() {
         {Object.entries(data.domains).map(([k, label]) => {
           const ds = domStatus(k);
           return (
-            <button key={k} onClick={() => setDomain(domain === k ? "all" : k)} className={cn("rounded-lg border bg-ink-900 p-3 text-left", domain === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500")}>
+            <button key={k} onClick={() => setDomain(domain === k ? "all" : k)} className={cn("rounded-md border bg-ink-900 p-3 text-left", domain === k ? "border-accent" : "border-black/[0.07] hover:border-ink-500")}>
               <div className="text-xs font-medium text-ink-200">{label}</div>
               <div className="num mt-1 text-sm"><span className="text-ink-100">{ds.filled}</span><span className="text-ink-500"> / {ds.total} with values</span></div>
               <div className="mt-1.5 h-1 rounded bg-ink-800"><div className="h-1 rounded bg-accent" style={{ width: `${(ds.filled / Math.max(1, ds.total)) * 100}%` }} /></div>

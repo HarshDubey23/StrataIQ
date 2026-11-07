@@ -37,6 +37,14 @@ SOURCES: dict[str, dict] = {
         "url": "https://foursquare.com/products/places-api/",
         "coverage_note": "Commercial places database. Adds businesses not yet mapped in OpenStreetMap; a place found in both is counted once.",
     },
+    "us_census": {
+        "name": "US Census ACS 5-year and TIGERweb",
+        "kind": "official_aggregate_estimate",
+        "license": "US government public data",
+        "attribution": "U.S. Census Bureau. Not endorsed or certified by the Census Bureau.",
+        "url": "https://www.census.gov/programs-surveys/acs",
+        "coverage_note": "Survey estimates pooled over five years, not a live count.",
+    },
     "worldpop": {
         "name": "WorldPop Global population (100 m, unconstrained)",
         "kind": "official_aggregate_estimate",

@@ -1,57 +1,54 @@
 @import "tailwindcss";
 
-/*
-  StrataIQ — "Survey blue", one system for the landing page and the app.
-  Three grounds: cobalt (the landing field, primary actions), night (navigation, billboards),
-  paper (work surfaces). Archivo throughout, wide for headlines; mono uppercase for labels;
-  square corners and hairlines instead of soft shadows. Data colours always encode provenance:
-  amber = observed competitors, green = field-verified, red = synthetic agents.
-
-  The ink scale runs from page ground (950) to primary text (100), so components keep
-  using bg-ink-950 / text-ink-100 and the theme lives here.
-*/
+/* StrataIQ: the Fire Atlas. Blue ground, white map sheets, flat fills with ink outlines. Color always means something. */
 @theme {
-  --font-sans: var(--font-archivo), var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-archivo), var(--font-inter-tight), ui-sans-serif, sans-serif;
-  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
-  --font-mono: var(--font-jbmono), ui-monospace, SFMono-Regular, monospace;
-  --font-deva: var(--font-tiro), serif;
+  --font-sans: var(--font-public), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow), var(--font-public), ui-sans-serif, sans-serif;
+  --font-serif: var(--font-barlow), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-public), ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink-950: #ededf0; /* page */
+  --color-ink-950: #eef2f6; /* page */
   --color-ink-900: #ffffff; /* surface */
-  --color-ink-850: #f6f6f8;
-  --color-ink-800: #e8e8ec;
-  --color-ink-700: #dcdce2; /* hairline */
-  --color-ink-600: #c9c9d1;
-  --color-ink-500: #95959f;
-  --color-ink-400: #66666f; /* tertiary text */
-  --color-ink-300: #45454d; /* secondary text */
-  --color-ink-200: #26262b;
-  --color-ink-100: #0c0c0e; /* primary text */
-  --color-paper: #ededf0;
-  --color-night: #0c0c0e;     /* navigation, billboards */
-  --color-night-800: #1b1b1f;
-  --color-night-700: #2a2a30;
+  --color-ink-850: #f7f8fa;
+  --color-ink-800: #e4e9f0;
+  --color-ink-700: #d3dbe5; /* hairline */
+  --color-ink-600: #b9c4d2;
+  --color-ink-500: #68758a;
+  --color-ink-400: #53617a; /* tertiary text */
+  --color-ink-300: #38465f; /* secondary text */
+  --color-ink-200: #1f2d4a;
+  --color-ink-100: #0f1f3d; /* primary text */
+  --color-paper: #f7f8fa;   /* the map sheet */
+  --color-night: #0f1f3d;   /* ink */
+  --color-atlas: #1d4f91;   /* the ground */
+  --color-atlas-deep: #163e75;
 
-  /* square corners everywhere; rounded-full stays round for dots and pills */
-  --radius-xs: 1px;
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 5px;
-  --radius-2xl: 6px;
+  /* The atlas key. These three colors always mean the same thing. */
+  --color-brick: #e98f86;   /* measured */
+  --color-you: #f2c94c;     /* yours: your site, your entries, your next step */
+  --color-you-deep: #e3b52f;
+  --color-stone: #a9c4e4;   /* estimated */
+  --color-moss: #9fcba8;    /* checked on the street */
 
-  --color-accent: #2f49ff;      /* you: candidate site, your customers (cobalt) */
-  --color-accent-dim: #dfe4ff;
-  --color-observed: #b45309;    /* observed competitor (OpenStreetMap / Foursquare) */
-  --color-field: #3f7a14;       /* verified on the ground by a field researcher */
-  --color-userdata: #7c3aed;    /* user-entered evidence */
-  --color-model: #0f766e;       /* model estimate */
-  --color-assumption: #6b7180;  /* assumption */
-  --color-agent: #e5484d;       /* synthetic agents */
-  --color-warn: #a16207;
-  --color-danger: #dc2626;
-  --color-ok: #15803d;
+  --radius-xs: 0px;
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
+
+  --color-accent: #1d4f91;
+  --color-data: #1d4f91;
+  --color-accent-dim: #dbe6f3;
+  --color-observed: #a23e30;
+  --color-field: #2f7a43;
+  --color-userdata: #7a5c00;
+  --color-model: #1d4f91;
+  --color-assumption: #53617a;
+  --color-agent: #1d4f91;
+  --color-warn: #8a6400;
+  --color-danger: #b3261e;
+  --color-ok: #1e7a46;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
@@ -75,15 +72,15 @@ body {
 }
 
 ::selection {
-  background: rgb(47 73 255 / 0.18);
+  background: var(--color-you);
+  color: var(--color-night);
 }
 
 /* the landing's wide Archivo, carried into the app (unlayered, so it outranks font-medium) */
 .font-display {
   font-family: var(--font-display);
-  font-stretch: 118%;
-  font-weight: 650;
-  letter-spacing: -0.035em;
+  font-weight: 600;
+  letter-spacing: -0.012em;
 }
 
 /* editorial accent: an italic serif word inside a sans headline */
@@ -119,20 +116,26 @@ body {
 
 /* floating surface used over maps and as menus / dialogs */
 .panel {
-  background: rgb(255 255 255 / 0.94);
-  border: 1px solid rgb(12 12 14 / 0.12);
-  backdrop-filter: blur(14px) saturate(1.3);
-  -webkit-backdrop-filter: blur(14px) saturate(1.3);
-  box-shadow: 0 24px 48px -28px rgb(12 12 14 / 0.35);
+  background: var(--color-paper);
+  border: 1px solid var(--color-night);
 }
 
 /* mono uppercase label, the Sprint-style "01.SECTION" voice */
 .label-mono {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-display);
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+}
+
+/* a map sheet: the one container in the product */
+.sheet {
+  background: var(--color-paper);
+  border: 1px solid var(--color-night);
+  color: var(--color-night);
+}
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .contours {
@@ -151,13 +154,11 @@ body {
   color: var(--color-ink-400);
 }
 
-/* hover on cards: a hard cobalt edge instead of a soft float */
 .lift {
-  transition: transform 0.5s var(--ease-out-expo), box-shadow 0.5s var(--ease-out-expo), border-color 0.3s;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 .lift:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--color-accent);
+  border-color: var(--color-night);
 }
 
 .sheen {
@@ -170,12 +171,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.25) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.9s var(--ease-out-expo);
-}
-.sheen:hover::after {
-  transform: translateX(120%);
+  background: none;
 }
 
 /* reveal: elements fade up once when they enter view */
@@ -216,6 +212,53 @@ body {
 .rise-2 { animation-delay: 120ms; }
 .rise-3 { animation-delay: 180ms; }
 .rise-4 { animation-delay: 240ms; }
+
+/* one word of a headline rising into place */
+.word {
+  display: inline-block;
+  transform: translateY(105%);
+  transition: transform 0.85s var(--ease-out-expo);
+}
+.word.is-in {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .word {
+    transform: none;
+  }
+}
+
+/* a lot being drawn on the sheet */
+@keyframes lot-in {
+  from { transform: scale(0); opacity: 0; }
+  60% { opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+.lot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lot-in 0.55s var(--ease-out-expo) both;
+}
+
+/* a band of color pulled across the sheet */
+@keyframes wipe-in {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.wipe {
+  animation: wipe-in 0.6s var(--ease-in-out-quart) both;
+}
+
+/* if script never lifts the opening sheet, it still gets out of the way */
+@keyframes curtain-gone {
+  to { visibility: hidden; }
+}
+.curtain {
+  animation: curtain-gone 0.01s 4s forwards;
+}
+[data-seen] .curtain {
+  display: none;
+}
 
 @keyframes marquee {
   to { transform: translateX(-50%); }
@@ -259,140 +302,6 @@ body {
   animation: float 6s ease-in-out infinite;
 }
 
-/* ---------------- landing: "survey blue" — one blue field, white line work, black billboards ---------------- */
-.lp {
-  --lp-blue: #2f49ff;
-  background: var(--lp-blue);
-  color: #fff;
-  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  font-stretch: 100%;
-}
-.lp ::selection {
-  background: #fff;
-  color: var(--lp-blue);
-}
-.lp-wide {
-  font-family: var(--font-archivo), ui-sans-serif, sans-serif;
-  font-stretch: 125%;
-  font-weight: 700;
-}
-.lp-cond {
-  font-stretch: 62%;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.lp-num {
-  font-variant-numeric: tabular-nums;
-}
-.lp :focus-visible {
-  outline-color: #fff;
-}
-.lp-link {
-  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
-  transition: background-size 0.45s var(--ease-out-expo), color 0.2s;
-}
-.lp-link:hover {
-  color: #fff;
-  background-size: 100% 1px;
-}
-/* faint survey grid over the city */
-.lp-grid {
-  background-image: linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
-  background-size: 80px 80px;
-  mask-image: radial-gradient(120% 90% at 50% 40%, black 40%, transparent 100%);
-}
-
-/* opening sheet */
-.lp-intro {
-  transition: transform 1.05s var(--ease-in-out-quart);
-}
-.lp-intro.is-lift {
-  transform: translateY(-100%);
-}
-.lp-rule-h,
-.lp-rule-v {
-  position: absolute;
-  background: rgb(255 255 255 / 0.22);
-}
-.lp-rule-h {
-  left: 0;
-  right: 0;
-  height: 1px;
-  transform-origin: left;
-  animation: lp-draw-x 1.1s var(--ease-out-expo) both;
-}
-.lp-rule-v {
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  transform-origin: top;
-  animation: lp-draw-y 1.1s var(--ease-out-expo) both;
-}
-@keyframes lp-draw-x {
-  from { transform: scaleX(0); }
-}
-@keyframes lp-draw-y {
-  from { transform: scaleY(0); }
-}
-.lp-intro-word {
-  animation: lp-up 1.1s var(--ease-out-expo) 0.15s both;
-}
-@keyframes lp-up {
-  from { transform: translateY(105%); }
-}
-
-/* headline letters rise in once */
-.lp-rise {
-  display: inline-block;
-  overflow: hidden;
-  padding-bottom: 0.06em;
-  vertical-align: bottom;
-}
-.lp-rise > span {
-  display: inline-block;
-  white-space: pre;
-  transform: translateY(110%) rotate(6deg);
-  transition: transform 1.1s var(--ease-out-expo);
-}
-.lp-rise.is-go > span {
-  transform: none;
-}
-.lp-fade {
-  opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.9s var(--ease-out-expo), transform 0.9s var(--ease-out-expo);
-}
-.lp-fade.is-go {
-  opacity: 1;
-  transform: none;
-}
-
-/* billboards swing in when their chapter takes the camera */
-.lp-bb {
-  opacity: 0.25;
-  transform: perspective(1100px) rotateY(16deg) translateX(-28px);
-  transform-origin: left center;
-  transition: opacity 0.8s var(--ease-out-expo), transform 1.1s var(--ease-out-expo);
-}
-.lp-bb-r {
-  transform: perspective(1100px) rotateY(-16deg) translateX(28px);
-  transform-origin: right center;
-}
-.lp-bb.is-on {
-  opacity: 1;
-  transform: none;
-}
-.lp-msg {
-  opacity: 0;
-  transform: translateY(10px) scale(0.98);
-  transition: opacity 0.5s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
-}
-.lp-msg.is-on {
-  opacity: 1;
-  transform: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -402,13 +311,8 @@ body {
     transition-duration: 0.001ms !important;
   }
   [data-reveal],
-  .lp-fade,
-  .lp-bb,
-  .lp-msg {
+  .x-none {
     opacity: 1;
-    transform: none;
-  }
-  .lp-rise > span {
     transform: none;
   }
   .line-mask > span {
@@ -417,7 +321,7 @@ body {
 }
 
 input[type="range"] {
-  accent-color: var(--color-accent);
+  accent-color: var(--color-atlas);
 }
 
 /* Lenis */
@@ -431,8 +335,8 @@ html.lenis body {
 
 /* MapLibre */
 .maplibregl-ctrl-group {
-  background: rgb(255 255 255 / 0.95) !important;
-  border: 1px solid rgb(12 12 14 / 0.14) !important;
+  background: var(--color-paper) !important;
+  border: 1px solid var(--color-night) !important;
   box-shadow: none !important;
   border-radius: 3px !important;
   overflow: hidden;
@@ -448,6 +352,9 @@ html.lenis body {
 .maplibregl-ctrl-attrib a {
   color: var(--color-ink-300) !important;
 }
+.maplibregl-ctrl-top-right {
+  top: 72px;
+}
 .maplibregl-ctrl-scale {
   background: rgb(255 255 255 / 0.7) !important;
   color: var(--color-ink-300) !important;
@@ -456,15 +363,24 @@ html.lenis body {
 .maplibregl-popup-content {
   background: #fff !important;
   color: var(--color-ink-100);
-  border: 1px solid rgb(12 12 14 / 0.14);
-  border-radius: 3px;
+  border: 1px solid var(--color-night);
+  border-radius: 0;
   padding: 8px 10px;
-  font-size: 12px;
-  box-shadow: 0 12px 30px -14px rgb(13 16 40 / 0.3);
+  font-size: 13px;
+  box-shadow: none;
 }
 .maplibregl-popup-tip {
   border-top-color: #fff !important;
   border-bottom-color: #fff !important;
+}
+
+.print-only {
+  display: none;
+}
+
+@page {
+  size: letter;
+  margin: 16mm 14mm;
 }
 
 @media print {
@@ -472,6 +388,25 @@ html.lenis body {
   body {
     background: white !important;
     color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  article {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  section,
+  table,
+  tr,
+  li {
+    break-inside: avoid;
+  }
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+  .print-only {
+    display: block;
   }
   .no-print {
     display: none !important;
@@ -484,7 +419,7 @@ html.lenis body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-night);
   outline-offset: 2px;
 }
 
@@ -494,11 +429,44 @@ select {
 
 /* soft cobalt glow behind auth / empty screens */
 .halo {
-  background: radial-gradient(60% 50% at 50% 35%, rgb(47 73 255 / 0.1), transparent 70%);
+  background: none;
 }
 
 /* thin scrollbars on the app's scrolling columns */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(12 12 14 / 0.2) transparent;
+  scrollbar-color: var(--color-ink-600) transparent;
+}
+
+.maplibregl-ctrl-scale {
+  background: var(--color-paper) !important;
+  border: 1px solid var(--color-night) !important;
+  color: var(--color-night) !important;
+  font-weight: 600;
+}
+
+/* your site's ring: a compositor animation, so it costs the map nothing */
+.site-ping {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+.site-ping::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--color-you);
+  border-radius: 999px;
+  animation: site-ping 2s var(--ease-out-expo) infinite;
+}
+@keyframes site-ping {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(7); opacity: 0; }
+}
+
+/* the scale bar only has room on wide screens */
+@media (max-width: 1279px) {
+  .maplibregl-ctrl-scale {
+    display: none;
+  }
 }

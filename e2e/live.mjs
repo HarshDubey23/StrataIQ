@@ -33,7 +33,7 @@ const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
 let pid = null;
 await step("landing", async () => {
   await page.goto(BASE);
-  await page.getByText("before you sign the lease.").first().waitFor({ timeout: 60000 });
+  await page.getByRole("heading", { name: "See if your location wins before you sign." }).waitFor({ timeout: 60000 });
   await shot("01-hero", 12000);
   for (const [i, id] of [[2, "real"], [3, "agents"], [5, "voice"]]) {
     await page.evaluate((x) => document.getElementById(x)?.scrollIntoView(), id);
@@ -46,7 +46,7 @@ await step("open live demo (guest)", async () => {
   await page.getByRole("button", { name: "Pizza", exact: true }).click();
   await page.waitForTimeout(15000);
   await shot("06-hero-pizza", 1000);
-  await page.getByRole("button", { name: /Open the live demo/ }).first().click();
+  await page.getByRole("button", { name: /^See / }).first().click();
   await page.waitForURL(/\/app\/projects\/.+\/market/, { timeout: 280000 });
   pid = page.url().split("/projects/")[1].split("/")[0];
   await shot("10-market", 10000);
@@ -150,7 +150,7 @@ await step("voice analyst (grounded answers)", async () => {
 
 await step("quick start from one sentence", async () => {
   await page.goto(`${BASE}/app`);
-  await page.getByLabel("Your business idea").fill("A café in Indiranagar, Bengaluru, coffee at ₹250");
+  await page.getByLabel("Your business idea").fill("A café in Downtown Austin, Texas, coffee at $6");
   await page.getByRole("button", { name: /Understand it/ }).click();
   await page.getByRole("button", { name: /Analyse this idea with live data/ }).waitFor({ timeout: 60000 });
   await shot("20-quickstart-plan", 1500);

@@ -402,6 +402,47 @@ def _merge_pois(*groups: list[dict]) -> list[dict]:
     return out
 
 
+_background: set[asyncio.Task] = set()
+
+
+async def quick_competitors(lat: float, lng: float, radius_m: int, filters: list[str], cache: Cache | None = None, terms: list[str] | None = None, budget_s: float = 5.0) -> tuple[list[dict], dict, bool]:
+    """Rivals within a few seconds. Returns (pois, provenance, complete).
+
+    The slow public Overpass servers can take half a minute or time out, so a smaller search answers first. The full
+    search keeps running and fills the cache, so asking again soon gets everything. Nearby points share one search.
+    """
+    from . import foursquare
+
+    rlat, rlng = round(lat, 3), round(lng, 3)
+    full = asyncio.create_task(fetch_competitors(rlat, rlng, radius_m, filters, cache, terms=terms, timeout_s=30.0, limit=400))
+    _background.add(full)
+
+    def finished(t: asyncio.Task) -> None:
+        _background.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            log.warning("full competitor search failed: %s", t.exception())
+
+    full.add_done_callback(finished)
+    done, _ = await asyncio.wait({full}, timeout=0.4)  # a cached answer comes back at once
+    if done and full.exception() is None:
+        pois, prov = full.result()
+        return pois, prov, True
+
+    # Foursquare answers in about a second. The public OSM servers can be unreachable from a cloud host, so nothing waits on them.
+    pois: list[dict] = []
+    if foursquare.enabled():
+        try:
+            pois = _merge_pois([], await asyncio.wait_for(foursquare.fsq_pois(rlat, rlng, radius_m, terms or []), budget_s))
+        except Exception as e:  # noqa: BLE001
+            log.warning("foursquare quick search failed: %s", e)
+    if not pois:
+        await asyncio.wait({full}, timeout=budget_s)
+        if full.done() and full.exception() is None:
+            found, prov = full.result()
+            return found, prov, True
+    return pois, provenance("foursquare", detail=f"{len(pois)} found so far; the full search is still running"), False
+
+
 async def fetch_competitors(lat: float, lng: float, radius_m: int, filters: list[str], cache: Cache | None = None,
                             terms: list[str] | None = None, timeout_s: float = 38.0, limit: int = 600) -> tuple[list[dict], dict]:
     """Competitors from every OpenStreetMap server at once, merged for maximum coverage.

@@ -7,6 +7,20 @@ on:
   workflow_dispatch:
 
 jobs:
+  docker-web:
+    # The production image once built the wrong root layout, which only showed on a real server.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t web ./frontend
+      - name: The image serves the landing page with its styles
+        run: |
+          docker run -d --name web -p 3000:3000 -e API_URL=http://127.0.0.1:9 web
+          for i in $(seq 1 30); do curl -sf -o page.html localhost:3000/ && break; sleep 2; done
+          grep -q 'See if your location wins before you sign.' page.html
+          css=$(grep -o '/_next/static/css/[^"]*' page.html | head -1)
+          test -n "$css" && curl -sf -o /dev/null "localhost:3000$css"
+
   backend:
     runs-on: ubuntu-latest
     services:
@@ -107,6 +121,8 @@ jobs:
           npx tsc --noEmit 2>&1 | tee tsc.log
       - name: Lint
         run: npm run lint
+      - name: Lease math
+        run: npm run test:lease
       - name: Build
         run: |
           set -o pipefail
@@ -138,6 +154,8 @@ jobs:
       JWT_SECRET: ci-secret-not-for-production
       CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
       API_URL: http://127.0.0.1:8000
+      MARKET: US
+      NEXT_PUBLIC_MARKET: US
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
-import { Logo } from "@/components/brand";
+import { BlockPlan, Logo } from "@/components/brand";
 import { Button, ErrorState, Field, Input } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import type { Project, User } from "@/lib/types";
@@ -80,19 +80,23 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-accent px-4 py-10">
-      <div aria-hidden className="lp-grid pointer-events-none absolute inset-0" />
-      <div aria-hidden className="lp-wide pointer-events-none absolute inset-x-0 bottom-0 select-none text-center text-[19vw] leading-[0.78] tracking-[-0.06em] text-white/[0.07]">StrataIQ</div>
-      <div className="rise relative w-full max-w-sm">
-        <div className="mb-10 flex justify-center">
-          <Logo tone="dark" />
+    <div className="grid min-h-screen bg-paper lg:grid-cols-[1.15fr_1fr]">
+      <div className="relative hidden overflow-hidden border-r border-night bg-atlas lg:block">
+        <BlockPlan seed={14} cols={8} rows={8} draw className="absolute inset-0 h-full w-full" />
+        <p className="sheet rise font-display absolute bottom-6 left-6 w-72 p-4 text-[24px] leading-tight" style={{ animationDelay: "500ms" }}>Test a location before you sign the lease.</p>
+      </div>
+      <div className="flex flex-col">
+      <div className="h-28 overflow-hidden border-b border-night bg-atlas lg:hidden"><BlockPlan seed={14} cols={10} rows={2} draw className="h-full w-full" /></div>
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-8">
+          <Logo />
         </div>
-        <form onSubmit={submit} className="space-y-4 rounded-md bg-white p-7 text-ink-100 shadow-[12px_12px_0_var(--color-night)]" noValidate>
+        <form onSubmit={submit} className="space-y-5 text-ink-100" noValidate>
           <div>
-            <p className="label-mono text-accent">{mode === "sign-up" ? "01. New account" : "01. Welcome back"}</p>
-            <h1 className="font-display mt-2 text-[28px] leading-none tracking-tight">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
-            <p className="mt-1 text-sm text-ink-300">
-              {demo ? "Sign in to open the labelled demo scenario." : mode === "sign-up" ? "Start testing business ideas against a model of the real market." : "Welcome back."}
+            <h1 className="font-display text-[44px] leading-none">{mode === "sign-up" ? "Create your account" : "Sign in"}</h1>
+            <p className="mt-2 text-[15px] text-ink-300">
+              {demo ? "Sign in to open the labeled demo scenario." : mode === "sign-up" ? "Test a location before you sign the lease." : "Welcome back."}
             </p>
           </div>
           {error && <ErrorState message={error} />}
@@ -107,27 +111,29 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           <Field label="Password" htmlFor="password" error={errors.password} hint={mode === "sign-up" ? "At least 8 characters. Stored only as a salted bcrypt hash." : undefined}>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "sign-up" ? "new-password" : "current-password"} required />
           </Field>
-          <Button type="submit" variant="primary" className="w-full" loading={busy}>
+          <Button type="submit" variant="next" size="lg" className="w-full" loading={busy}>
             {mode === "sign-up" ? "Create account" : "Sign in"}
           </Button>
           <button
             type="button"
             onClick={guest}
-            className="w-full rounded-md border border-ink-100/15 py-2.5 text-sm font-semibold text-ink-200 transition-colors hover:border-ink-100 hover:bg-ink-100 hover:text-white"
+            className="h-12 w-full border border-night bg-white text-sm font-semibold text-night transition-colors hover:bg-ink-800"
           >
             Continue as guest
           </button>
-          <p className="text-center text-xs text-ink-400">
+          <p className="text-center text-[14px] text-ink-300">
             {mode === "sign-up" ? (
-              <>Already have an account? <Link className="text-accent hover:underline" href={`/sign-in${demo ? "?demo=1" : ""}`}>Sign in</Link></>
+              <>Already have an account? <Link className="font-medium text-atlas underline underline-offset-4" href={`/sign-in${demo ? "?demo=1" : ""}`}>Sign in</Link></>
             ) : (
-              <>New here? <Link className="text-accent hover:underline" href={`/sign-up${demo ? "?demo=1" : ""}`}>Create an account</Link></>
+              <>New here? <Link className="font-medium text-atlas underline underline-offset-4" href={`/sign-up${demo ? "?demo=1" : ""}`}>Create an account</Link></>
             )}
           </p>
           {mode === "sign-in" && (
-            <p className="text-center text-[11px] text-ink-500">Forgot your password? Email-based reset is not enabled in this deployment; change it from Settings once signed in.</p>
+            <p className="text-center text-[13px] text-ink-400">Forgot your password? {process.env.NEXT_PUBLIC_CONTACT_EMAIL ? <a className="underline underline-offset-4" href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Email support</a> : "Contact support"} and we will help you get back in.</p>
           )}
         </form>
+      </div>
+      </div>
       </div>
     </div>
   );

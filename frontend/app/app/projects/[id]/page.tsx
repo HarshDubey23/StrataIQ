@@ -20,8 +20,8 @@ export default function Overview() {
   const steps = [
     { done: hasSnap, t: "Load live market evidence", href: `${base}/market` },
     { done: (p.field?.records ?? 0) > 0, t: "Check the street with a field researcher", href: `${base}/field` },
-    { done: ran, t: "Run the live market (10,000 agents)", href: `${base}/live` },
-    { done: false, t: "X-ray agents & read the Market DNA", href: `${base}/genome` },
+    { done: ran, t: "Run the live market (10,000 customers)", href: `${base}/live` },
+    { done: false, t: "See who your customers are", href: `${base}/genome` },
     { done: alt && scen.filter((s) => s.latest_run).length > 1, t: "Test an alternative scenario", href: `${base}/simulation` },
     { done: false, t: "Review the decision and what to verify", href: `${base}/decisions` },
     { done: false, t: "Share a feasibility report", href: `${base}/report` },
@@ -38,9 +38,9 @@ export default function Overview() {
     <main className="rise mx-auto w-full max-w-7xl space-y-5 p-4 md:p-8">
       <MarketGlance project={p} />
       {next && (
-        <Link href={next.href} className="group flex items-center justify-between rounded-xl border border-accent/40 bg-accent/[0.08] px-5 py-4 text-sm transition-colors hover:bg-accent/15">
-          <span><span className="text-ink-300">Next step:</span> <span className="font-medium text-ink-100">{next.t}</span></span>
-          <ArrowRight className="h-4 w-4 text-accent" />
+        <Link href={next.href} className="group flex items-center justify-between border border-night bg-white px-5 py-4 text-[15px] text-night transition-colors hover:bg-ink-800">
+          <span>Next step: <span className="font-semibold">{next.t}</span></span>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
       )}
       <div className="grid gap-5 lg:grid-cols-3">
@@ -57,7 +57,7 @@ export default function Overview() {
               )}
             </div>
             <div className="space-y-2">
-              <label className="block text-xs text-ink-400" htmlFor="goal">Recommendations optimise for</label>
+              <label className="block text-xs text-ink-400" htmlFor="goal">Recommendations optimize for</label>
               <Select id="goal" value={p.decision_goal} onChange={(e) => setGoal(e.target.value as Goal)}>
                 {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </Select>
@@ -71,12 +71,10 @@ export default function Overview() {
             </div>
           </div>
         </Card>
-        <Link href={`${base}/field`} className="lift group relative overflow-hidden rounded-xl border border-field/25 bg-ink-900/80 p-5 hover:border-field/50">
-          <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-field/10 blur-2xl" />
-          <p className="idx">GROUND TRUTH</p>
-          <div className="font-display mt-2 text-lg font-medium tracking-tight">Field research</div>
-          <p className="mt-1 text-[13px] text-ink-400">{(p.field?.records ?? 0) > 0 ? `${p.field?.records} records collected on the street. The agents use them on the next run.` : "No data for this area? Send a researcher from your industry to the street."}</p>
-          <span className="mt-4 inline-flex items-center gap-1 text-xs text-field">Open field research <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" /></span>
+        <Link href={`${base}/field`} className="lift group border border-ink-600 bg-white p-5">
+          <div className="font-display text-[20px]">Check the street</div>
+          <p className="mt-1 text-[14px] text-ink-300">{(p.field?.records ?? 0) > 0 ? `${p.field?.records} records collected on the street. The agents use them on the next run.` : "Maps miss prices, foot traffic and rent. Send someone to the street with a phone link."}</p>
+          <span className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-atlas">Open field data <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" /></span>
         </Link>
       </div>
 

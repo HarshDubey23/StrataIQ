@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { money, num, pct, when } from "@/lib/format";
+import { MarketingCurve, PriceCurve, ProfitHistogram, RampChart, Tornado } from "@/components/charts";
+import { IncomeMix } from "@/components/RealData";
+import { money, num, pct, when, distance } from "@/lib/format";
 import type { CompetitorRec, Decision, Scenario, SimResult, Snapshot, Location, Archetype, Category } from "@/lib/types";
 
 export interface ReportContent {
@@ -13,12 +15,130 @@ export interface ReportContent {
   disclaimer: string;
 }
 
-function H({ n, children }: { n: number; children: React.ReactNode }) {
+function H({ children }: { n: number; children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 mt-8 flex items-baseline gap-2 border-b border-black/[0.07] pb-1.5 text-base font-semibold">
-      <span className="num text-xs text-ink-400">{String(n).padStart(2, "0")}</span>
+    <h2 className="mb-3 mt-10 break-after-avoid font-display text-[28px] text-ink-100">
       {children}
     </h2>
+  );
+}
+
+const VERDICT: Record<string, { label: string; tone: string }> = {
+  potentially_viable: { label: "Can work under these inputs", tone: "bg-ok text-white" },
+  financially_challenging: { label: "Loses money as planned", tone: "bg-danger text-white" },
+  high_uncertainty: { label: "Too uncertain to call yet", tone: "bg-night text-white" },
+};
+
+function Kpi({ label, value, note, swatch = "bg-stone", kind = "Estimated" }: { label: string; value: string; note?: string; swatch?: string; kind?: string }) {
+  return (
+    <div className="border-b border-r border-night bg-white p-4">
+      <div className="flex items-center justify-between gap-2 text-[13px] text-ink-300">{label}<span title={kind} aria-label={kind} className={`h-2.5 w-3.5 shrink-0 border border-night ${swatch}`} /></div>
+      <div className="num mt-1 font-display text-[30px] leading-none text-ink-100">{value}</div>
+      {note && <div className="mt-1.5 text-[12px] text-ink-400">{note}</div>}
+    </div>
+  );
+}
+
+function ChartCard({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
+  return (
+    <section className="break-inside-avoid border border-ink-600 bg-white p-4">
+      <h3 className="font-display text-[19px] text-ink-100">{title}</h3>
+      <p className="mb-3 mt-0.5 text-xs text-ink-400">{note}</p>
+      {children}
+    </section>
+  );
+}
+
+function ShareBars({ data }: { data: Record<string, number | null | undefined> }) {
+  const rows = Object.entries(data).filter(([, v]) => typeof v === "number" && v > 0).sort((a, b) => Number(b[1]) - Number(a[1]));
+  return (
+    <ul className="space-y-2 text-xs">
+      {rows.map(([k, v]) => (
+        <li key={k}>
+          <div className="flex justify-between"><span className="capitalize">{({ two_wheeler: "motorcycle", auto: "taxi" } as Record<string, string>)[k] ?? k.replaceAll("_", " ")}</span><span className="num font-medium">{pct(Number(v))}</span></div>
+          <div className="mt-0.5 h-2 border border-night bg-white"><div className="h-full bg-stone" style={{ width: `${Number(v) * 100}%` }} /></div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The closing page: what the numbers mean and what to do next, in plain sentences built only from this report's figures. */
+function BottomLine({ c }: { c: ReportContent }) {
+  const d = c.decision;
+  const best = c.scenarios.find((s) => s.scenario.id === d.best_scenario_id && s.result?.finance) || c.scenarios.find((s) => s.result?.finance);
+  const r = best?.result as any;
+  if (!r) return null;
+  const mc = r.monte_carlo;
+  const risk = d.risks.find((x) => x.factor !== "Data gap");
+  const steps = d.next_actions.slice(0, 3);
+  return (
+    <section className="mt-10 break-inside-avoid bg-atlas p-6 text-white">
+      <h2 className="font-display text-[32px] leading-tight">Bottom line and what to do</h2>
+      <p className="mt-3 text-[15px] leading-relaxed">
+        {d.headline} Under the best plan tested, &ldquo;{best!.scenario.name}&rdquo;, the model puts a typical month at {money(mc?.profit?.p50 ?? r.finance.operating_profit)}{mc ? `, within a range of ${money(mc.profit.p10)} to ${money(mc.profit.p90)}, with a ${pct(mc.prob_loss)} chance of a monthly loss` : ""}.
+        {r.finance.payback_months ? ` Startup costs would pay back in about ${num(r.finance.payback_months, 1)} months.` : " Startup costs do not pay back on these inputs."}
+        {risk ? ` The main risk: ${risk.text}` : ""}
+      </p>
+      {steps.length > 0 && (
+        <ol className="mt-4 list-decimal space-y-2 pl-5 text-[15px] leading-snug">
+          {steps.map((a, i) => <li key={i}><b>{a.action}</b> {a.why}</li>)}
+        </ol>
+      )}
+      <p className="mt-4 text-[13px] text-white">Before you sign, replace the example costs with real quotes and check the street in person.</p>
+    </section>
+  );
+}
+
+/** The first pages: the answer, the numbers and the charts behind them. */
+function Executive({ c }: { c: ReportContent }) {
+  const d = c.decision;
+  const best = c.scenarios.find((s) => s.scenario.id === d.best_scenario_id && s.result?.finance) || c.scenarios.find((s) => s.scenario.is_baseline && s.result?.finance) || c.scenarios.find((s) => s.result?.finance);
+  const r = best?.result as any;
+  if (!r) return null;
+  const f = r.finance;
+  const mc = r.monte_carlo;
+  const abm = r.abm;
+  const unit = r.unit_label ?? c.archetype.unit_label;
+  const membership = c.archetype.key === "membership";
+  const verdict = VERDICT[d.verdict];
+  // The chart shows the pace of growth from the simulated customers, on the same scale as the forecast above.
+  const last = abm?.weekly?.[abm.weekly.length - 1]?.units || 1;
+  const ramp = (abm?.weekly || []).map((w: any) => ({ ...w, units: (w.units / last) * (r.summary.modeled_demand_units / (membership ? 1 : 30 / 7)) }));
+  return (
+    <>
+      <div className={`mt-6 border border-night p-5 ${verdict?.tone ?? "bg-night text-white"}`}>
+        <div className="font-display text-[32px] leading-tight">{verdict?.label ?? "Result"}</div>
+        <p className="mt-1 text-[15px] leading-snug">{d.headline}</p>
+      </div>
+      <div className="mt-3 grid grid-cols-2 border-l border-t border-night md:grid-cols-3">
+        <Kpi label="Profit in a typical month" value={money(mc?.profit?.p50 ?? f.operating_profit)} note={mc ? `Range ${money(mc.profit.p10, { compact: true })} to ${money(mc.profit.p90, { compact: true })}` : undefined} />
+        <Kpi label={membership ? "Members to break even" : "Sales a day to break even"} value={f.break_even_units == null ? "Not reached" : num(membership ? f.break_even_units : f.break_even_units / 30)} note={`At ${money(r.summary.price)} and your costs`} />
+        <Kpi label={membership ? "Members forecast" : "Sales a day forecast"} value={num(membership ? r.summary.modeled_demand_units : r.summary.modeled_demand_units / 30)} note="Planning estimate" />
+        <Kpi label="Chance of a monthly loss" value={mc ? pct(mc.prob_loss) : "Not run"} note={mc ? `From ${num(mc.draws)} market scenarios` : undefined} />
+        <Kpi label="Payback on startup cost" value={f.payback_months ? `${num(f.payback_months, 1)} months` : "Not reached"} note={`${money(r.finance?.startup_cost ?? (best?.scenario as any)?.inputs?.startup_cost ?? 0, { compact: true })} to open`} />
+        <Kpi label="Monthly revenue" value={money(f.revenue, { compact: true })} note="Planning estimate" />
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        {mc?.histogram && <ChartCard title="Range of monthly profit" note="Each bar is how often a profit level came up across market scenarios."><ProfitHistogram mc={mc} /></ChartCard>}
+        {r.sensitivity?.price_curve?.length > 0 && <ChartCard title="Price test" note="Profit and sales at each price, using this neighborhood's customers."><PriceCurve data={r.sensitivity.price_curve} current={r.summary.price} unit={unit} /></ChartCard>}
+        {abm?.weekly?.length > 0 && <ChartCard title="First months after opening" note="How quickly sales and awareness build toward the forecast."><RampChart data={ramp} unit={unit} /></ChartCard>}
+        {r.sensitivity?.tornado?.length > 0 && <ChartCard title="What moves your profit most" note="Check the longest bars first. These assumptions matter most."><Tornado data={r.sensitivity.tornado} base={f.operating_profit} /></ChartCard>}
+        {r.sensitivity?.marketing_curve?.length > 0 && <ChartCard title="Marketing test" note="Profit at each monthly marketing budget."><MarketingCurve data={r.sensitivity.marketing_curve} current={Number((best?.scenario as any)?.inputs?.marketing_spend ?? 0)} /></ChartCard>}
+        {abm?.metrics?.customer_modes && <ChartCard title="How customers reach you" note="From commute data for these neighborhoods."><ShareBars data={abm.metrics.customer_modes} /></ChartCard>}
+        {abm?.life?.occupation_shares && <ChartCard title="Who lives in your catchment" note="Job and student status of simulated residents, drawn from Census figures."><ShareBars data={abm.life.occupation_shares} /></ChartCard>}
+      </div>
+      {r.income && <div className="mt-3 break-inside-avoid"><IncomeMix income={r.income} price={r.summary.price} /></div>}
+      {r.sensitivity?.stress_tests?.length > 0 && (
+        <section className="mt-3 break-inside-avoid border border-ink-600 bg-white p-4">
+          <h3 className="font-display text-[19px] text-ink-100">Stress tests</h3>
+          <table className="mt-2 w-full text-xs">
+            <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">If this happens</th><th className="text-right font-normal">Sales</th><th className="text-right font-normal">Profit / month</th><th className="text-right font-normal">Change</th></tr></thead>
+            <tbody>{r.sensitivity.stress_tests.map((t: any) => <tr key={t.label} className="border-t border-black/[0.06]"><td className="py-1">{t.label}</td><td className="num text-right">{num(t.units)}</td><td className="num text-right">{money(t.profit)}</td><td className={`num text-right ${t.delta_profit < 0 ? "text-danger" : "text-ok"}`}>{money(t.delta_profit, { sign: true })}</td></tr>)}</tbody>
+          </table>
+        </section>
+      )}
+    </>
   );
 }
 
@@ -32,12 +152,12 @@ function MiniMap({ loc, snap, comps }: { loc: Location; snap: ReportContent["loc
   const sx = (x: number) => ((x - x0) / (x1 - x0 || 1)) * W;
   const sy = (y: number) => W - ((y - y0) / (y1 - y0 || 1)) * W;
   return (
-    <svg viewBox={`-10 -10 ${W + 20} ${W + 20}`} className="h-56 w-56 shrink-0 rounded border border-black/[0.07] bg-ink-900" role="img" aria-label="Catchment and competitors">
-      <polygon points={ring.map((c) => `${sx(c[0])},${sy(c[1])}`).join(" ")} fill="rgba(34,211,238,0.07)" stroke="#2F49FF" strokeDasharray="4 3" />
+    <svg viewBox={`-10 -10 ${W + 20} ${W + 20}`} className="h-56 w-56 shrink-0 border border-night bg-atlas" role="img" aria-label="Catchment and competitors">
+      <polygon points={ring.map((c) => `${sx(c[0])},${sy(c[1])}`).join(" ")} fill="rgba(255,255,255,0.08)" stroke="#ffffff" strokeDasharray="4 3" />
       {comps.filter((c) => c.active).map((c) => (
-        <circle key={c.id} cx={sx(c.lng)} cy={sy(c.lat)} r={4} fill={c.source === "user" ? "#C59BFF" : "#F59E0B"} stroke="#FFFFFF" />
+        <circle key={c.id} cx={sx(c.lng)} cy={sy(c.lat)} r={4} fill={c.source === "user" ? "#f2c94c" : "#e98f86"} stroke="#0f1f3d" />
       ))}
-      <circle cx={sx(loc.lng)} cy={sy(loc.lat)} r={6} fill="#2F49FF" stroke="#FFFFFF" strokeWidth={2} />
+      <circle cx={sx(loc.lng)} cy={sy(loc.lat)} r={7} fill="#f2c94c" stroke="#0f1f3d" strokeWidth={1.5} />
     </svg>
   );
 }
@@ -47,21 +167,21 @@ export function ReportView({ c }: { c: ReportContent }) {
   const prof = c.project.profile as Record<string, any>;
   const ran = c.scenarios.filter((s) => s.result);
   return (
-    <article className="print-light mx-auto max-w-4xl rounded-lg border border-black/[0.07] bg-ink-950 p-6 text-sm leading-relaxed text-ink-200 md:p-10">
-      {c.project.is_demo && <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-800">DEMO SCENARIO — Illustrative market data; not verified live conditions.</div>}
+    <article className="print-light mx-auto max-w-4xl bg-ink-950 p-6 text-sm leading-relaxed text-ink-200 md:p-10">
+      {c.project.is_demo && <div className="mb-4 border border-dashed border-night bg-white px-3 py-2 text-[13px] font-medium">Demo scenario: illustrative market data, not verified live conditions.</div>}
       <header>
-        <div className="text-xsst text-ink-400">StrataIQ feasibility report</div>
-        <h1 className="mt-1 text-2xl font-semibold text-ink-100">{c.project.name}</h1>
-        <p className="mt-1 text-xs text-ink-400">Generated {when(c.generated_at)} · model {d.model_version || "—"}</p>
-        <p className="mt-3 rounded border border-black/[0.07] bg-ink-900 p-3 text-xs text-ink-300">{c.disclaimer}</p>
+        <div className="print-only font-display text-lg font-medium text-ink-100">StrataIQ</div>
+        <h1 className="mt-5 font-display text-4xl font-medium leading-[1.02] tracking-[-0.03em] text-ink-100">{c.project.name}</h1>
+        <p className="mt-2 text-sm text-ink-300">Location feasibility report, generated {when(c.generated_at)}</p>
       </header>
 
+      <Executive c={c} />
+
       <H n={1}>Business concept</H>
-      <p><b>{c.project.category.label}</b> — modeled as <b>{c.archetype.label}</b> ({c.archetype.unit_label} per month).</p>
+      <p><b>{c.project.category.label}</b>, tested as a {c.archetype.label.toLowerCase()} business, counted in {c.archetype.unit_label} a month.</p>
       {prof.description && <p className="mt-1">{prof.description}</p>}
       {Array.isArray(prof.positioning) && prof.positioning.length > 0 && <p className="mt-1 text-ink-300">Claimed positioning (unverified): {prof.positioning.join(", ")}.</p>}
-      <p className="mt-1 text-xs text-ink-400">Competitor search tags: {c.project.category.filters.join(" OR ")} ({c.project.category.method} match)</p>
-
+      
       <H n={2}>Geographic area</H>
       <div className="space-y-4">
         {c.locations.map(({ location: l, snapshot: s }) => (
@@ -70,9 +190,9 @@ export function ReportView({ c }: { c: ReportContent }) {
             <div className="space-y-1">
               <div className="font-medium text-ink-100">{l.label}</div>
               <div className="text-xs text-ink-300">{l.address}</div>
-              <div className="text-xs">Catchment: {s?.catchment_method === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${l.catchment.radius_km} km straight-line radius`}</div>
-              {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "user-entered" : s.population.source}; placement: {s.population.method})</div> : <div className="text-xs text-amber-700">Population unavailable</div>}
-              {s && <div className="text-xs">Data coverage: {s.coverage.level} — {s.coverage.note}</div>}
+              <div className="text-xs">Catchment: {s?.catchment_method === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${distance(l.catchment.radius_km)} straight-line radius`}</div>
+              {s?.population?.total ? <div className="text-xs">Population: {num(s.population.total)} ({s.population.source === "worldpop" ? "WorldPop estimate" : s.population.source === "user" ? "entered by you" : "estimated from buildings"})</div> : <div className="text-xs text-warn">Population unavailable</div>}
+              {s && <div className="text-xs">Map coverage: {s.coverage.level}. {s.coverage.note}</div>}
             </div>
           </div>
         ))}
@@ -84,12 +204,12 @@ export function ReportView({ c }: { c: ReportContent }) {
         <tbody>
           {c.locations.flatMap(({ location: l, snapshot: s }) => (s?.sources || []).map((src, i) => (
             <tr key={`${l.id}-${i}`} className="border-t border-black/[0.06]">
-              <td className="py-1">{src.name}</td><td>{src.layer}</td><td>{when(src.retrieved_at)}</td><td>{src.source_updated_at || "not reported"}</td><td>{src.license}</td>
+              <td className="py-1 pr-3">{src.name}</td><td className="pr-3">{src.layer}</td><td className="pr-3">{when(src.retrieved_at)}</td><td>{src.source_updated_at ? (/^\d{4}-\d{2}-\d{2}T/.test(src.source_updated_at) ? when(src.source_updated_at) : src.source_updated_at) : "not reported"}</td><td>{src.license}</td>
             </tr>
           )))}
         </tbody>
       </table>
-      {c.locations.some((l) => l.snapshot?.errors?.length) && <p className="mt-2 text-xs text-amber-700">Some sources failed: {c.locations.flatMap((l) => l.snapshot?.errors || []).map((e) => `${e.source} (${e.message})`).join("; ")}</p>}
+      {c.locations.some((l) => l.snapshot?.errors?.length) && <p className="mt-2 text-xs text-warn">Some sources failed: {c.locations.flatMap((l) => l.snapshot?.errors || []).map((e) => `${e.source} (${e.message})`).join("; ")}</p>}
 
       <H n={4}>Competitor overview</H>
       <p className="mb-2 text-xs text-ink-400">{c.competitors.filter((x) => x.active).length} active competitors ({c.competitors.filter((x) => x.source === "user").length} user-entered, {c.competitors.filter((x) => x.is_hypothetical).length} hypothetical). Prices are unknown unless recorded by the user.</p>
@@ -120,14 +240,14 @@ export function ReportView({ c }: { c: ReportContent }) {
       {ran.map(({ scenario: s, result: r }) => r?.summary && r.finance && (
         <div key={s.id} className="mb-3">
           <div className="font-medium text-ink-100">{s.name}{s.is_baseline && " (baseline)"}</div>
-          <p className="text-xs">Price {money(r.summary.price)} · modeled demand {num(r.summary.modeled_demand_units)} {r.unit_label ?? c.archetype.unit_label}/month (capacity {num(r.summary.capacity_units)}) · revenue {money(r.finance.revenue)} · operating cost {money((r.finance.fixed_cost || 0) + (r.finance.variable_cost || 0))} · <b>operating profit {money(r.finance.operating_profit)}</b> · break-even {num(r.finance.break_even_units)} units · payback {r.finance.payback_months ? `${num(r.finance.payback_months, 1)} months` : "not reached"}.</p>
-          {r.monte_carlo && <p className="text-xs text-ink-400">Monte Carlo ({r.monte_carlo.draws} draws): profit P10 {money(r.monte_carlo.profit.p10)}, P50 {money(r.monte_carlo.profit.p50)}, P90 {money(r.monte_carlo.profit.p90)}; modeled probability of loss {pct(r.monte_carlo.prob_loss)}.</p>}
+          <p className="text-xs">Price {money(r.summary.price)} · modeled demand {num(r.summary.modeled_demand_units)} {r.unit_label ?? c.archetype.unit_label}/month (capacity {num(r.summary.capacity_units)}) · revenue {money(r.finance.revenue)} · operating cost {money((r.finance.fixed_cost || 0) + (r.finance.variable_cost || 0))} · <b>operating profit {money(r.finance.operating_profit)}</b> · break-even at {num(r.finance.break_even_units)} {r.unit_label ?? c.archetype.unit_label} · payback {r.finance.payback_months ? `${num(r.finance.payback_months, 1)} months` : "not reached"}.</p>
+          {r.monte_carlo && <p className="text-xs text-ink-400">Across {num(r.monte_carlo.draws)} market scenarios: bad month {money(r.monte_carlo.profit.p10)}, typical month {money(r.monte_carlo.profit.p50)}, good month {money(r.monte_carlo.profit.p90)}. Chance of a monthly loss: {pct(r.monte_carlo.prob_loss)}.</p>}
         </div>
       ))}
 
       <H n={8}>Scenario comparison</H>
       <table className="w-full text-xs">
-        <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">Rank</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Units</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">P(loss)</th></tr></thead>
+        <thead><tr className="text-left text-ink-400"><th className="py-1 font-normal">Rank</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Sales</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">Chance of loss</th></tr></thead>
         <tbody>{d.ranking.map((r) => <tr key={r.scenario_id} className="border-t border-black/[0.06]"><td className="py-1">{r.rank}</td><td>{r.name}</td><td className="text-right">{num(r.units)}</td><td className="text-right">{money(r.profit)}</td><td className="text-right">{pct(r.prob_loss)}</td></tr>)}</tbody>
       </table>
       <p className="mt-2"><b>Result:</b> {d.headline}</p>
@@ -139,17 +259,19 @@ export function ReportView({ c }: { c: ReportContent }) {
       <ul className="list-disc space-y-1 pl-5">{(d.gaps || []).map((g) => <li key={g.key}>{g.text}</li>)}{!(d.gaps || []).length && <li>No critical data gaps were flagged by the rules; local verification is still recommended.</li>}</ul>
 
       <H n={11}>Recommended next actions</H>
-      <ol className="list-decimal space-y-1 pl-5">{d.next_actions.map((a, i) => <li key={i}>{a.action} <span className="text-ink-400">— {a.why}</span></li>)}</ol>
+      <ol className="list-decimal space-y-1 pl-5">{d.next_actions.map((a, i) => <li key={i}>{a.action} <span className="text-ink-400">{a.why}</span></li>)}</ol>
       {d.recommendations.length > 0 && (
         <ul className="mt-3 space-y-2">
-          {d.recommendations.map((r, i) => <li key={i} className="rounded border border-black/[0.07] p-2 text-xs"><b>{r.action}</b> {r.reason} Reconsider if: {r.reconsider_if}</li>)}
+          {d.recommendations.map((r, i) => <li key={i} className="border border-ink-600 bg-white p-3 text-[13px]"><b>{r.action}</b> {r.reason} Think again if: {r.reconsider_if}</li>)}
         </ul>
       )}
 
       <H n={12}>Methodology and limitations</H>
-      <p>Demand is estimated with a multinomial-logit customer-choice model over synthetic customer segments placed on a population grid, with an outside option, lognormal affordability, distance decay and capacity limits. Uncertainty is propagated by Monte Carlo over documented parameter ranges. Default behaviour parameters are not calibrated against observed sales; no accuracy figure is claimed. See /methodology for formulas.</p>
+      <p>The demand figure is a planning estimate. In a test against a year of reported alcohol sales at 5,546 Texas bars and restaurants, location data explained under 3% of the difference between individual venues, so your concept, size and operation can move real sales far from this figure.</p>
+      <p>Demand comes from a customer-choice model: simulated people, placed where the population data puts them, weigh price, distance and what they can afford, and can choose you, a rival or nothing. We rerun it across market scenarios to get the range. How people react to price and quality are starting estimates that have not been checked against real sales.</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-ink-300">{(ran[0]?.result?.limitations || []).map((l) => <li key={l}>{l}</li>)}</ul>
-      <p className="mt-6 text-[11px] text-ink-500">Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0).</p>
+      <BottomLine c={c} />
+      <p className="mt-6 text-[11px] leading-snug text-ink-400">{c.disclaimer} Map data © OpenStreetMap contributors (ODbL). Population © WorldPop (CC BY 4.0). Neighborhood figures: U.S. Census Bureau ACS 2023, not endorsed or certified by the Census Bureau.</p>
     </article>
   );
 }

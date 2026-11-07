@@ -1,30 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Instrument_Serif, Inter_Tight, JetBrains_Mono, Tiro_Devanagari_Hindi } from "next/font/google";
+import { Barlow_Semi_Condensed, Public_Sans } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
-import VoiceDock from "@/components/voice/VoiceDockLoader";
 
-const inter = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight", display: "swap" });
-const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-instrument", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono", display: "swap" });
-// Archivo with its width axis: extra-wide for landing headlines, normal width for landing text
-const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
-const tiro = Tiro_Devanagari_Hindi({ subsets: ["devanagari"], weight: "400", variable: "--font-tiro", display: "swap" });
+const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public", display: "swap" });
+const barlow = Barlow_Semi_Condensed({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-barlow", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "StrataIQ — Test your business on a live model of the street",
-  description:
-    "Pick any business and any place. StrataIQ loads the real competitors and population around it, adds ground data from a field researcher, simulates 10,000 customers on a 3D map, and shows profit, risk and break-even before you invest.",
+  title: "StrataIQ: test a business location before you sign",
+  description: "See the real competitors and neighborhood around any US location, and how many customers a day you need to break even.",
 };
 
-export const viewport: Viewport = { themeColor: "#f3f4f7", colorScheme: "light" };
+export const viewport: Viewport = { themeColor: "#1d4f91", colorScheme: "light" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable} ${tiro.variable} ${archivo.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${publicSans.variable} ${barlow.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://tiles.openfreemap.org" crossOrigin="anonymous" />
+        {/* runs before paint, so a returning visitor never sees the opening sheet */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(sessionStorage.getItem("siq-intro")||matchMedia("(prefers-reduced-motion: reduce)").matches||matchMedia("(pointer: coarse)").matches)document.documentElement.dataset.seen="1"}catch(e){}` }} />
+        {/* Entrance animations start hidden; without script the text must still show */}
+        <noscript><style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}.curtain{display:none}.word,[data-reveal]{opacity:1!important;transform:none!important}`}</style></noscript>
+      </head>
       <body className="grain min-h-screen font-sans">
         {children}
-        <VoiceDock />
       </body>
     </html>
   );

@@ -73,8 +73,9 @@ def _report_content(db: Session, p: Project) -> dict:
     for s in p.scenarios:
         r = runs.get(s.id)
         scen.append({"scenario": scenario_out(s, r), "result": None if not r else {
-            k: r.results.get(k) for k in ("summary", "finance", "monte_carlo", "segments", "parameters", "limitations", "drivers", "model_version")
-        } | {"sensitivity": {k: (r.results.get("sensitivity") or {}).get(k) for k in ("tornado", "stress_tests", "thresholds", "price_curve")}}})
+            k: r.results.get(k) for k in ("summary", "finance", "monte_carlo", "segments", "parameters", "limitations", "drivers", "model_version", "income")
+        } | {"sensitivity": {k: (r.results.get("sensitivity") or {}).get(k) for k in ("tornado", "stress_tests", "thresholds", "price_curve", "marketing_curve")},
+             "abm": {k: (r.results.get("abm") or {}).get(k) for k in ("n_agents", "days", "weekly", "monthly_units", "steady_units", "ramp_up_week", "life", "metrics", "top_drivers_against_you", "businesses", "competitors_simulated")}}})
     return {"generated_at": utcnow().isoformat(), "project": {"name": p.name, "objective": p.objective, "decision_goal": p.decision_goal,
             "category": p.category, "profile": p.profile, "is_demo": p.is_demo},
             "archetype": ARCHETYPES[p.category["archetype"]].to_public(), "locations": locs, "competitors": comps,

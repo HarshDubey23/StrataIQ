@@ -71,13 +71,13 @@ export function LocationPicker({
       <form onSubmit={search} className="flex gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-400" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a locality, street or landmark, e.g. ‘HSR Layout Sector 2, Bengaluru’" className="pl-9" aria-label="Search place" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a locality, street or landmark, e.g. ‘South Congress, Austin, TX’" className="pl-9" aria-label="Search place" />
         </div>
         <Button type="submit" loading={loading}>Search</Button>
       </form>
       {error && <ErrorState message={error} />}
       {results && results.length > 0 && (
-        <ul className="max-h-40 divide-y divide-black/[0.06] overflow-auto rounded-xl border border-black/[0.07] bg-black/[0.02]">
+        <ul className="max-h-40 divide-y divide-black/[0.06] overflow-auto rounded-md border border-black/[0.07] bg-black/[0.02]">
           {results.map((r, i) => (
             <li key={i}>
               <button type="button" onClick={() => pick(r.lat, r.lng, r.display_name)} className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-ink-800">

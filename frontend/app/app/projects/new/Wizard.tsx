@@ -7,7 +7,7 @@ import { useSession } from "@/components/AppShell";
 import { LocationPicker, type PickedPlace } from "@/components/LocationPicker";
 import { Badge, Button, Card, cn, ErrorState, Evidence, Field, Input, Notice, NumberInput, Segmented, Select, Spinner, Textarea } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, OBJECTIVES, pct } from "@/lib/format";
+import { money, num, OBJECTIVES, pct, CUR, distance } from "@/lib/format";
 import type { Archetype, ArchetypeKey, Category, Goal, Objective, Project } from "@/lib/types";
 
 const STEPS = ["Objective", "Business", "Profile", "Finances", "Positioning", "Location", "Review"];
@@ -194,7 +194,7 @@ export function Wizard() {
 
   const money0 = (label: string, v: number | null, set: (v: number | null) => void, hint: string, kind: "user" | "assumption" = "user") => (
     <Field label={label} hint={hint} kind={v === null ? undefined : kind}>
-      <NumberInput value={v} onChange={set} prefix="₹" allowEmpty placeholder="0" />
+      <NumberInput value={v} onChange={set} prefix={CUR} allowEmpty placeholder="0" />
     </Field>
   );
 
@@ -234,7 +234,7 @@ export function Wizard() {
                 </button>
               ))}
             </div>
-            <Field label="What should the recommendation optimise for?">
+            <Field label="What should the recommendation optimize for?">
               <Segmented<Goal>
                 value={goal}
                 onChange={setGoal}
@@ -268,17 +268,16 @@ export function Wizard() {
             </Field>
             {resolveErr && <ErrorState message={resolveErr} />}
             {category && arch && (
-              <div className="space-y-4 rounded-xl border border-black/[0.07] bg-black/[0.02] p-4">
+              <div className="space-y-4 rounded-md border border-black/[0.07] bg-black/[0.02] p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{category.label}</span>
                   <Badge tone={category.method === "taxonomy" || category.method === "manual" ? "ok" : "warn"}>
-                    {category.method === "taxonomy" ? "Catalogue match" : category.method === "llm" ? <><Sparkles className="h-3 w-3" /> AI-mapped, validated</> : category.method === "manual" ? "Selected" : "Keyword search"}
+                    {category.method === "taxonomy" ? "Matched" : category.method === "llm" ? <><Sparkles className="h-3 w-3" /> AI-mapped, validated</> : category.method === "manual" ? "Selected" : "Keyword search"}
                   </Badge>
                   <span className="num text-xs text-ink-400">match {pct(category.confidence)}</span>
                 </div>
                 {category.notes.map((n, i) => <Notice key={i} tone="warn">{n}</Notice>)}
                 <div className="text-xs text-ink-300">
-                  Competitors will be searched on OpenStreetMap with: <code className="num text-ink-200">{category.filters.join("  OR  ") || "—"}</code>
                 </div>
                 <Field label="Business model type" hint={arch.description}>
                   <Select
@@ -290,7 +289,7 @@ export function Wizard() {
                 </Field>
                 {category.alternatives.length > 0 && (
                   <div>
-                    <div className="mb-1.5 text-xs text-ink-400">Not quite right? Closest catalogue matches:</div>
+                    <div className="mb-1.5 text-xs text-ink-400">Not quite right? Closest catalog matches:</div>
                     <div className="flex flex-wrap gap-1.5">
                       {category.alternatives.slice(0, 5).map((a) => (
                         <button key={a.key} onClick={() => pickAlternative(a.key)} className="rounded-full border border-ink-600 px-2.5 py-1 text-xs text-ink-200 hover:border-accent">
@@ -327,7 +326,7 @@ export function Wizard() {
             <p className="text-xs text-ink-400">{arch.period_note}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={arch.price_label} hint="Your planned price. Example figures are fine at this stage." kind="user">
-                <NumberInput value={price} onChange={setPrice} prefix="₹" min={1} allowEmpty placeholder="e.g. 1800" />
+                <NumberInput value={price} onChange={setPrice} prefix={CUR} min={1} allowEmpty placeholder="e.g. 1800" />
               </Field>
               <Field label="Planned operating hours">
                 <Input value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. 6am–10pm, Mon–Sat" />
@@ -343,11 +342,11 @@ export function Wizard() {
                 <div className="text-sm font-medium">Current performance (leave unknown values empty)</div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {[
-                    ["monthly_sales", "Monthly sales (₹)"],
+                    ["monthly_sales", `Monthly sales (${CUR})`],
                     ["monthly_customers", `Monthly ${arch.unit_label}`],
                     ["conversion_rate", "Conversion rate (0–1)"],
                     ["repeat_rate", "Repeat-customer rate (0–1)"],
-                    ["current_marketing", "Current marketing (₹/month)"],
+                    ["current_marketing", `Current marketing (${CUR}/month)`],
                   ].map(([k, l]) => (
                     <Field key={k} label={l} kind={existing[k] !== undefined && existing[k] !== null ? "user" : undefined}>
                       <NumberInput value={existing[k] ?? null} onChange={(v) => setExisting({ ...existing, [k]: v })} allowEmpty />
@@ -375,10 +374,10 @@ export function Wizard() {
               {money0("Other fixed costs per month", otherFixed, setOtherFixed, "Software, maintenance, insurance, accounting.")}
               {money0("Marketing per month", marketing, setMarketing, "Drives awareness of a new business in the model.")}
               <Field label={`Variable cost per ${arch.unit_label.replace(/s$/, "")}`} hint={`Leave empty to assume ${pct(arch.params.variable_cost_ratio?.value)} of price (category default).`} kind={vcu === null ? "assumption" : "user"}>
-                <NumberInput value={vcu} onChange={setVcu} prefix="₹" allowEmpty placeholder="optional" />
+                <NumberInput value={vcu} onChange={setVcu} prefix={CUR} allowEmpty placeholder="optional" />
               </Field>
               <Field label="Typical local price (if known)" hint="What competitors charge. Leave empty if you have not checked yet; it becomes a flagged assumption." kind={refPrice === null ? "unknown" : "user"}>
-                <NumberInput value={refPrice} onChange={setRefPrice} prefix="₹" allowEmpty placeholder="optional" />
+                <NumberInput value={refPrice} onChange={setRefPrice} prefix={CUR} allowEmpty placeholder="optional" />
               </Field>
               <Field label="Desired break-even timeframe (months)">
                 <NumberInput value={breakEvenMonths} onChange={setBreakEvenMonths} allowEmpty suffix="months" />
@@ -425,7 +424,7 @@ export function Wizard() {
                 />
               </Field>
               {catchMode === "radius" ? (
-                <Field label={`Radius: ${radius.toFixed(1)} km`} hint={`Default for ${arch.label.toLowerCase()}: ${arch.default_catchment_km} km`}>
+                <Field label={`Radius: ${distance(radius)}`} hint={`Default for ${arch.label.toLowerCase()}: ${distance(arch.default_catchment_km)}`}>
                   <input type="range" min={0.5} max={6} step={0.1} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" aria-label="Catchment radius" />
                 </Field>
               ) : (
@@ -467,7 +466,7 @@ export function Wizard() {
                 <div className="num">{money((rent || 0) + (payroll || 0) + (utilities || 0) + (otherFixed || 0) + (marketing || 0))} fixed</div>
                 <div className="text-ink-300">Startup: <span className="num">{money(startup)}</span></div>
                 <div className="text-ink-300">Location: {place?.address}</div>
-                <div className="text-ink-300">Catchment: {catchMode === "radius" ? `${radius.toFixed(1)} km radius` : `${minutes} min ${profile}`}</div>
+                <div className="text-ink-300">Catchment: {catchMode === "radius" ? `${distance(radius)} radius` : `${minutes} min ${profile}`}</div>
               </div>
             </div>
             <div>

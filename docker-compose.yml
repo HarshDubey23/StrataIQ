@@ -1,5 +1,5 @@
 # Local full stack: PostgreSQL+PostGIS, FastAPI backend, Next.js frontend.
-#   cp .env.example .env   (optional: add ORS_API_KEY / ANTHROPIC_API_KEY / CONTACT_EMAIL)
+#   cp .env.example .env   (optional: add ORS_API_KEY / AI_API_KEY / CONTACT_EMAIL)
 #   docker compose up --build
 #   open http://localhost:3000
 services:

@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/components/AppShell";
 import { useProject } from "@/components/ProjectContext";
-import { Badge, Button, ButtonLink, Card, CardHeader, cn, EmptyState, ErrorState, Evidence, Metric, Notice, Segmented, Skeleton } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, CardHeader, cn, EmptyState, ErrorState, Evidence, Notice, Segmented, Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { money, num, pct } from "@/lib/format";
 import type { Decision, Goal } from "@/lib/types";
 
 const VERDICT: Record<Decision["verdict"], { label: string; tone: "ok" | "warn" | "danger" | "neutral"; icon: typeof CheckCircle2 }> = {
-  potentially_viable: { label: "Potentially viable under assumptions", tone: "ok", icon: CheckCircle2 },
-  financially_challenging: { label: "Financially challenging under current inputs", tone: "danger", icon: TrendingDown },
+  potentially_viable: { label: "Can work under these inputs", tone: "ok", icon: CheckCircle2 },
+  financially_challenging: { label: "Loses money as planned", tone: "danger", icon: TrendingDown },
   high_uncertainty: { label: "High uncertainty", tone: "warn", icon: CircleHelp },
   more_evidence_required: { label: "More evidence required", tone: "warn", icon: AlertTriangle },
   no_conclusion: { label: "No conclusion yet", tone: "neutral", icon: CircleHelp },
@@ -65,7 +65,7 @@ export default function Decisions() {
   return (
     <main className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-ink-300">Optimise recommendations for</div>
+        <div className="text-sm text-ink-300">Optimize recommendations for</div>
         <Segmented<Goal>
           value={goal}
           onChange={changeGoal}
@@ -81,27 +81,28 @@ export default function Decisions() {
         </Notice>
       ) : null}
 
-      <Card className={cn("p-5", V.tone === "ok" ? "border-emerald-500/30" : V.tone === "danger" ? "border-red-500/30" : "border-amber-500/30")}>
-        <div className="flex items-start gap-3">
-          <V.icon className={cn("mt-0.5 h-6 w-6 shrink-0", V.tone === "ok" ? "text-emerald-700" : V.tone === "danger" ? "text-red-700" : "text-amber-700")} />
-          <div className="space-y-2">
-            <Badge tone={V.tone === "neutral" ? "neutral" : V.tone}>{V.label}</Badge>
-            <p className="text-lg leading-snug text-ink-100">{d.headline}</p>
-            <p className="text-xs text-ink-400">Ranked for: {d.objective_label}. Model {d.model_version}. {d.method_note}</p>
-          </div>
-        </div>
-      </Card>
+      <section className={cn("wipe border border-night p-6 text-white", V.tone === "ok" ? "bg-ok" : V.tone === "danger" ? "bg-danger" : "bg-night")}>
+        <h1 className="font-display flex items-center gap-3 text-[40px] leading-[1.05]"><V.icon className="h-8 w-8 shrink-0" /> {V.label}</h1>
+        <p className="mt-2 max-w-[66ch] text-[16px] leading-snug">{d.headline}</p>
+      </section>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Revenue / mo" value={money(fs.revenue, { compact: true })} kind="model" sub={fs.scenario} />
-        <Metric label="Operating cost / mo" value={money(fs.operating_cost, { compact: true })} kind="model" />
-        <Metric label="Operating profit / mo" value={<span className={fs.operating_profit < 0 ? "text-red-700" : "text-emerald-700"}>{money(fs.operating_profit, { compact: true })}</span>} kind="model" sub={`P10 ${money(fs.profit_p10, { compact: true })} · P90 ${money(fs.profit_p90, { compact: true })}`} />
-        <Metric label="Modeled P(loss)" value={pct(fs.prob_loss)} kind="model" sub="conditional on assumptions" />
-        <Metric label="Break-even" value={fs.break_even_units === null ? "n/a" : num(fs.break_even_units)} sub={`${fs.unit_label} / month`} kind="model" />
-        <Metric label="Capacity use" value={pct(fs.utilization)} kind="model" />
-        <Metric label="Cash before opening" value={money(fs.startup_cost, { compact: true })} kind="user" />
-        <Metric label="Payback" value={fs.payback_months ? `${num(fs.payback_months, 1)} months` : "not reached"} kind="model" />
+      <div className="grid border-l border-t border-night bg-white sm:grid-cols-3 lg:grid-cols-6">
+        {[
+          { l: "Profit / month", v: <span className={fs.operating_profit < 0 ? "text-danger" : "text-ok"}>{money(fs.operating_profit, { compact: true })}</span>, n: `${money(fs.profit_p10, { compact: true })} to ${money(fs.profit_p90, { compact: true })}` },
+          { l: "Revenue / month", v: money(fs.revenue, { compact: true }), n: fs.scenario },
+          { l: "Costs / month", v: money(fs.operating_cost, { compact: true }), n: `${pct(fs.utilization)} of capacity used` },
+          { l: "To break even", v: fs.break_even_units === null ? "Not reached" : num(fs.break_even_units), n: `${fs.unit_label} a month` },
+          { l: "Chance of a losing month", v: pct(fs.prob_loss), n: "Under these inputs" },
+          { l: "Payback", v: fs.payback_months ? `${num(fs.payback_months, 1)} mo` : "Not reached", n: `${money(fs.startup_cost, { compact: true })} to open` },
+        ].map((x, i) => (
+          <div key={x.l} className="rise border-b border-r border-night p-4" style={{ animationDelay: `${150 + i * 45}ms` }}>
+            <div className="text-[13px] text-ink-300">{x.l}</div>
+            <div className="num font-display mt-1.5 text-[30px] leading-none">{x.v}</div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-ink-400"><span aria-hidden className="h-2 w-3 shrink-0 border border-night bg-stone" title="Estimated" /> <span className="truncate">{x.n}</span></div>
+          </div>
+        ))}
       </div>
+      <p className="-mt-3 text-[12px] text-ink-400">Ranked for {d.objective_label}. {d.method_note}</p>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-5">
@@ -131,14 +132,14 @@ export default function Decisions() {
             <CardHeader title="Scenario ranking" subtitle={`By ${d.objective_label}`} />
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
-                <thead><tr className="border-b border-black/[0.06] text-left text-xs text-ink-400"><th className="px-3 py-2 font-normal">#</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Units</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">P10</th><th className="text-right font-normal">P(loss)</th><th className="px-3 text-right font-normal">Payback</th></tr></thead>
+                <thead><tr className="border-b border-black/[0.06] text-left text-xs text-ink-400"><th className="px-3 py-2 font-normal">#</th><th className="font-normal">Scenario</th><th className="text-right font-normal">Sales</th><th className="text-right font-normal">Profit / mo</th><th className="text-right font-normal">Bad month</th><th className="text-right font-normal">Loss risk</th><th className="px-3 text-right font-normal">Payback</th></tr></thead>
                 <tbody>
                   {d.ranking.map((r) => (
-                    <tr key={r.scenario_id} className={cn("border-b border-black/[0.06]/60", r.rank === 1 && "bg-accent/5")}>
+                    <tr key={r.scenario_id} className={cn("border-b border-black/[0.06]/60", r.rank === 1 && "bg-accent-dim")}>
                       <td className="num px-3 py-2">{r.rank}</td>
                       <td>{r.name} {r.is_baseline && <span className="text-xs text-ink-500">(baseline)</span>}</td>
                       <td className="num text-right">{num(r.units)}</td>
-                      <td className={cn("num text-right", r.profit < 0 && "text-red-700")}>{money(r.profit, { compact: true })}</td>
+                      <td className={cn("num text-right", r.profit < 0 && "text-danger")}>{money(r.profit, { compact: true })}</td>
                       <td className="num text-right">{money(r.profit_p10, { compact: true })}</td>
                       <td className="num text-right">{pct(r.prob_loss)}</td>
                       <td className="num px-3 text-right">{r.payback_months ? `${num(r.payback_months, 1)} mo` : "—"}</td>
@@ -170,7 +171,7 @@ export default function Decisions() {
 
         <div className="space-y-5">
           <Card>
-            <CardHeader title={<span className="flex items-center gap-1.5"><ListChecks className="h-4 w-4 text-accent" /> Recommended next actions</span>} />
+            <CardHeader title={<span className="flex items-center gap-1.5"><ListChecks className="h-4 w-4" /> What to do next</span>} />
             <ul className="divide-y divide-black/[0.06]">
               {d.next_actions.map((a, i) => (
                 <li key={i} className="space-y-1 p-3 text-sm">
@@ -200,13 +201,13 @@ export default function Decisions() {
               {d.drivers.map((x) => (
                 <div key={x.param} className="mb-1.5">
                   <div className="flex justify-between text-xs"><span className="text-ink-300">{x.label}</span><span className="num">{x.spearman_rho.toFixed(2)}</span></div>
-                  <div className="mt-1 h-1.5 rounded bg-ink-800"><div className={cn("h-1.5 rounded", x.spearman_rho >= 0 ? "bg-model" : "bg-red-400")} style={{ width: `${Math.abs(x.spearman_rho) * 100}%` }} /></div>
+                  <div className="mt-1 h-1.5 rounded bg-ink-800"><div className={cn("h-1.5 rounded", x.spearman_rho >= 0 ? "bg-stone" : "bg-brick")} style={{ width: `${Math.abs(x.spearman_rho) * 100}%` }} /></div>
                 </div>
               ))}
-              <p className="mt-2 text-[11px] text-ink-500">Rank correlation with profit across Monte Carlo draws (model attribution, not causation).</p>
+              <p className="mt-2 text-[11px] text-ink-500">How closely each assumption moved with profit across market scenarios. It shows association, not cause.</p>
             </Card>
           )}
-          <ButtonLink href={`/app/projects/${p.id}/report`} variant="primary" className="w-full">Create feasibility report</ButtonLink>
+          <ButtonLink href={`/app/projects/${p.id}/report`} variant="primary" size="lg" className="w-full">Create the report</ButtonLink>
         </div>
       </div>
     </main>

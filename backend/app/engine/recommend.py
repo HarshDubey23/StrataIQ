@@ -95,7 +95,7 @@ def _gaps(evidence: dict, result: dict) -> list[dict]:
         gaps.append({"key": "population_estimate", "severity": "high", "text": "Population is a rough building-count estimate because WorldPop was unavailable.",
                      "action": "Reload market data later, or enter a census/ward population figure for the catchment."})
     if evidence.get("catchment_method") == "radius":
-        gaps.append({"key": "catchment_radius", "severity": "low", "text": "Catchment is a straight-line radius, not a travel-time area.", "action": "Configure a routing key to use travel-time catchments."})
+        gaps.append({"key": "catchment_radius", "severity": "low", "text": "Catchment is a straight-line radius, not a travel-time area.", "action": "Check how long the drive or walk really takes from the neighborhoods you are counting on."})
     cov = evidence.get("coverage") or {}
     if cov.get("level") in ("low", "unknown"):
         gaps.append({"key": "coverage", "severity": "medium", "text": cov.get("note") or "Map coverage looks thin in this area.", "action": "Verify local businesses before making a high-cost location decision."})
@@ -121,13 +121,13 @@ def decide(scenarios: list[dict], objective: Objective, evidence: dict, archetyp
 
     if p50 is not None and p50 > 0 and (pl is None or pl < 0.25):
         verdict = "potentially_viable"
-        head = f"'{best['name']}' appears financially viable under the current assumptions"
+        head = f"The '{best['name']}' plan appears financially viable under the current assumptions"
     elif p50 is not None and p50 < 0 and (pl is None or pl > 0.7):
         verdict = "financially_challenging"
-        head = f"'{best['name']}' is financially challenging under the current inputs"
+        head = f"The '{best['name']}' plan is financially challenging under the current inputs"
     else:
         verdict = "high_uncertainty"
-        head = f"'{best['name']}' could go either way under the current assumptions"
+        head = f"The '{best['name']}' plan could go either way under the current assumptions"
     if high_gaps:
         head += ", but key evidence is missing and the result should be treated as provisional."
         if verdict == "high_uncertainty":
@@ -140,8 +140,8 @@ def decide(scenarios: list[dict], objective: Objective, evidence: dict, archetyp
     thr = ((r.get("sensitivity") or {}).get("thresholds") or {}).get("participation_break_even")
     part = r["parameters"]["participation"]["value"]
     reconsider = (
-        f"Reconsider if field evidence suggests fewer than {thr * 100:.1f}% of residents use this category (model assumes {part * 100:.1f}%)."
-        if thr else "Reconsider if verified demand is materially below the modeled estimate."
+        f"Field evidence suggests fewer than {thr * 100:.1f}% of residents use this category (model assumes {part * 100:.1f}%)."
+        if thr else "Verified demand comes in well below this estimate."
     )
     if best["id"] != base["id"]:
         d_profit = (r["finance"]["operating_profit"] or 0) - (rb["finance"]["operating_profit"] or 0)
@@ -161,7 +161,7 @@ def decide(scenarios: list[dict], objective: Objective, evidence: dict, archetyp
         cur = r["summary"]["price"]
         if best_pt["price"] and abs(best_pt["price"] - cur) / cur > 0.08 and (best_pt["profit"] or 0) > (r["finance"]["operating_profit"] or 0):
             recs.append({
-                "action": f"Test a price near {_money(best_pt['price'])} (currently {_money(cur)}).",
+                "action": f"Test a price near {_money(best_pt['price'])} (now {_money(cur)}).",
                 "reason": f"In the price sweep, modeled profit peaks around {_money(best_pt['price'])} at {_money(best_pt['profit'])}/month.",
                 "change_vs_baseline": {"operating_profit": round((best_pt['profit'] or 0) - (r['finance']['operating_profit'] or 0), 2)},
                 "main_uncertainty": "Price sensitivity and competitor prices are assumptions.",

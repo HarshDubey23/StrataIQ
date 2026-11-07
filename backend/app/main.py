@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from . import ratelimit
 from .api import assistant, auth, catalog, decisions, demo, explore, field, genome, insights, projects, quickstart, scenarios, voice
 from .config import get_settings
 from .db import get_engine
@@ -72,6 +73,18 @@ async def ensure_migrated(request: Request, call_next):
     return await call_next(request)
 
 
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    if request.url.path == "/api/health":
+        return await call_next(request)
+    bucket, limit, window = ratelimit.rule_for(request.method, request.url.path)
+    wait = ratelimit.retry_after(ratelimit.client_ip(request), bucket, limit, window)
+    if wait:
+        return JSONResponse(status_code=429, headers={"Retry-After": str(wait)},
+                            content={"detail": f"Too many requests. Please try again in {wait} seconds."})
+    return await call_next(request)
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_handler(request: Request, exc: RequestValidationError):
     errors = [{"field": ".".join(str(x) for x in e["loc"][1:]), "message": e["msg"]} for e in exc.errors()]
@@ -94,9 +107,9 @@ def health():
         db_ok = False
         import re
         err = re.sub(r"://[^@\s]+@", "://***@", f"{type(e).__name__}: {e}")[:300]
-    from .engine.economics.income import GRID_FILE, hces
+    from .engine.economics.income import hces
     body = {"status": "ok" if db_ok else "degraded", "db": db_ok, "model_version": MODEL_VERSION,
-            "real_data": {"hces_2023_24": bool(hces().get("state_deciles")), "wealth_grid": GRID_FILE.exists()}}
+            "real_data": {"hces_2023_24": bool(hces().get("state_deciles"))}}
     if err:
         body["db_error"] = err
     return JSONResponse(status_code=200 if db_ok else 503, content=body)

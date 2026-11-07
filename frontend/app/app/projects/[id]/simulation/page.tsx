@@ -9,7 +9,7 @@ import { useProject } from "@/components/ProjectContext";
 import { DataLineage, IncomeMix } from "@/components/RealData";
 import { Badge, Button, Card, CardHeader, cn, Dialog, EmptyState, ErrorState, Evidence, Field, Input, Metric, Notice, NumberInput, Segmented, Select, Spinner, statusToKind, Tip } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct, signed } from "@/lib/format";
+import { money, num, pct, signed, CUR } from "@/lib/format";
 import type { CompareRow, MarketData, Run, Scenario, ScenarioInputs, SimResult } from "@/lib/types";
 
 const ADV_PARAMS = ["participation", "frequency", "beta_price", "distance_decay", "awareness_base", "competitor_price_ratio", "competitor_quality"];
@@ -175,7 +175,7 @@ export default function SimulationLab() {
               {s.name}
               {s.is_baseline && <span className="ml-1 opacity-60">(baseline)</span>}
               {!s.latest_run && <span className="ml-1 opacity-60">· not run</span>}
-              {s.latest_run?.stale && <span className="ml-1 text-amber-700">· changed</span>}
+              {s.latest_run?.stale && <span className="ml-1 text-warn">· changed</span>}
             </button>
           ))}
         </div>
@@ -199,7 +199,7 @@ export default function SimulationLab() {
             ) : (
               <button onClick={() => setRenaming(true)} className="font-display truncate text-left text-lg hover:text-accent" title="Rename">{sel.name}</button>
             )}
-            {!sel.is_baseline && <button onClick={() => setDelOpen(true)} aria-label="Delete scenario" className="text-ink-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>}
+            {!sel.is_baseline && <button onClick={() => setDelOpen(true)} aria-label="Delete scenario" className="text-ink-500 hover:text-danger"><Trash2 className="h-4 w-4" /></button>}
           </div>
 
           <Field label="Location">
@@ -210,7 +210,7 @@ export default function SimulationLab() {
 
           <Field label={`${arch.price_label}: ${money(draft.price)}`} kind="user">
             <input type="range" min={Math.max(1, Math.round(sel.inputs.price * 0.4))} max={Math.round(sel.inputs.price * 2)} step={Math.max(1, Math.round(sel.inputs.price / 100))} value={draft.price} onChange={(e) => set("price", Number(e.target.value))} className="w-full" aria-label="Price" />
-            <NumberInput value={draft.price} onChange={(v) => v && set("price", v)} prefix="₹" min={1} />
+            <NumberInput value={draft.price} onChange={(v) => v && set("price", v)} prefix={CUR} min={1} />
           </Field>
           <Field label={`Marketing / month: ${money(draft.marketing_spend)}`} kind="user">
             <input type="range" min={0} max={Math.max(100000, sel.inputs.marketing_spend * 3)} step={1000} value={draft.marketing_spend} onChange={(e) => set("marketing_spend", Number(e.target.value))} className="w-full" aria-label="Marketing spend" />
@@ -225,12 +225,12 @@ export default function SimulationLab() {
           >
             <div className="flex items-center gap-2 text-xs">
               <Select aria-label="Opening time" className="h-8" value={draft.offer?.open_hour ?? ""} onChange={(e) => set("offer", { open_hour: e.target.value === "" ? null : Number(e.target.value), close_hour: draft.offer?.close_hour ?? 22, weekend_open: draft.offer?.weekend_open ?? true, attributes: draft.offer?.attributes ?? {} })}>
-                <option value="">default</option>
+                <option value="">Auto</option>
                 {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
               </Select>
               <span className="text-ink-400">to</span>
               <Select aria-label="Closing time" className="h-8" value={draft.offer?.close_hour ?? ""} onChange={(e) => set("offer", { open_hour: draft.offer?.open_hour ?? 6, close_hour: e.target.value === "" ? null : Number(e.target.value), weekend_open: draft.offer?.weekend_open ?? true, attributes: draft.offer?.attributes ?? {} })}>
-                <option value="">default</option>
+                <option value="">Auto</option>
                 {Array.from({ length: 24 }, (_, h) => h + 1).map((h) => <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>)}
               </Select>
               <label className="ml-auto flex items-center gap-1 text-ink-300">
@@ -251,14 +251,14 @@ export default function SimulationLab() {
             <div className="grid grid-cols-2 gap-2 p-3 pt-0">
               {(["rent", "payroll", "utilities", "other_fixed"] as const).map((k) => (
                 <Field key={k} label={k === "other_fixed" ? "Other fixed" : k[0].toUpperCase() + k.slice(1)}>
-                  <NumberInput value={draft[k]} onChange={(v) => set(k, v ?? 0)} prefix="₹" min={0} />
+                  <NumberInput value={draft[k]} onChange={(v) => set(k, v ?? 0)} prefix={CUR} min={0} />
                 </Field>
               ))}
               <Field label="Variable cost / unit" kind={draft.variable_cost_per_unit === null ? "assumption" : "user"}>
-                <NumberInput value={draft.variable_cost_per_unit} onChange={(v) => set("variable_cost_per_unit", v)} prefix="₹" allowEmpty placeholder="default" />
+                <NumberInput value={draft.variable_cost_per_unit} onChange={(v) => set("variable_cost_per_unit", v)} prefix={CUR} allowEmpty placeholder="default" />
               </Field>
               <Field label="Startup cost">
-                <NumberInput value={draft.startup_cost} onChange={(v) => set("startup_cost", v ?? 0)} prefix="₹" min={0} />
+                <NumberInput value={draft.startup_cost} onChange={(v) => set("startup_cost", v ?? 0)} prefix={CUR} min={0} />
               </Field>
             </div>
           </details>
@@ -267,7 +267,7 @@ export default function SimulationLab() {
             <summary className="label-mono cursor-pointer px-3 py-2.5 text-ink-200">Market assumptions (advanced)</summary>
             <div className="space-y-3 p-3 pt-0">
               <Field label="Typical local price" kind={draft.reference_price ? "user" : "unknown"} hint="Leave empty to derive it from competitor prices you entered, or fall back to your baseline price.">
-                <NumberInput value={draft.reference_price} onChange={(v) => set("reference_price", v)} prefix="₹" allowEmpty placeholder="unknown" />
+                <NumberInput value={draft.reference_price} onChange={(v) => set("reference_price", v)} prefix={CUR} allowEmpty placeholder="unknown" />
               </Field>
               {ADV_PARAMS.map((k) => {
                 const pd = arch.params[k];
@@ -295,7 +295,7 @@ export default function SimulationLab() {
             </div>
           </details>
 
-          <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-ink-100/10 bg-white/90 p-3 backdrop-blur-xl">
+          <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-ink-100/10 bg-white/90 p-3 -xl">
             <Button variant="secondary" size="sm" onClick={save} loading={saving} disabled={!dirty}><Save className="h-3.5 w-3.5" /> Save</Button>
             <Button variant="primary" className="flex-1" onClick={run} loading={running} disabled={!hasSnapshot}>
               <Play className="h-4 w-4" /> {res && !dirty && !stale ? "Recalculate" : "Run simulation"}
@@ -304,7 +304,7 @@ export default function SimulationLab() {
           {!hasSnapshot && market && (
             <Notice tone="warn">No market data for this location yet. <Link className="text-accent underline" href={`/app/projects/${p.id}/market`}>Load it on the Market map</Link>.</Notice>
           )}
-          {(dirty || stale) && res && <p className="text-xs text-amber-700">Inputs changed since the last run. Results shown are from the previous run.</p>}
+          {(dirty || stale) && res && <p className="text-xs text-warn">Inputs changed since the last run. Results shown are from the previous run.</p>}
         </aside>
 
         {/* CENTER: map + analysis */}
@@ -328,7 +328,7 @@ export default function SimulationLab() {
               onCandidateClick={(id) => setDraftLoc(id)}
             />
             <div className="panel absolute bottom-8 left-2 z-10 space-y-1.5 rounded-md p-2 text-[11px]">
-              <Segmented value={agentColor} onChange={setAgentColor} options={[{ value: "choice", label: "Colour by choice" }, { value: "red", label: "All agents" }]} />
+              <Segmented value={agentColor} onChange={setAgentColor} options={[{ value: "choice", label: "Color by choice" }, { value: "red", label: "All agents" }]} />
               {agentColor === "choice" ? (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-ink-300">
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" /> chooses you</span>
@@ -385,8 +385,8 @@ export default function SimulationLab() {
                           <tr key={s.label} className="border-t border-black/[0.06]">
                             <td className="py-2">{s.label}</td>
                             <td className="num text-right">{num(s.units)}</td>
-                            <td className={cn("num text-right", s.profit < 0 && "text-red-700")}>{money(s.profit)}</td>
-                            <td className={cn("num text-right", s.delta_profit < 0 ? "text-red-700" : "text-emerald-700")}>{money(s.delta_profit, { sign: true })}</td>
+                            <td className={cn("num text-right", s.profit < 0 && "text-danger")}>{money(s.profit)}</td>
+                            <td className={cn("num text-right", s.delta_profit < 0 ? "text-danger" : "text-ok")}>{money(s.delta_profit, { sign: true })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -413,8 +413,8 @@ export default function SimulationLab() {
                           ["Revenue / mo", (m) => money(m.revenue, { compact: true })],
                           ["Operating cost / mo", (m) => money(m.operating_cost, { compact: true })],
                           ["Operating profit / mo", (m) => money(m.operating_profit, { compact: true })],
-                          ["Profit P10 – P90", (m) => `${money(m.profit_p10, { compact: true })} – ${money(m.profit_p90, { compact: true })}`],
-                          ["Modeled P(loss)", (m) => pct(m.prob_loss)],
+                          ["Profit range", (m) => `${money(m.profit_p10, { compact: true })} – ${money(m.profit_p90, { compact: true })}`],
+                          ["Chance of a monthly loss", (m) => pct(m.prob_loss)],
                           ["Break-even units", (m) => num(m.break_even_units)],
                           ["Capacity use", (m) => pct(m.utilization)],
                           ["Payback", (m) => (m.payback_months ? `${num(m.payback_months, 1)} mo` : "not reached")],
@@ -469,13 +469,13 @@ export default function SimulationLab() {
                 <Metric
                   label="Operating profit / mo"
                   className="col-span-2"
-                  value={<span className={res.finance.operating_profit < 0 ? "text-red-700" : "text-emerald-700"}>{money(res.finance.operating_profit)}</span>}
+                  value={<span className={res.finance.operating_profit < 0 ? "text-danger" : "text-ok"}>{money(res.finance.operating_profit)}</span>}
                   kind="model"
                   delta={d(res.finance.operating_profit, baseRes?.finance.operating_profit) !== null ? money(d(res.finance.operating_profit, baseRes?.finance.operating_profit), { sign: true }) : null}
                   deltaGood={(d(res.finance.operating_profit, baseRes?.finance.operating_profit) ?? 0) >= 0}
-                  sub={res.monte_carlo ? `P10 ${money(res.monte_carlo.profit.p10, { compact: true })} · P90 ${money(res.monte_carlo.profit.p90, { compact: true })}` : undefined}
+                  sub={res.monte_carlo ? `Range ${money(res.monte_carlo.profit.p10, { compact: true })} to ${money(res.monte_carlo.profit.p90, { compact: true })}` : undefined}
                 />
-                <Metric label="Modeled P(loss)" value={pct(res.monte_carlo?.prob_loss)} kind="model" delta={d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) !== null ? `${signed((d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) * 100)} pts` : null} deltaGood={(d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) <= 0} />
+                <Metric label="Chance of a monthly loss" value={pct(res.monte_carlo?.prob_loss)} kind="model" delta={d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) !== null ? `${signed((d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) * 100)} pts` : null} deltaGood={(d(res.monte_carlo?.prob_loss, baseRes?.monte_carlo?.prob_loss) ?? 0) <= 0} />
                 <Metric label="Break-even" value={res.finance.break_even_units === null ? "n/a" : num(res.finance.break_even_units)} sub={res.unit_label} kind="model" />
                 <Metric label="Capacity use" value={pct(res.finance.utilization)} sub={`of ${num(res.summary.capacity_units)}`} kind="model" />
                 <Metric label="Payback" value={res.finance.payback_months ? `${num(res.finance.payback_months, 1)} mo` : "not reached"} kind="model" />
@@ -510,7 +510,7 @@ export default function SimulationLab() {
                   </div>
                 ))}
                 <p className="text-[10px] text-ink-500">{res.income
-                  ? "Share of each spending class (India's bottom 40% / middle 40% / top 20%, sized from official data for this area) whose willingness to pay exceeds your price."
+                  ? "Share of each spending class (the US bottom 40% / middle 40% / top 20%, sized from official data for this area) whose willingness to pay exceeds your price."
                   : "Share of each synthetic segment whose assumed willingness to pay exceeds your price."}</p>
               </Card>
               {res.income && <IncomeMix income={res.income} />}

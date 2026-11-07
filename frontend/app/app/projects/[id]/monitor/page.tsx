@@ -6,7 +6,7 @@ import { CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, Respo
 import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Evidence, Field, Input, Notice, NumberInput, Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct, when } from "@/lib/format";
+import { money, num, pct, when, CUR } from "@/lib/format";
 
 interface Monitor {
   forecast: { run_id: string; run_at: string; units: number; revenue: number; costs: number; units_p10: number | null; units_p90: number | null; unit_label: string } | null;
@@ -67,13 +67,13 @@ export default function MonitorPage() {
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <ComposedChart data={data} margin={{ top: 10, right: 16, left: 4, bottom: 4 }}>
-                  <CartesianGrid stroke="#E7E4DC" vertical={false} />
-                  <XAxis dataKey="period" stroke="#75716A" fontSize={11} />
-                  <YAxis stroke="#75716A" fontSize={11} width={48} />
-                  <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #E7E4DC", fontSize: 12 }} />
-                  {f?.units_p10 != null && f?.units_p90 != null && <ReferenceArea y1={f.units_p10} y2={f.units_p90} fill="#0F766E" fillOpacity={0.08} />}
-                  {f && <ReferenceLine y={f.units} stroke="#0F766E" strokeDasharray="4 3" label={{ value: "forecast", fill: "#0F766E", fontSize: 10, position: "right" }} />}
-                  <Line dataKey="actual" stroke="#C59BFF" strokeWidth={2} dot={{ r: 3 }} />
+                  <CartesianGrid stroke="#d3dbe5" vertical={false} />
+                  <XAxis dataKey="period" stroke="#53617a" fontSize={11} />
+                  <YAxis stroke="#53617a" fontSize={11} width={48} />
+                  <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #d3dbe5", fontSize: 12 }} />
+                  {f?.units_p10 != null && f?.units_p90 != null && <ReferenceArea y1={f.units_p10} y2={f.units_p90} fill="#1d4f91" fillOpacity={0.08} />}
+                  {f && <ReferenceLine y={f.units} stroke="#1d4f91" strokeDasharray="4 3" label={{ value: "forecast", fill: "#1d4f91", fontSize: 10, position: "right" }} />}
+                  <Line dataKey="actual" stroke="#1d4f91" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             )}
@@ -92,7 +92,7 @@ export default function MonitorPage() {
                       <td className="num text-right">{a.error ? `${a.error.units_abs > 0 ? "+" : ""}${num(a.error.units_abs)} (${pct(a.error.units_pct)})` : "—"}</td>
                       <td className="num text-right">{money(a.revenue, { compact: true })}</td>
                       <td className="px-3"><Evidence kind="user" label="User-reported" /></td>
-                      <td><button aria-label={`Delete ${a.period}`} onClick={async () => { await api(`/projects/${p.id}/actual-outcomes/${a.period}`, { method: "DELETE" }); load(); }} className="px-2 text-ink-500 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></button></td>
+                      <td><button aria-label={`Delete ${a.period}`} onClick={async () => { await api(`/projects/${p.id}/actual-outcomes/${a.period}`, { method: "DELETE" }); load(); }} className="px-2 text-ink-500 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -105,11 +105,11 @@ export default function MonitorPage() {
           <form onSubmit={add} className="space-y-3 p-4">
             <Field label="Month"><Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} required /></Field>
             <Field label={`Actual ${f?.unit_label || "units"}`}><NumberInput value={units} onChange={setUnits} allowEmpty /></Field>
-            <Field label="Revenue"><NumberInput value={revenue} onChange={setRevenue} prefix="₹" allowEmpty /></Field>
-            <Field label="Total costs"><NumberInput value={costs} onChange={setCosts} prefix="₹" allowEmpty /></Field>
+            <Field label="Revenue"><NumberInput value={revenue} onChange={setRevenue} prefix={CUR} allowEmpty /></Field>
+            <Field label="Total costs"><NumberInput value={costs} onChange={setCosts} prefix={CUR} allowEmpty /></Field>
             <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. launch offer running" /></Field>
             <Button type="submit" variant="primary" className="w-full" loading={busy}>Save</Button>
-            <p className="text-[11px] text-ink-500">Figures are labelled user-reported and are not independently verified. Saving the same month again overwrites it.</p>
+            <p className="text-[11px] text-ink-500">Figures are labeled user-reported and are not independently verified. Saving the same month again overwrites it.</p>
           </form>
         </Card>
       </div>

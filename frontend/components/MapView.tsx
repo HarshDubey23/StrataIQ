@@ -1,5 +1,6 @@
 "use client";
 
+import { US_MARKET } from "@/lib/format";
 import maplibregl, { type GeoJSONSource, type Map as MLMap } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { attachDeck, C, enhanceMap, metersPerZoneRadius, pickStyle, popColor, type DeckHandle } from "@/lib/mapkit";
@@ -119,14 +120,14 @@ export default function MapView(props: Props) {
       }
       map.current = m;
       m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
-      m.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+      m.addControl(new maplibregl.ScaleControl({ unit: US_MARKET ? "imperial" : "metric" }), "bottom-left");
       m.on("error", (e) => {
         const msg = String((e as { error?: { message?: string } }).error?.message || "");
         if (msg.includes("style")) setStyleNote("Base map tiles could not be loaded. Data layers still work.");
       });
       m.on("load", () => {
         if (!m) return;
-        enhanceMap(m);
+        enhanceMap(m, { labels: true });
         attachDeck(m).then((d) => {
           if (cancelled || !d) return;
           deck.current = d;
@@ -142,15 +143,15 @@ export default function MapView(props: Props) {
         m.addSource("siq-activity", { type: "geojson", data: EMPTY });
         m.addSource("siq-agents", { type: "geojson", data: EMPTY });
         m.addSource("siq-comps", { type: "geojson", data: EMPTY });
-        m.addLayer({ id: "siq-catchment-fill", type: "fill", source: "siq-catchment", paint: { "fill-color": "#2F49FF", "fill-opacity": 0.035 } });
-        m.addLayer({ id: "siq-catchment-line", type: "line", source: "siq-catchment", paint: { "line-color": "#2F49FF", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.8 } });
+        m.addLayer({ id: "siq-catchment-fill", type: "fill", source: "siq-catchment", paint: { "fill-color": "#F2C94C", "fill-opacity": 0.035 } });
+        m.addLayer({ id: "siq-catchment-line", type: "line", source: "siq-catchment", paint: { "line-color": "#F2C94C", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.8 } });
         m.addLayer({
           id: "siq-zones",
           type: "circle",
           source: "siq-zones",
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 4, 14, 14, 16, 34],
-            "circle-color": ["interpolate", ["linear"], ["get", "v"], 0, "#dfe4ff", 0.25, "#b9c3ff", 0.5, "#8a9bff", 0.75, "#5a72ff", 1, "#2f49ff"],
+            "circle-color": ["interpolate", ["linear"], ["get", "v"], 0, "#7fa3d1", 0.25, "#a9c4e4", 0.5, "#c8daee", 0.75, "#e6eef7", 1, "#ffffff"],
             "circle-opacity": 0.5,
             "circle-blur": 0.6,
           },
@@ -159,7 +160,7 @@ export default function MapView(props: Props) {
           id: "siq-activity",
           type: "circle",
           source: "siq-activity",
-          paint: { "circle-radius": 3, "circle-color": "#a9a59b", "circle-opacity": 0.8, "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1 },
+          paint: { "circle-radius": 3, "circle-color": "#a9c4e4", "circle-opacity": 0.8, "circle-stroke-color": "#0F1F3D", "circle-stroke-width": 1 },
         });
         m.addLayer({
           id: "siq-agents",
@@ -188,7 +189,7 @@ export default function MapView(props: Props) {
           paint: {
             "circle-radius": 5.5,
             "circle-color": ["get", "c"],
-            "circle-stroke-color": ["case", ["boolean", ["get", "hyp"], false], "#ffffff", "#FFFFFF"],
+            "circle-stroke-color": "#0F1F3D",
             "circle-stroke-width": ["case", ["boolean", ["get", "hyp"], false], 2, 1.5],
             "circle-opacity": ["case", ["boolean", ["get", "off"], false], 0.35, 1],
           },
@@ -263,7 +264,7 @@ export default function MapView(props: Props) {
     const m = map.current;
     if (!ready || !m) return;
     const mode = props.agentColor || "red";
-    const color = (choice: number) => (mode === "red" ? "#E5484D" : choice === 0 ? "#2F49FF" : choice < 0 ? "#A9A59B" : "#E5484D");
+    const color = (choice: number) => (mode === "red" ? "#A9C4E4" : choice === 0 ? "#F2C94C" : choice < 0 ? "#6f97cb" : "#A9C4E4");
     (m.getSource("siq-agents") as GeoJSONSource).setData(fc((props.agents || []).map(([lat, lng, seg, ch]) => pt(lng, lat, { c: color(ch), s: seg, ch }))));
   }, [ready, props.agents, props.agentColor]);
 
@@ -282,7 +283,7 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const m = map.current;
     if (!ready || !m) return;
-    const col = { osm: "#F59E0B", fsq: "#F59E0B", user: "#7C3AED", hypothetical: "#7C3AED", demo: "#D97706", field: "#65A30D" };
+    const col = { osm: "#E98F86", fsq: "#E98F86", user: "#F2C94C", hypothetical: "#F2C94C", demo: "#E98F86", field: "#9FCBA8" };
     (m.getSource("siq-comps") as GeoJSONSource).setData(
       fc(
         (props.competitors || []).map((c) =>
@@ -300,16 +301,16 @@ export default function MapView(props: Props) {
       const d = document.createElement("button");
       d.type = "button";
       d.setAttribute("aria-label", `Candidate ${c.label}`);
-      d.style.cssText = `display:flex;align-items:center;gap:6px;padding:3px 8px 3px 4px;border-radius:999px;font:600 11px var(--font-inter-tight),sans-serif;cursor:pointer;
-        background:${c.active ? "#2F49FF" : "#FFFFFF"};color:${c.active ? "#F3F4F7" : "#131312"};border:1px solid ${c.active ? "#8A9BFF" : "#D8D4CA"};box-shadow:0 6px 16px -6px rgba(13,16,40,.35)`;
+      d.style.cssText = `display:flex;align-items:center;gap:6px;padding:3px 8px 3px 4px;font:600 12px var(--font-public),sans-serif;cursor:pointer;
+        background:${c.active ? "#F2C94C" : "#FFFFFF"};color:#0F1F3D;border:1px solid #0F1F3D`;
       const dot = document.createElement("span");
-      dot.style.cssText = `width:10px;height:10px;border-radius:999px;background:${c.active ? "#F3F4F7" : "#2F49FF"}`;
+      dot.style.cssText = `width:10px;height:10px;border-radius:999px;background:${c.active ? "#0F1F3D" : "#F2C94C"}`;
       const t = document.createElement("span");
       t.textContent = c.label;
       if (c.active) {
         dot.style.position = "relative";
         const ring = document.createElement("span");
-        ring.style.cssText = "position:absolute;inset:-4px;border-radius:999px;border:2px solid #F3F4F7;animation:ping-soft 1.8s cubic-bezier(.16,1,.3,1) infinite";
+        ring.style.cssText = "position:absolute;inset:-4px;border-radius:999px;border:2px solid #0F1F3D;animation:ping-soft 1.8s cubic-bezier(.16,1,.3,1) infinite";
         dot.append(ring);
       }
       d.append(dot, t);
@@ -378,7 +379,7 @@ export default function MapView(props: Props) {
           data: [...comps].filter((c) => c.name && !/^unnamed/i.test(c.name)).sort((a, b) => (w[b.id] || 0) - (w[a.id] || 0)).slice(0, 12),
           getPosition: (c: MapCompetitor) => [c.lng, c.lat, 120 + ((w[c.id] || 0) / wmax) * 520 + 30],
           getText: (c: MapCompetitor) => (c.name.length > 26 ? `${c.name.slice(0, 25)}…` : c.name),
-          getSize: 12, sizeUnits: "pixels", getColor: [19, 19, 18, 240], getTextAnchor: "middle", getAlignmentBaseline: "bottom",
+          getSize: 12, sizeUnits: "pixels", getColor: [15, 31, 61, 255], getTextAnchor: "middle", getAlignmentBaseline: "bottom",
           background: true, getBackgroundColor: [255, 255, 255, 235], getBorderColor: [0, 0, 0, 30], getBorderWidth: 1, backgroundPadding: [6, 3], fontFamily: "Inter Tight, system-ui, sans-serif",
           characterSet: "auto", updateTriggers: { getPosition: [wmax, Object.keys(w).length] },
         }),
@@ -394,7 +395,7 @@ export default function MapView(props: Props) {
         new DL.ColumnLayer({
           id: "opp-top", data: (props.opportunity || []).filter((o) => o.rank), diskResolution: 6, radius: 55, extruded: true, angle: 30,
           getPosition: (o: MapOpportunity) => [o.lng, o.lat], getElevation: (o: MapOpportunity) => 900 - 110 * ((o.rank || 1) - 1),
-          getFillColor: [69, 224, 168, 225], pickable: true,
+          getFillColor: [159, 203, 168, 235], pickable: true,
           onClick: (info: { object?: MapOpportunity }) => { if (info.object) handlers.current.onOpportunityClick?.(info.object); },
         }),
       (props.opportunity || []).some((o) => o.rank) &&
@@ -449,7 +450,7 @@ export default function MapView(props: Props) {
       {/* inline style: maplibre's .maplibregl-map sets position:relative, which would override a utility class */}
       <div ref={el} style={{ position: "absolute", inset: 0 }} />
       {!ready && !styleNote && <div className="absolute inset-0 flex items-center justify-center bg-ink-900 text-sm text-ink-400">Loading map…</div>}
-      {styleNote && <div className="absolute left-2 top-2 rounded bg-ink-900/90 px-2 py-1 text-xs text-amber-800">{styleNote}</div>}
+      {styleNote && <div className="absolute left-2 top-2 rounded bg-ink-900/90 px-2 py-1 text-xs text-warn">{styleNote}</div>}
     </div>
   );
 }

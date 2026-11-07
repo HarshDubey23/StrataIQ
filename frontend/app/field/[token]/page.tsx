@@ -59,7 +59,7 @@ export default function FieldApp() {
   const done = b.checklist.filter((t) => (b.counts[t.kind] ?? 0) >= t.target).length;
   return (
     <div className="mx-auto min-h-screen max-w-md pb-16">
-      <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-ink-950/90 px-5 pb-3 pt-4 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-ink-950/90 px-5 pb-3 pt-4 -xl">
         <div className="flex items-center gap-2.5">
           <LogoMark size={22} />
           <span className="text-[13px] font-medium">StrataIQ Field</span>
@@ -67,13 +67,13 @@ export default function FieldApp() {
             <span className="h-1.5 w-1.5 rounded-full bg-field" /> {b.request.status === "submitted" ? "Submitted" : "Collecting"}
           </span>
         </div>
-        <h1 className="font-display mt-3 text-[22px] font-medium leading-tight tracking-tight">{b.project.category} · {b.project.name}</h1>
+        <h1 className="font-display mt-3 text-[22px] font-medium leading-tight ">{b.project.category} · {b.project.name}</h1>
         {b.location && (
           <a href={`https://www.google.com/maps/search/?api=1&query=${b.location.lat},${b.location.lng}`} target="_blank" rel="noreferrer" className="mt-1 flex items-center gap-1.5 text-xs text-ink-400 hover:text-ink-100">
             <MapPin className="h-3.5 w-3.5 text-accent" /> {b.location.address || `${b.location.lat.toFixed(4)}, ${b.location.lng.toFixed(4)}`}{b.location.radius_km ? ` · within ${b.location.radius_km} km` : ""}
           </a>
         )}
-        <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg bg-black/[0.04] p-1" role="tablist">
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-md bg-black/[0.04] p-1" role="tablist">
           {(["record", "brief"] as const).map((t) => (
             <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn("h-8 rounded-md text-[13px] transition-colors", tab === t ? "bg-ink-100 text-ink-950" : "text-ink-300")}>
               {t === "record" ? "Record" : `Brief · ${done}/${b.checklist.length}`}
@@ -94,8 +94,7 @@ export default function FieldApp() {
         ) : (
           <div className="space-y-4">
             {b.request.brief && (
-              <div className="rounded-xl border border-accent/30 bg-accent/[0.07] p-4 text-sm leading-relaxed text-ink-100">
-                <p className="idx mb-1.5">FROM THE ANALYST</p>
+              <div className="rounded-md border border-accent/30 bg-accent/[0.07] p-4 text-sm leading-relaxed text-ink-100">
                 {b.request.brief}
               </div>
             )}
@@ -103,7 +102,7 @@ export default function FieldApp() {
               const n = b.counts[t.kind] ?? 0;
               const M = KIND_META[t.kind];
               return (
-                <div key={t.kind} className="rounded-xl border border-black/[0.07] p-4">
+                <div key={t.kind} className="rounded-md border border-black/[0.07] p-4">
                   <div className="flex items-center gap-2">
                     <span className="idx">0{i + 1}</span>
                     <M.icon className={cn("h-4 w-4", M.tint)} />
@@ -129,7 +128,7 @@ export default function FieldApp() {
           {sent || b.request.status === "submitted" ? (
             <p className="flex items-center gap-2 text-sm text-field"><Check className="h-4 w-4" /> Sent to the analyst. You can keep adding data from this link.</p>
           ) : (
-            <button onClick={submit} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-field/50 text-[15px] font-medium text-field hover:bg-field/10">
+            <button onClick={submit} className="flex h-12 w-full items-center justify-center gap-2 rounded-md border border-field/50 text-[15px] font-medium text-field hover:bg-field/10">
               <Send className="h-4 w-4" /> I&apos;m done — send to analyst
             </button>
           )}

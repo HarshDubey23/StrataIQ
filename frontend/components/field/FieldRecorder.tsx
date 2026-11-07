@@ -8,6 +8,7 @@ import { Check, Crosshair, Footprints, Home, Loader2, MessageSquareText, Minus, 
 import { useEffect, useRef, useState } from "react";
 import { cn, inputCls, NumberInput } from "@/components/ui";
 import type { FieldKind } from "@/lib/types";
+import { CUR, distance } from "@/lib/format";
 
 export interface RecordDraft {
   kind: FieldKind;
@@ -35,7 +36,7 @@ function Chips<T extends string | number>({ value, options, onChange, label }: {
           aria-checked={value === o.v}
           onClick={() => onChange(value === o.v ? null : o.v)}
           className={cn(
-            "h-9 rounded-lg border px-3 text-[13px] transition-colors",
+            "h-9 rounded-md border px-3 text-[13px] transition-colors",
             value === o.v ? "border-accent bg-accent text-white" : "border-black/10 bg-black/[0.03] text-ink-200 hover:border-black/25",
           )}
         >
@@ -106,7 +107,7 @@ export function FieldRecorder({
               aria-selected={kind === k}
               onClick={() => setKind(k)}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-lg border px-1 py-2.5 text-[12px] transition-colors",
+                "flex flex-col items-center gap-1 rounded-md border px-1 py-2.5 text-[12px] transition-colors",
                 kind === k ? "border-black/25 bg-black/[0.07] text-ink-100" : "border-black/[0.06] text-ink-400 hover:text-ink-100",
               )}
             >
@@ -125,7 +126,7 @@ export function FieldRecorder({
       </div>
       <div aria-live="polite" className="mt-3 min-h-5 text-sm">
         {flash && <span className="rise inline-flex items-center gap-1.5 text-field"><Check className="h-4 w-4" /> {flash}</span>}
-        {err && <span className="text-red-700">{err}</span>}
+        {err && <span className="text-danger">{err}</span>}
       </div>
     </div>
   );
@@ -136,7 +137,7 @@ function SaveBtn({ busy, disabled, children }: { busy: boolean; disabled?: boole
     <button
       type="submit"
       disabled={busy || disabled}
-      className="sheen flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-accent text-[15px] font-medium text-white transition-colors hover:bg-[#2238e0] disabled:opacity-40"
+      className="sheen flex h-12 w-full items-center justify-center gap-2 rounded-md bg-accent text-[15px] font-medium text-white transition-colors hover:bg-[#2238e0] disabled:opacity-40"
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {children}
     </button>
@@ -166,7 +167,7 @@ function InterviewForm({ category, priceLabel, busy, onSave }: { category: strin
               type="button"
               key={v}
               onClick={() => setUses(v)}
-              className={cn("h-12 rounded-lg border text-[15px] font-medium capitalize transition-colors", uses === v ? (v === "yes" ? "border-field bg-field text-ink-950" : "border-ink-200 bg-ink-100 text-ink-950") : "border-black/10 text-ink-200")}
+              className={cn("h-12 rounded-md border text-[15px] font-medium capitalize transition-colors", uses === v ? (v === "yes" ? "border-field bg-field text-ink-950" : "border-ink-200 bg-ink-100 text-ink-950") : "border-black/10 text-ink-200")}
             >
               {v}
             </button>
@@ -179,7 +180,7 @@ function InterviewForm({ category, priceLabel, busy, onSave }: { category: strin
             <Chips label="Visits per month" value={visits} onChange={setVisits} options={[1, 2, 4, 8, 12, 20].map((v) => ({ v, l: v === 20 ? "20+" : String(v) }))} />
           </Q>
           <Q n="03" label="How far do you travel for it?">
-            <Chips label="Travel distance" value={km} onChange={setKm} options={[0.5, 1, 2, 3, 5, 8].map((v) => ({ v, l: v === 8 ? "8+ km" : `${v} km` }))} />
+            <Chips label="Travel distance" value={km} onChange={setKm} options={[0.5, 1, 2, 3, 5, 8].map((v) => ({ v, l: v === 8 ? `${distance(8, 0)}+` : distance(v) }))} />
           </Q>
           <Q n="04" label="How do you usually get there?">
             <Chips label="Travel mode" value={mode} onChange={setMode} options={[{ v: "walk", l: "Walk" }, { v: "two_wheeler", l: "Two-wheeler" }, { v: "auto", l: "Auto" }, { v: "bus_metro", l: "Bus / metro" }, { v: "car", l: "Car" }]} />
@@ -189,7 +190,7 @@ function InterviewForm({ category, priceLabel, busy, onSave }: { category: strin
       {uses && (
         <>
           <Q n={uses === "yes" ? "05" : "02"} label={<>The most you would pay — <span className="text-ink-400">{priceLabel.toLowerCase()}</span></>}>
-            <NumberInput value={price} onChange={setPrice} prefix="₹" placeholder="e.g. 1500" allowEmpty min={1} />
+            <NumberInput value={price} onChange={setPrice} prefix={CUR} placeholder="e.g. 1500" allowEmpty min={1} />
           </Q>
           <Q n={uses === "yes" ? "06" : "03"} label="Age group (optional)">
             <Chips label="Age group" value={age} onChange={setAge} options={[{ v: "18_24", l: "18–24" }, { v: "25_34", l: "25–34" }, { v: "35_49", l: "35–49" }, { v: "50_plus", l: "50+" }]} />
@@ -237,7 +238,7 @@ function CompetitorForm({ site, priceLabel, busy, onSave }: { site: { lat: numbe
       </Q>
       <Q n="02" label="Where is it?">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={locate} className="inline-flex h-10 items-center gap-2 rounded-lg border border-black/15 px-3 text-[13px] text-ink-100 hover:border-black/30">
+          <button type="button" onClick={locate} className="inline-flex h-10 items-center gap-2 rounded-md border border-black/15 px-3 text-[13px] text-ink-100 hover:border-black/30">
             {gps === "busy" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4 text-field" />} Use my GPS here
           </button>
           <span className="num font-mono text-[11px] text-ink-400">
@@ -247,12 +248,12 @@ function CompetitorForm({ site, priceLabel, busy, onSave }: { site: { lat: numbe
         {gps === "err" && <p className="text-xs text-warn">Location permission was denied. Allow it in the browser, or stand at the site.</p>}
       </Q>
       <Q n="03" label={<>Real price you saw — <span className="text-ink-400">{priceLabel.toLowerCase()}</span></>}>
-        <NumberInput value={price} onChange={setPrice} prefix="₹" placeholder="from the menu / board / staff" allowEmpty min={1} />
+        <NumberInput value={price} onChange={setPrice} prefix={CUR} placeholder="from the menu / board / staff" allowEmpty min={1} />
       </Q>
       <Q n="04" label="Your rating of the place">
         <div className="flex gap-1.5" role="radiogroup" aria-label="Rating">
           {[1, 2, 3, 4, 5].map((v) => (
-            <button type="button" key={v} role="radio" aria-checked={q === v} onClick={() => setQ(q === v ? null : v)} className={cn("h-11 flex-1 rounded-lg border text-[15px] transition-colors", q !== null && v <= q ? "border-observed bg-observed text-ink-950" : "border-black/10 text-ink-300")}>
+            <button type="button" key={v} role="radio" aria-checked={q === v} onClick={() => setQ(q === v ? null : v)} className={cn("h-11 flex-1 rounded-md border text-[15px] transition-colors", q !== null && v <= q ? "border-observed bg-observed text-ink-950" : "border-black/10 text-ink-300")}>
               {v}
             </button>
           ))}
@@ -301,24 +302,24 @@ function FootfallForm({ busy, onSave }: { busy: boolean; onSave: (d: RecordDraft
         onSave({ kind: "footfall", data: { count, minutes: mins, time_of_day: tod, weekend } });
       }}
     >
-      <div className="rounded-xl border border-black/[0.08] bg-black/[0.02] p-4">
+      <div className="rounded-md border border-black/[0.08] bg-black/[0.02] p-4">
         <div className="flex items-center justify-between">
           <span className="num font-mono text-2xl text-ink-100">{mm}:{ss}</span>
           <div className="flex gap-1.5">
-            <button type="button" onClick={() => setRunning((r) => !r)} aria-label={running ? "Pause timer" : "Start timer"} className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/[0.07] text-ink-100">
+            <button type="button" onClick={() => setRunning((r) => !r)} aria-label={running ? "Pause timer" : "Start timer"} className="flex h-10 w-10 items-center justify-center rounded-md bg-black/[0.07] text-ink-100">
               {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </button>
-            <button type="button" onClick={() => { setRunning(false); setSecs(0); setCount(0); }} aria-label="Reset" className="flex h-10 w-10 items-center justify-center rounded-lg bg-black/[0.04] text-ink-400">
+            <button type="button" onClick={() => { setRunning(false); setSecs(0); setCount(0); }} aria-label="Reset" className="flex h-10 w-10 items-center justify-center rounded-md bg-black/[0.04] text-ink-400">
               <RotateCcw className="h-4 w-4" />
             </button>
           </div>
         </div>
         <div className="mt-4 flex items-center gap-3">
-          <button type="button" onClick={() => setCount((c) => Math.max(0, c - 1))} aria-label="Minus one" className="flex h-16 w-16 items-center justify-center rounded-xl border border-black/10 text-ink-300"><Minus className="h-5 w-5" /></button>
+          <button type="button" onClick={() => setCount((c) => Math.max(0, c - 1))} aria-label="Minus one" className="flex h-16 w-16 items-center justify-center rounded-md border border-black/10 text-ink-300"><Minus className="h-5 w-5" /></button>
           <button
             type="button"
             onClick={() => { setCount((c) => c + 1); if (!running) setRunning(true); }}
-            className="flex h-16 flex-1 items-center justify-center gap-3 rounded-xl bg-accent text-white active:scale-[0.98]"
+            className="flex h-16 flex-1 items-center justify-center gap-3 rounded-md bg-accent text-white active:scale-[0.98]"
             aria-label="Count one person"
           >
             <Plus className="h-5 w-5" />
@@ -353,11 +354,11 @@ function RentForm({ busy, onSave }: { busy: boolean; onSave: (d: RecordDraft) =>
       }}
     >
       <Q n="01" label="Monthly rent quoted">
-        <NumberInput value={rent} onChange={setRent} prefix="₹" placeholder="e.g. 65000" allowEmpty min={1} />
+        <NumberInput value={rent} onChange={setRent} prefix={CUR} placeholder="e.g. 65000" allowEmpty min={1} />
       </Q>
       <div className="grid grid-cols-2 gap-3">
         <Q n="02" label="Deposit">
-          <NumberInput value={dep} onChange={setDep} prefix="₹" placeholder="optional" allowEmpty min={0} />
+          <NumberInput value={dep} onChange={setDep} prefix={CUR} placeholder="optional" allowEmpty min={0} />
         </Q>
         <Q n="03" label="Area">
           <NumberInput value={area} onChange={setArea} suffix="sq ft" placeholder="optional" allowEmpty min={1} />

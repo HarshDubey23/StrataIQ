@@ -8,7 +8,7 @@ import { FieldRecorder, KIND_META, type RecordDraft } from "@/components/field/F
 import { useProject } from "@/components/ProjectContext";
 import { Button, Card, CardHeader, cn, ErrorState, Evidence, inputCls, Skeleton, Textarea } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { ago, money, num, pct } from "@/lib/format";
+import { ago, money, num, pct, distance } from "@/lib/format";
 import type { FieldPayload, FieldStatus, Run } from "@/lib/types";
 
 const PARAM_LABEL: Record<string, { t: string; fmt: (v: number) => string; d: string }> = {
@@ -119,7 +119,6 @@ export default function FieldResearch() {
     <main className="mx-auto w-full max-w-7xl p-4 md:p-8">
       <header className="rise grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <p className="idx">02/ GROUND TRUTH</p>
           <h2 className="font-display mt-2 text-[clamp(1.8rem,3.4vw,2.8rem)] font-medium leading-[1] tracking-[-0.04em]">Field research</h2>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-300">
             Maps miss informal shops, real prices and how people actually behave. A researcher from the {p.category.label.toLowerCase()} industry walks the
@@ -145,7 +144,7 @@ export default function FieldResearch() {
                 <span className="inline-flex items-center gap-2 rounded-md border border-field/40 bg-field/10 px-2 py-1 text-[11px] font-medium text-field">
                   <UserRoundCheck className="h-3.5 w-3.5" /> Matched specialty
                 </span>
-                <h3 className="font-display mt-3 text-2xl font-medium tracking-tight">Send a {f.specialty.toLowerCase()} to {loc?.address?.split(",")[0] || "your site"}</h3>
+                <h3 className="font-display mt-3 text-2xl font-medium ">Send a {f.specialty.toLowerCase()} to {loc?.address?.split(",")[0] || "your site"}</h3>
                 <p className="mt-2 max-w-xl text-sm text-ink-300">They get a link that opens a field app on their phone — no login. Everything they record lands here and in the simulation.</p>
               </div>
               <ol className="grid gap-px bg-black/[0.06] sm:grid-cols-2">
@@ -180,8 +179,7 @@ export default function FieldResearch() {
             <Card className="rise rise-1">
               <div className="flex flex-wrap items-start justify-between gap-4 p-6">
                 <div>
-                  <p className="idx">ASSIGNMENT</p>
-                  <h3 className="font-display mt-1.5 text-xl font-medium tracking-tight">{f.request.researcher_name || "Field researcher"} · <span className="text-ink-300">{f.request.specialty}</span></h3>
+                  <h3 className="font-display mt-1.5 text-xl font-medium ">{f.request.researcher_name || "Field researcher"} · <span className="text-ink-300">{f.request.specialty}</span></h3>
                   <p className="mt-1 text-xs text-ink-400">Requested {ago(f.request.created_at)}{f.request.due_date ? ` · needed by ${f.request.due_date}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -206,11 +204,11 @@ export default function FieldResearch() {
               <div className="border-t border-black/[0.06] p-6">
                 <p className="text-xs text-ink-400">Researcher&apos;s field link — send it on WhatsApp. It only lets them add data to this project.</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <code className="num min-w-0 flex-1 truncate rounded-lg border border-black/10 bg-ink-950 px-3 py-2.5 font-mono text-[12px] text-ink-200">{link}</code>
+                  <code className="num min-w-0 flex-1 truncate rounded-md border border-black/10 bg-ink-950 px-3 py-2.5 font-mono text-[12px] text-ink-200">{link}</code>
                   <Button size="md" onClick={() => { void navigator.clipboard?.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1800); }}>
                     {copied ? <Check className="h-4 w-4 text-field" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy"}
                   </Button>
-                  <a href={link} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-black/10 px-3 text-sm text-ink-200 hover:border-black/25">
+                  <a href={link} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-md border border-black/10 px-3 text-sm text-ink-200 hover:border-black/25">
                     <ExternalLink className="h-4 w-4" /> Open field app
                   </a>
                 </div>
@@ -299,7 +297,7 @@ export default function FieldResearch() {
                     <KindIcon kind={r.kind} />
                     <span className="min-w-0 flex-1 truncate text-ink-200">{describe(r.kind, r.data)}</span>
                     <span className="hidden text-xs text-ink-500 sm:inline">{r.collected_by} · {ago(r.created_at)}</span>
-                    <button onClick={() => remove(r.id)} aria-label="Delete record" className="rounded-md p-1.5 text-ink-500 hover:bg-black/5 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => remove(r.id)} aria-label="Delete record" className="rounded-md p-1.5 text-ink-500 hover:bg-black/5 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
                   </li>
                 ))}
               </ul>
@@ -312,8 +310,7 @@ export default function FieldResearch() {
           <Card className="rise rise-2 p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="idx">RECORD</p>
-                <h3 className="font-display mt-1 text-lg font-medium tracking-tight">Add ground data yourself</h3>
+                <h3 className="font-display mt-1 text-lg font-medium ">Add ground data yourself</h3>
               </div>
               {loc && <Link href={`/app/projects/${p.id}/market`} className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-ink-100"><MapPin className="h-3.5 w-3.5" /> map</Link>}
             </div>
@@ -328,7 +325,7 @@ export default function FieldResearch() {
 function Stat({ n, l, accent }: { n: number; l: string; accent?: boolean }) {
   return (
     <div>
-      <div className={cn("num font-display text-3xl font-medium tracking-tight", accent && "text-field")}>{n}</div>
+      <div className={cn("num font-display text-3xl font-medium ", accent && "text-field")}>{n}</div>
       <div className="text-[11px] text-ink-400">{l}</div>
     </div>
   );
@@ -344,7 +341,7 @@ function describe(kind: string, d: Record<string, unknown>): string {
   if (kind === "interview") {
     const parts = [d.uses_category ? "Uses it" : "Doesn't use it"];
     if (n(d.visits_per_month)) parts.push(`${d.visits_per_month}×/mo`);
-    if (n(d.travel_km)) parts.push(`${d.travel_km} km`);
+    if (n(d.travel_km)) parts.push(distance(d.travel_km as number));
     if (n(d.max_price)) parts.push(`max ${money(d.max_price as number)}`);
     return parts.join(" · ");
   }

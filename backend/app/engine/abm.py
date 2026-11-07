@@ -39,7 +39,9 @@ from scipy.special import ndtri
 
 from ..categories.archetypes import Archetype
 from . import genome as gm
+from . import lives
 from .economics.behaviour import TASTE_SIGMA
+from .economics.income_us import draw_age_sex
 from .economics.income import CLASS_EDGES as INCOME_CLASS_EDGES
 from .model import BusinessInputs, Competitor, ResolvedParams, Zone
 
@@ -161,14 +163,19 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
     jit = spacing_km / 2.2
     lat = zlat[zi] + rng.uniform(-1, 1, N) * jit / 110.574
     lng = zlng[zi] + rng.uniform(-1, 1, N) * jit / (111.32 * math.cos(math.radians(float(np.mean(zlat)))))
-    band_p, fem_p, age_src = _age_dist(age_sex)
-    band = rng.choice(len(AGE_BANDS), size=N, p=band_p)
+    people = getattr(income, "people", None)
+    if people is not None:
+        band, female = draw_age_sex(rng, zi, people["age_sex"])
+        age_src = "us_census_tract"
+    else:
+        band_p, fem_p, age_src = _age_dist(age_sex)
+        band = rng.choice(len(AGE_BANDS), size=N, p=band_p)
+        female = rng.random(N) < fem_p[band]
     age = np.clip(AGE_MID[band] + rng.uniform(-2, 2, N), 0, 95)
-    female = rng.random(N) < fem_p[band]
     mpce = income_z = None
     if income is not None:
-        # real-data income: national consumption rank from Meta RWI tile x HCES 2023-24 curve (see economics/income.py)
-        mpce, u = income.draw(np.random.default_rng(seed + 211), zi)
+        # real-data income: consumption rank on the HCES 2023-24 curve (see economics/income.py)
+        mpce, u = income.draw(np.random.default_rng(seed + 503), zi)  # own stream: sharing one with the in-market draw would tie income to it
         seg = np.digitize(u, INCOME_CLASS_EDGES[1:-1])
         income_z = ndtri(np.clip(u, 1e-6, 1 - 1e-6))
     else:
@@ -193,7 +200,8 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
                 walk_agent = np.maximum(walk_z[zi] + off / 4.5 * 60, 0.5)
     gen = gm.generate(np.random.default_rng(seed + 7), age=age, female=female, seg_keys=[s.key for s in arch.segments], seg=seg,
                       zone_pop=pop, zone_act=act, lat=lat, lng=lng, zi=zi, blat=blat, blng=blng, circuity=P["circuity"],
-                      max_km=P["max_km"], seg_dt=seg_dt, income_z=income_z, dist_km=dist_agent, walk_min=walk_agent)
+                      max_km=P["max_km"], seg_dt=seg_dt, income_z=income_z, dist_km=dist_agent, walk_min=walk_agent,
+                      hh_size=4.2 if people is None else people["hh_size"][zi], mode_share=None if people is None else people["modes"][zi])
     if behaviour is not None and mpce is not None:
         # WTP = reference price x (MPCE / x_ref)^elasticity x taste. The taste factor keeps each agent's generated
         # deviation from its genome (standardised, log-sd = the assumed taste spread); the income part is real data.
@@ -204,7 +212,8 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
     a_target = P["awareness_base"] + (1 - P["awareness_base"]) * (1 - 2 ** (-max(biz.marketing_spend, 0) / hs))
     F, meta = gm.business_features(arch.key, biz, comps, ref_price, P["competitor_quality"], profile, a_target, offer)
     # competitor prices unknown -> assumed ratio x reference
-    meta["prices"] = np.array([biz.price] + [c.price if c.price else ref_price * P["competitor_price_ratio"] for c in comps], float)
+    spread_price, _ = lives.competitor_spread([c.name for c in comps])
+    meta["prices"] = np.array([biz.price] + [c.price if c.price else ref_price * P["competitor_price_ratio"] * s for c, s in zip(comps, spread_price)], float)
     F[:, gm.FI["price_rel"]] = np.log(meta["prices"] / ref_price)
     F[:, gm.FI["premium"]] = np.clip(meta["prices"] / ref_price - 1.0, 0, 2)
     F[:, gm.FI["budget"]] = np.clip(1.0 - meta["prices"] / ref_price, 0, 1)
@@ -472,6 +481,12 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
 
     habit = np.zeros((N, J))
     cong = np.zeros(N)
+    people = getattr(income, "people", None)
+    life = lives.build(np.random.default_rng(seed + 401), zi, age, gget("ev_household_size"), arch.key,
+                       None if people is None else people["employed_rate"][zi], None if people is None else people["college_rate"][zi])
+    opinion = np.zeros((N, J))  # what each person has come to think of each business, from visits and friends
+    spent = np.zeros(N)  # this month's spending in the category
+    budget = ref_price * gget("ec_spend_monthly_cat") * np.maximum(pop.freq, 1.0)  # capacity is per usual visit, so frequent visitors budget for it
     member_of = np.full(N, -1)
     reconsider = rng.integers(0, 30, N)
     purchases_you = np.zeros(N, int)
@@ -483,7 +498,6 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
     freq = pop.freq
 
     daily_cap = arch.capacity_units(biz.capacity) / 30.0 / scale if not membership else arch.capacity_units(biz.capacity) / scale
-    zone_count = np.bincount(zi, minlength=len(zones)).astype(float)
 
     series = {k: [] for k in ("units_you", "customers_you", "aware_share", "members_you", "units_comp", "turned_away", "units_none")}
     frames = []
@@ -492,7 +506,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
     def choose(idx: np.ndarray) -> np.ndarray:
         if idx.size == 0:
             return idx
-        v = v_static[idx] + habit[idx] - np.where(np.arange(J)[None, :] == 0, (cong[idx] > 0)[:, None] * D["congestion_penalty"], 0)
+        v = v_static[idx] + habit[idx] + opinion[idx] - np.where(np.arange(J)[None, :] == 0, (cong[idx] > 0)[:, None] * D["congestion_penalty"], 0)
         v[:, 0] = np.where(aware[idx], v[:, 0], -np.inf)
         ns = noise[idx]
         u = v + rng.gumbel(0, 1, size=v.shape) * ns[:, None]
@@ -506,7 +520,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
 
         Same utilities and personal noise scale as ``choose``; used to count demand in real units without the
         "one agent = N residents" rounding that makes sampled daily counts jump in big steps."""
-        v = v_static[idx] + habit[idx] - np.where(np.arange(J)[None, :] == 0, (cong[idx] > 0)[:, None] * D["congestion_penalty"], 0)
+        v = v_static[idx] + habit[idx] + opinion[idx] - np.where(np.arange(J)[None, :] == 0, (cong[idx] > 0)[:, None] * D["congestion_penalty"], 0)
         v[:, 0] = np.where(aware[idx], v[:, 0], -np.inf)
         vv = np.concatenate([v, outside[idx][:, None]], 1) / noise[idx][:, None]
         vv = np.where(np.isfinite(vv), vv, -np.inf)
@@ -522,8 +536,9 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
     staffing = np.clip(np.random.default_rng(seed + 307).normal(0.97, 0.03, days), 0.85, 1.0)
 
     for day in range(days):
-        cust_zone = np.bincount(zi[purchases_you > 0], weights=wom_send[purchases_you > 0], minlength=len(zones)).astype(float)
-        wom_pressure = np.divide(cust_zone, zone_count, out=np.zeros_like(cust_zone), where=zone_count > 0)[zi]
+        if day % 30 == 0:
+            spent[:] = 0
+        wom_pressure = ((purchases_you > 0) * wom_send)[life.friends].mean(1)  # people hear from their own friends and family
         p_paid = 1 - np.exp(-daily_paid * ch_mult)
         p_wom = np.clip(D["wom_rate"] * wom_recv * wom_pressure * 30, 0, 0.5)
         p_sign = np.where(near_site, sign_att, 0.0)
@@ -542,7 +557,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
         if membership:
             due = np.where(in_market & ((reconsider == day % 30) | (member_of < 0) & (rng.random(N) < 1 / 15)))[0]
             mem_due = due[member_of[due] >= 0]
-            churn = mem_due[rng.random(mem_due.size) < churn_m[mem_due]]
+            churn = mem_due[rng.random(mem_due.size) < np.clip(churn_m[mem_due] * np.exp(-opinion[mem_due, member_of[mem_due]]), 0, 0.9)]
             churned += int((member_of[churn] == 0).sum())
             left_you[churn[member_of[churn] == 0]] = True
             member_of[churn] = -1
@@ -554,8 +569,9 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             joining = due[(choice == 0) & (cur != 0)]
             current_members = int((member_of == 0).sum())
             room = int(max(0, math.floor(daily_cap + rng.random()) - current_members))
+            rejected_now = joining[:0]
             if joining.size > room:
-                rejected = rng.choice(joining, size=joining.size - room, replace=False)
+                rejected = rejected_now = rng.choice(joining, size=joining.size - room, replace=False)
                 choice[np.isin(due, rejected)] = -1
                 cong[rejected] = D["congestion_memory"]
                 turned_away[rejected] += 1
@@ -568,6 +584,8 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             got = choice >= 0
             newm = due[got]
             habit[newm, choice[got]] = np.minimum(habit[newm, choice[got]] + habit_rate[newm], habit_cap[newm])
+            lives.remember_visit(rng, opinion, newm, choice[got], crowding=float(np.clip((current_members / max(daily_cap, 1e-9) - 0.85) * 2, 0, 1)))
+            opinion[rejected_now, 0] = np.clip(opinion[rejected_now, 0] - 0.3, -lives.OPINION_LIMIT, lives.OPINION_LIMIT)
             fy = due[(choice == 0) & (first_you[due] < 0)]
             first_you[fy] = day
             purchases_you[due[choice == 0]] += 1
@@ -583,7 +601,8 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             m_day = float(dow[day % 7])
             # demand in real units: every in-market agent's purchase rate x its own choice probabilities x residents it stands for
             pr = probs(in_idx) if in_idx.size else np.zeros((0, J + 1))
-            w = freq[in_idx] / 30.0 * m_day
+            able = spent < budget  # the month's money for this category has not run out
+            w = freq[in_idx] / 30.0 * m_day * life.routine[in_idx, day % 7] * able[in_idx]
             exp_you = scale * float(w @ pr[:, 0]) if in_idx.size else 0.0
             exp_comp = scale * float(w @ pr[:, 1:J].sum(1)) if in_idx.size and J > 1 else 0.0
             exp_none = scale * float(w @ pr[:, J]) if in_idx.size else 0.0
@@ -591,7 +610,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             served = min(orders, cap_units_day * float(staffing[day]))  # staffing / rush days: never above the stated limit
             turned = orders - served
             # agent-level events (who buys, from whom) drive habits, word of mouth and the dots on the map
-            buyers = np.where(in_market & (rng.random(N) < freq / 30.0 * m_day))[0]
+            buyers = np.where(in_market & able & (rng.random(N) < freq / 30.0 * m_day * life.routine[:, day % 7]))[0]
             choice = choose(buyers)
             decisions += buyers.size
             to_you = buyers[choice == 0]
@@ -607,6 +626,9 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             got = choice >= 0
             b = buyers[got]
             habit[b, choice[got]] = np.minimum(habit[b, choice[got]] + habit_rate[b], habit_cap[b])
+            lives.remember_visit(rng, opinion, b, choice[got], crowding=float(np.clip((orders / max(cap_units_day, 1e-9) - 0.85) * 2, 0, 1)))
+            opinion[rejected, 0] = np.clip(opinion[rejected, 0] - 0.3, -lives.OPINION_LIMIT, lives.OPINION_LIMIT)
+            np.add.at(spent, b, pop.meta["prices"][choice[got]])
             prev = last_choice[buyers]
             left_you[buyers[(prev == 0) & (choice > 0)]] = True
             fy = buyers[(choice == 0) & (first_you[buyers] < 0)]
@@ -621,6 +643,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             series["members_you"].append(0)
             series.setdefault("demand_you", []).append(exp_you)
             frame_events = b
+        lives.share_opinions(rng, opinion, life.friends, wom_send, wom_recv, purchases_you > 0)
         series["customers_you"].append(int((purchases_you > 0).sum()))
         series["aware_share"].append(float(aware[in_market].mean()) if in_market.any() else 0.0)
         if day % frame_every == 0:
@@ -709,8 +732,8 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
 
     agents = {
         "columns": ["lat", "lng", "age", "female", "segment", "mode", "in_market", "aware", "last_choice", "purchases_you", "wtp", "price_sens",
-                    "dist_km", "digital", "social", "zone", "time_pref", "income_z", "time_fit_you", "u_you", "mpce"],
-        "rows": [], "modes": MODE_NAMES, "segments": [s.key for s in arch.segments], "time_prefs": ["morning", "evening", "late"],
+                    "dist_km", "digital", "social", "zone", "time_pref", "income_z", "time_fit_you", "u_you", "mpce", "occupation", "household", "opinion", "friends_customers"],
+        "occupations": lives.OCCUPATIONS, "rows": [], "modes": MODE_NAMES, "segments": [s.key for s in arch.segments], "time_prefs": ["morning", "evening", "late"],
     }
     wtp_v = gm_wtp(G, ref_price)
     psens_v = G[:, KI["ec_price_sens"]]
@@ -719,17 +742,30 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
     tfy = up.parts["time_fit"][:, 0]
     uy = np.where(np.isfinite(v_static[:, 0]), v_static[:, 0], -99)
     rows = agents["rows"]
+    friends_customers = (purchases_you[life.friends] > 0).sum(1)
     for i in range(N):
         rows.append([round(float(pop.lat[i]), 5), round(float(pop.lng[i]), 5), int(age[i]), int(female[i]), int(seg[i]), int(mode[i]), int(in_market[i]),
                      int(aware[i]), int(final[i]), int(purchases_you[i]), round(float(wtp_v[i])), round(float(psens_v[i]), 2),
                      round(float(gen.dist[i, 0]), 2), round(float(1 / (1 + math.exp(-dig[i]))), 2), round(float(1 / (1 + math.exp(-soc[i]))), 2),
                      int(zi[i]), int(time_pref[i]), round(float(income_z[i]), 2), round(float(tfy[i]), 3), round(float(uy[i]), 2),
-                     None if pop.mpce is None else int(round(float(pop.mpce[i])))])
+                     None if pop.mpce is None else int(round(float(pop.mpce[i]))), int(life.occupation[i]), int(life.household[i]),
+                     round(float(opinion[i, 0]), 2), int(friends_customers[i])])
 
     by_block = {}
     for p in gm.REG:
         by_block[p.block] = by_block.get(p.block, 0) + 1
+    tried = cust if cust.any() else np.zeros(N, bool)
+    life_summary = {
+        "households": int(np.unique(life.household).size),
+        "occupation_shares": {name: float((life.occupation == k).mean()) for k, name in enumerate(lives.OCCUPATIONS)},
+        "promoters_share": round(float((opinion[tried, 0] >= lives.OPINION_THRESHOLD).mean()) if tried.any() else 0.0, 4),
+        "detractors_share": round(float((opinion[tried, 0] <= -lives.OPINION_THRESHOLD).mean()) if tried.any() else 0.0, 4),
+        "data_based": ["age", "sex", "income", "household size", "job status", "college enrolment", "commute mode"] if people is not None else [],
+        "assumed": ["weekly routines", "friendships", "reactions to visits", "shift-work share", "taste differences"],
+        "note": "Each agent is synthetic: its traits are drawn from neighbourhood statistics, not copied from any real person.",
+    }
     return {
+        "life": life_summary,
         "n_agents": N, "scale": round(scale, 2), "days": days, "seed": seed, "age_source": pop.age_src,
         "in_market_agents": int(in_market.sum()),
         "monthly_units": [round(x, 1) for x in monthly_units], "steady_units": round(steady, 1), "peak_weekly_units": round(peak, 1),

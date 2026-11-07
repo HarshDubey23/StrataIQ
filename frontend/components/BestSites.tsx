@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import type { MapOpportunity } from "@/components/MapView";
 import { Button, cn, Notice } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { money, num, pct } from "@/lib/format";
+import { money, num, pct, distance, US_MARKET } from "@/lib/format";
 import { sendStrategy } from "@/lib/screen";
 
 export interface Site {
@@ -111,7 +111,7 @@ export function BestSites({ projectId, scenarioId, locationKey, onData, onFocus 
   const better = data.top.filter((t) => t.profit > c.profit);
   return (
     <div className="space-y-3 text-xs">
-      <div className="rounded-xl border border-model/40 bg-model/[0.06] p-3">
+      <div className="rounded-md border border-model/40 bg-model/[0.06] p-3">
         <div className="mb-1 flex items-center gap-1.5 font-medium text-ink-100"><Crosshair className="h-3.5 w-3.5 text-model" /> Where should you open?</div>
         <p className="leading-relaxed text-ink-300">
           I tested your exact plan at {num(data.candidates.length)} spots. {better.length
@@ -123,7 +123,7 @@ export function BestSites({ projectId, scenarioId, locationKey, onData, onFocus 
       </div>
       <SiteRow title={`Your site · ${data.location.label}`} s={c} unit={data.unit} base={c} current onFocus={() => onFocus(c.lat, c.lng)} />
       {data.top.map((s, i) => (
-        <SiteRow key={`${s.lat},${s.lng}`} title={`#${i + 1} · ${s.from_current_km} km away`} s={s} unit={data.unit} base={c} onFocus={() => onFocus(s.lat, s.lng)}
+        <SiteRow key={`${s.lat},${s.lng}`} title={`#${i + 1} · ${distance(s.from_current_km)} away`} s={s} unit={data.unit} base={c} onFocus={() => onFocus(s.lat, s.lng)}
           action={<Button size="sm" variant={i === 0 ? "primary" : "secondary"} loading={busy === i} disabled={busy !== null} onClick={() => adopt(i, s)}>
             <Sparkles className="h-3 w-3" /> {busy === i ? "Loading live data there…" : "Open this site & simulate"}
           </Button>} />
@@ -136,7 +136,7 @@ export function BestSites({ projectId, scenarioId, locationKey, onData, onFocus 
 function SiteRow({ title, s, unit, base, current, onFocus, action }: { title: string; s: Site; unit: string; base: Site; current?: boolean; onFocus: () => void; action?: React.ReactNode }) {
   const d = s.profit - base.profit;
   return (
-    <div className={cn("rounded-xl border p-3", current ? "border-accent/40 bg-accent/[0.04]" : "border-black/[0.07] bg-black/[0.025]")}>
+    <div className={cn("rounded-md border p-3", current ? "border-accent/40 bg-accent/[0.04]" : "border-black/[0.07] bg-black/[0.025]")}>
       <div className="mb-1.5 flex items-center gap-2">
         <MapPin className={cn("h-3.5 w-3.5", current ? "text-accent" : "text-model")} />
         <span className="font-medium text-ink-100">{title}</span>
@@ -145,8 +145,8 @@ function SiteRow({ title, s, unit, base, current, onFocus, action }: { title: st
       <div className="grid grid-cols-3 gap-2">
         <Stat l="Profit / month" v={money(s.profit, { compact: true })} d={current ? undefined : d} />
         <Stat l={`Demand (${unit})`} v={num(s.demand)} />
-        <Stat l="People ≤1 km" v={num(s.people_within_1km)} />
-        <Stat l="Rivals ≤500 m" v={String(s.competitors_within_500m)} />
+        <Stat l={US_MARKET ? "People within 0.6 mi" : "People ≤1 km"} v={num(s.people_within_1km)} />
+        <Stat l={US_MARKET ? "Rivals within 0.3 mi" : "Rivals ≤500 m"} v={String(s.competitors_within_500m)} />
         <Stat l="Nearest rival" v={s.nearest_competitor_km !== null ? `${num(s.nearest_competitor_km * 1000)} m` : "—"} />
         {s.risk ? <Stat l="Loss chance" v={pct(s.risk.prob_loss)} icon /> : <Stat l="Payback" v={s.payback_months ? `${s.payback_months} mo` : "—"} />}
       </div>

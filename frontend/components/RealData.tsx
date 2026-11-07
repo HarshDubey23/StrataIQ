@@ -2,49 +2,51 @@
 
 import { ExternalLink, Landmark, Route, Wallet } from "lucide-react";
 import { Evidence, cn, statusToKind } from "@/components/ui";
-import { money, pct } from "@/lib/format";
+import { money, pct, CUR, LOCALE, US_MARKET } from "@/lib/format";
 import type { IncomeEvidence, SimResult } from "@/lib/types";
 
 /* Real-data panels: who lives here (income mix from official data) and where every model parameter came from. */
 
-const CLASS_COLOR = ["#fb7185", "#fbbf24", "#C59BFF"];
+const CLASS_COLOR = ["#fb7185", "#fbbf24", "#1d4f91"];
+const AREA = US_MARKET ? "US" : "India";
 const METHOD_LABEL: Record<IncomeEvidence["method"], string> = {
+  us_tract: "Household income of the census tract each zone sits in",
   rwi_rank: "Local wealth tiles (Meta RWI, 2.4 km) ranked on India's official consumption curve",
-  state_curve: "State consumption curve (no local wealth tile here)",
+  state_curve: "State consumption curve",
   national_sector_curve: "All-India rural/urban curve (no state curve available)",
 };
 
 function rupees(x: number) {
-  return "₹" + Math.round(x).toLocaleString("en-IN");
+  return CUR + Math.round(x).toLocaleString(LOCALE);
 }
 
 export function IncomeMix({ income, price, className }: { income: IncomeEvidence; price?: number; className?: string }) {
   const maxShare = Math.max(...income.histogram.map((h) => h.share), ...income.national_histogram.map((h) => h.share), 0.01);
   const ratio = income.median_mpce / income.india_median_mpce;
   return (
-    <section className={cn("rounded-xl border border-black/[0.07] bg-black/[0.025] p-3 text-xs", className)} aria-label="Who lives here">
+    <section className={cn("rounded-md border border-black/[0.07] bg-black/[0.025] p-3 text-xs", className)} aria-label="Who lives here">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <Wallet className="h-4 w-4 text-accent" />
           <div>
             <div className="font-medium text-ink-100">Who lives here — spending power</div>
-            <div className="text-[10.5px] text-ink-400">Monthly spend per person, from official survey data</div>
+            <div className="text-[10.5px] text-ink-400">{US_MARKET ? "Monthly income per person, from US Census survey data" : "Monthly spend per person, from official survey data"}</div>
           </div>
         </div>
-        <Evidence kind="official" label="HCES 2023-24" />
+        <Evidence kind="official" label={US_MARKET ? "US Census ACS" : "HCES 2023-24"} />
       </div>
 
       <div className="mb-3 grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-ink-900/70 p-2">
+        <div className="rounded-md bg-ink-900/70 p-2">
           <div className="text-[10px] text-ink-400">Median here</div>
           <div className="num text-sm font-semibold text-ink-100">{rupees(income.median_mpce)}</div>
         </div>
-        <div className="rounded-xl bg-ink-900/70 p-2">
-          <div className="text-[10px] text-ink-400">India median</div>
+        <div className="rounded-md bg-ink-900/70 p-2">
+          <div className="text-[10px] text-ink-400">{AREA} median</div>
           <div className="num text-sm font-semibold text-ink-300">{rupees(income.india_median_mpce)}</div>
         </div>
-        <div className="rounded-xl bg-ink-900/70 p-2">
-          <div className="text-[10px] text-ink-400">vs India</div>
+        <div className="rounded-md bg-ink-900/70 p-2">
+          <div className="text-[10px] text-ink-400">vs {AREA}</div>
           <div className={cn("num text-sm font-semibold", ratio >= 1 ? "text-ok" : "text-warn")}>{ratio.toFixed(2)}×</div>
         </div>
       </div>
@@ -63,25 +65,25 @@ export function IncomeMix({ income, price, className }: { income: IncomeEvidence
             </div>
             <div className="relative mt-0.5 h-1.5 rounded bg-ink-800">
               <div className="h-1.5 rounded" style={{ width: `${c.share * 100}%`, background: CLASS_COLOR[i] }} />
-              <div className="absolute top-[-2px] h-[10px] w-[2px] rounded bg-ink-100/70" style={{ left: `${c.india_share * 100}%` }} title={`India: ${pct(c.india_share)}`} />
+              <div className="absolute top-[-2px] h-[10px] w-[2px] rounded bg-ink-100/70" style={{ left: `${c.india_share * 100}%` }} title={`${AREA}: ${pct(c.india_share)}`} />
             </div>
           </div>
         ))}
-        <div className="text-[10px] text-ink-500">White tick = India average share. Classes are India&apos;s bottom 40 %, middle 40 % and top 20 % by monthly spend.</div>
+        <div className="text-[10px] text-ink-500">White tick = {AREA} average share. Classes are the {AREA} bottom 40%, middle 40% and top 20% by {US_MARKET ? "monthly income" : "monthly spend"}.</div>
       </div>
 
       {/* distribution */}
       <div className="mt-3">
         <div className="mb-1 flex items-center justify-between text-[10px] text-ink-400">
-          <span>Distribution of monthly spend per person</span>
-          <span className="flex items-center gap-2"><span className="inline-block h-2 w-2 rounded-sm bg-accent" />here <span className="inline-block h-2 w-2 rounded-sm bg-ink-500" />India</span>
+          <span>Distribution of monthly {US_MARKET ? "income" : "spend"} per person</span>
+          <span className="flex items-center gap-2"><span className="inline-block h-2 w-2 rounded-sm bg-accent" />here <span className="inline-block h-2 w-2 rounded-sm bg-ink-500" />{AREA}</span>
         </div>
-        <div className="flex h-16 items-end gap-[3px]" role="img" aria-label="Spending distribution here versus India">
+        <div className="flex h-16 items-end gap-[3px]" role="img" aria-label="Income or spending distribution here versus the national mix">
           {income.histogram.map((h, i) => {
             const n = income.national_histogram[i]?.share || 0;
             const isPrice = price !== undefined && price >= h.lo && (h.hi === null || price < h.hi);
             return (
-              <div key={h.lo} className="relative flex h-full flex-1 items-end gap-[1px]" title={`${rupees(h.lo)}${h.hi ? "–" + rupees(h.hi) : "+"}: here ${pct(h.share)}, India ${pct(n)}`}>
+              <div key={h.lo} className="relative flex h-full flex-1 items-end gap-[1px]" title={`${rupees(h.lo)}${h.hi ? "–" + rupees(h.hi) : "+"}: here ${pct(h.share)}, ${AREA} ${pct(n)}`}>
                 <div className="w-1/2 rounded-t-sm bg-accent/85" style={{ height: `${(h.share / maxShare) * 100}%` }} />
                 <div className="w-1/2 rounded-t-sm bg-ink-500/70" style={{ height: `${(n / maxShare) * 100}%` }} />
                 {isPrice && <div className="absolute -top-1 left-0 right-0 h-0.5 bg-danger" />}
@@ -90,15 +92,15 @@ export function IncomeMix({ income, price, className }: { income: IncomeEvidence
           })}
         </div>
         <div className="mt-0.5 flex justify-between text-[9.5px] text-ink-500 num">
-          <span>₹0</span><span>₹5k</span><span>₹15k+</span>
+          <span>{CUR}0</span><span>{US_MARKET ? "$2.5k" : "₹5k"}</span><span>{CUR}15k+</span>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-black/[0.06] bg-ink-900/50 p-2 text-[10.5px] leading-relaxed text-ink-300">
+      <div className="mt-3 rounded-md border border-black/[0.06] bg-ink-900/50 p-2 text-[10.5px] leading-relaxed text-ink-300">
         <span className="text-ink-100">How agents pay:</span> each synthetic person&apos;s willingness to pay = local price × (their spend ÷ {rupees(income.x_ref)})
         <sup>{income.elasticity.value}</sup>. Richer residents value you more, poorer ones less — in exactly this area&apos;s mix.
         WTP multipliers by class: {income.classes.map((c, i) => <span key={c.key} className="num" style={{ color: CLASS_COLOR[i] }}>{i ? " · " : " "}{c.wtp_multiplier.toFixed(2)}×</span>)}.
-        {income.participation_lift !== 1 && <> Category participation here is <span className="num text-ink-100">{income.participation_lift.toFixed(2)}×</span> India&apos;s, from this income mix.</>}
+        {income.participation_lift !== 1 && <> Category participation here is <span className="num text-ink-100">{income.participation_lift.toFixed(2)}×</span> {AREA}&apos;s, from this income mix.</>}
       </div>
 
       <div className="mt-2 space-y-1">
@@ -134,7 +136,7 @@ export function DataLineage({ res, className }: { res: SimResult; className?: st
   const sources = res.parameter_sources || {};
   const g = res.abm?.genome;
   return (
-    <section className={cn("rounded-xl border border-black/[0.07] bg-black/[0.025] p-3 text-xs", className)} aria-label="Data lineage">
+    <section className={cn("rounded-md border border-black/[0.07] bg-black/[0.025] p-3 text-xs", className)} aria-label="Data lineage">
       <div className="mb-2 flex items-center gap-2">
         <Landmark className="h-4 w-4 text-model" />
         <div className="font-medium text-ink-100">Data lineage — what is real, what is assumed</div>
@@ -177,7 +179,7 @@ export function DataLineage({ res, className }: { res: SimResult; className?: st
       )}
       {g && (
         <div className="mt-2 border-t border-black/[0.06] pt-2 text-[10.5px] text-ink-400">
-          Each agent carries {g.per_agent} parameters. Placement, age–sex, travel distance and spending power come from data; behavioural traits are generated from documented, correlated assumptions and are labelled as such in every agent&apos;s X-ray.
+          Each agent carries {g.per_agent} parameters. Placement, age–sex, travel distance and spending power come from data; behavioural traits are generated from documented, correlated assumptions and are labeled as such in every agent&apos;s X-ray.
         </div>
       )}
     </section>

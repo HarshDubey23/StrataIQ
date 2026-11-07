@@ -15,6 +15,8 @@ from ..providers.registry import SOURCES
 from ..schemas import CategoryIn
 from ..security import current_user
 
+from ..config import get_settings  # noqa: E402
+
 router = APIRouter(tags=["catalog"])
 
 
@@ -59,7 +61,7 @@ def by_key(key: str, user: User = Depends(current_user)):
 async def search(q: str = Query(min_length=2, max_length=200), country: str | None = Query(default=None, max_length=20),
                  user: User = Depends(current_user)):
     try:
-        results, prov = await osm.geocode(q, cache=Cache(session_factory()), country_codes=country)
+        results, prov = await osm.geocode(q, cache=Cache(session_factory()), country_codes=country or get_settings().search_countries)
     except ProviderError as e:
         raise HTTPException(502, f"Place search is unavailable right now ({e.message[:120]}). You can still drop a pin on the map.") from e
     return {"results": results, "source": prov}
@@ -86,6 +88,9 @@ def capabilities():
 
 # Public, cached preview for the landing page: real competitors around a famous street, no account needed.
 PREVIEW_SPOTS = {
+    "austin": {"label": "Downtown Austin, Texas", "lat": 30.2672, "lng": -97.7431},
+    "miami": {"label": "Wynwood, Miami, Florida", "lat": 25.8005, "lng": -80.1990},
+    "phoenix": {"label": "Downtown Phoenix, Arizona", "lat": 33.4484, "lng": -112.0740},
     "cp-delhi": {"label": "Connaught Place, New Delhi", "lat": 28.6315, "lng": 77.2167},
     "indiranagar": {"label": "Indiranagar, Bengaluru", "lat": 12.9719, "lng": 77.6412},
     "bandra": {"label": "Bandra West, Mumbai", "lat": 19.0596, "lng": 72.8295},
@@ -95,23 +100,66 @@ PREVIEW_CATS = {"gym", "cafe", "pizza", "restaurant", "pharmacy", "salon", "bake
 
 
 @router.get("/market/preview")
-async def preview(spot: str = Query(default="cp-delhi"), category: str = Query(default="cafe"), radius_m: int = Query(default=1600, ge=300, le=3000)):
-    if spot not in PREVIEW_SPOTS or category not in PREVIEW_CATS:
+async def preview(spot: str = Query(default="austin"), category: str = Query(default="cafe"), radius_m: int = Query(default=1600, ge=300, le=3000),
+                  lat: float | None = Query(default=None, ge=-85, le=85), lng: float | None = Query(default=None, ge=-180, le=180)):
+    custom = lat is not None and lng is not None
+    if (not custom and spot not in PREVIEW_SPOTS) or category not in PREVIEW_CATS:
         raise HTTPException(404, "Unknown preview")
-    sp = PREVIEW_SPOTS[spot]
+    sp = {"label": "", "lat": lat, "lng": lng} if custom else PREVIEW_SPOTS[spot]
     entry = next((e for e in TAXONOMY if e.key == category), None)
     if entry is None:
         raise HTTPException(404, "Unknown category")
     try:
-        pois, prov = await osm.fetch_competitors(sp["lat"], sp["lng"], radius_m, list(entry.filters), Cache(session_factory()), limit=400,
-                                                 timeout_s=30, terms=[entry.label.split("/")[0].strip(), *entry.synonyms[:2]])
+        pois, prov, complete = await osm.quick_competitors(sp["lat"], sp["lng"], radius_m, list(entry.filters), Cache(session_factory()),
+                                                           terms=[entry.label.split("/")[0].strip(), *entry.synonyms[:2]])
     except ProviderError as e:
         raise HTTPException(502, f"OpenStreetMap is busy right now ({e.message[:100]})") from e
-    return {"spot": {**sp, "key": spot}, "category": {"key": entry.key, "label": entry.label}, "radius_m": radius_m,
+    return {"spot": {**sp, "key": spot}, "category": {"key": entry.key, "label": entry.label}, "radius_m": radius_m, "complete": complete,
             "competitors": [{"name": p["name"] or "Unnamed", "lat": p["lat"], "lng": p["lng"], "ref": p["ref"]} for p in pois],
             "source": {"name": " + ".join([prov.get("name") or ""] + [a["name"] for a in prov.get("also") or []]),
                        "retrieved_at": prov.get("retrieved_at"), "detail": prov.get("detail"), "from_cache": prov.get("from_cache"),
                        "attribution": " · ".join([prov.get("attribution") or ""] + [a["attribution"] for a in prov.get("also") or []])}}
+
+
+@router.get("/market/peek")
+async def peek(category: str = Query(default="gym"), q: str | None = Query(default=None, min_length=3, max_length=200),
+               lat: float | None = Query(default=None, ge=-85, le=85), lng: float | None = Query(default=None, ge=-180, le=180), label: str | None = Query(default=None, max_length=200)):
+    """Public first look at a US address: real Census figures around it, and the costs a founder would start from."""
+    from ..api.quickstart import ARCH_COSTS, ARCH_PRICE, TYPICAL_PRICE
+    from ..engine.economics import income_us
+
+    entry = next((e for e in TAXONOMY if e.key == category), None)
+    if entry is None or category not in PREVIEW_CATS:
+        raise HTTPException(404, "Unknown category")
+    if lat is None or lng is None:
+        if not q:
+            raise HTTPException(422, "Enter an address")
+        try:
+            found, _ = await osm.geocode(q, limit=1, cache=Cache(session_factory()), country_codes="us")
+        except ProviderError as e:
+            raise HTTPException(502, f"Address search is busy right now ({e.message[:100]})") from e
+        if not found:
+            # say what is actually wrong: a real place outside our data is not a bad address
+            try:
+                anywhere, _ = await osm.geocode(q, limit=1, cache=Cache(session_factory()))
+            except ProviderError:
+                anywhere = []
+            if anywhere:
+                raise HTTPException(422, f"{anywhere[0]['name']} is outside the United States. StrataIQ only has US data for now, so try a US address.")
+            raise HTTPException(404, "We could not find that address. Try a street, city and state, like 1402 South Lamar, Austin, TX.")
+        lat, lng, label = found[0]["lat"], found[0]["lng"], found[0]["display_name"]
+    data = income_us.load_tracts()
+    area = income_us.area_summary(data, lat, lng) if data is not None else None
+    if area is None:
+        raise HTTPException(422, "We only have Census data for US addresses right now.")
+    arch = ARCHETYPES[entry.archetype]
+    return {
+        "place": {"label": label or q or "", "lat": lat, "lng": lng},
+        "category": {"key": entry.key, "label": entry.label},
+        "area": {**area, "radius_miles": 2, "source": "U.S. Census ACS 2023 5-year and LODES jobs"},
+        "typical": {"price": float(TYPICAL_PRICE.get(entry.key, ARCH_PRICE[entry.archetype])), "unit": arch.unit_label, "per_day": entry.archetype != "membership",
+                    "variable_cost_ratio": arch.params["variable_cost_ratio"].value, **ARCH_COSTS[entry.archetype]},
+    }
 
 
 @router.get("/market/sources-check")

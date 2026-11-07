@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { GenomeParam, GenomeRegistry } from "@/lib/types";
+import { CUR, LOCALE, distance } from "@/lib/format";
 
 let registryPromise: Promise<GenomeRegistry> | null = null;
 
@@ -41,7 +42,7 @@ export const MECH_LABEL: Record<string, string> = {
 };
 
 export const GROUP_COLOR: Record<string, string> = {
-  you: "#2F49FF",
+  you: "#D93A1E",
   competitor: "#F59E0B",
   none: "#64748b",
   not_in_market: "#D8D4CA",
@@ -83,15 +84,15 @@ export function fmtParam(p: GenomeParam | undefined, v: number | null | undefine
   if (!p) return String(v);
   if (p.key === "ev_female" || p.key === "ev_in_market" || p.key === "ev_reach_site") return v ? "yes" : "no";
   if (p.key === "ev_lat" || p.key === "ev_lng") return v.toFixed(5);
-  if (p.unit === "id" || p.unit === "count" || p.unit === "rank" || p.unit === "people") return Math.round(v).toLocaleString("en-IN");
+  if (p.unit === "id" || p.unit === "count" || p.unit === "rank" || p.unit === "people") return Math.round(v).toLocaleString(LOCALE);
   if (p.unit === "0-1" || p.unit === "share") return `${Math.round(v * 100)}%`;
   if (p.unit === "z") return (v >= 0 ? "+" : "") + v.toFixed(2) + "σ";
   if (p.unit === "×") return v.toFixed(2) + "×";
-  if (p.unit === "km") return v.toFixed(2) + " km";
+  if (p.unit === "km") return distance(v, 2);
   if (p.unit === "min") return v.toFixed(1) + " min";
   if (p.unit === "years") return Math.round(v) + " yrs";
-  if (p.unit.startsWith("₹")) return "₹" + Math.round(v).toLocaleString("en-IN") + p.unit.slice(1);
-  return Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-IN") : v.toFixed(2);
+  if (p.unit.startsWith(CUR)) return CUR + Math.round(v).toLocaleString(LOCALE) + p.unit.slice(1);
+  return Math.abs(v) >= 100 ? Math.round(v).toLocaleString(LOCALE) : v.toFixed(2);
 }
 
 export const ORIGIN_LABEL: Record<string, string> = {

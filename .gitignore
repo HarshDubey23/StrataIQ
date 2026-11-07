@@ -15,3 +15,6 @@ frontend/next-env.d.ts
 
 .agents/
 docker-compose.*local*.yml
+deploy/.env
+deploy/backups/
+frontend/package-lock.json

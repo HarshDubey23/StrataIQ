@@ -126,3 +126,17 @@ def test_gym_competitor_classification():
 
     spa_cl = classify_competitor("gym", {"amenity": "spa"}, "Aura Spa")
     assert spa_cl.tier == "irrelevant"
+
+
+def test_private_amenities_and_repeat_listings_are_not_rivals():
+    from types import SimpleNamespace as C
+
+    from app.categories.competitors import is_private_amenity, real_rivals
+    for name in ("Sienna Ridge Apartments - Gym", "Austin Marriott Gym", "UFCU Alumni Gym", "Wyndham Gym", "St. Edwards University Rec Center"):
+        assert is_private_amenity(name), name
+    for name in ("LA Fitness", "Gold's Gym", "Crossfit South Lamar", "Orangetheory Fitness", None):
+        assert not is_private_amenity(name), name
+    gym = lambda name, lat=30.0, lng=-97.0, source="foursquare", price=None: C(name=name, lat=lat, lng=lng, source=source, price=price)  # noqa: E731
+    kept = real_rivals([gym("LA Fitness"), gym("LA Fitness", 30.0005), gym("LA Fitness", 30.05), gym("Sienna Apartments Gym"), gym("Sienna Apartments Gym", source="user"), gym("Hotel Gym", price=20)])
+    assert [(k.name, k.lat, k.source) for k in kept] == [("LA Fitness", 30.0, "foursquare"), ("LA Fitness", 30.05, "foursquare"), ("Sienna Apartments Gym", 30.0, "user"), ("Hotel Gym", 30.0, "foursquare")]
+

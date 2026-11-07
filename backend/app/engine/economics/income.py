@@ -142,6 +142,7 @@ class NationalCurve:
 
 
 # ---------------------------------------------------------------- wealth grid (Meta RWI x WorldPop)
+# shortcut: the CC BY-NC grid file was removed for commercial use, so the RWI paths never run; delete them or supply a licensed grid.
 @lru_cache(maxsize=1)
 def _grid():
     if not GRID_FILE.exists():

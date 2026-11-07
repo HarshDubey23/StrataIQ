@@ -33,6 +33,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..config import get_settings
+from . import lives
+
 GENOME_SIZE = 615
 
 # ---------------------------------------------------------------- latent structure
@@ -150,6 +153,9 @@ _CAT_ROLE = {
 MODE_BASE_SHARES = np.array([0.283, 0.426] + [0.291 * w / 40 for w in (8, 10, 12, 5, 5)])
 MODES = [("walk", 4.5, 0.55), ("two_wheeler", 18.0, 1.25), ("car", 16.0, 1.4), ("auto", 14.0, 1.1), ("bus", 11.0, 0.95), ("metro", 25.0, 1.2), ("cycle", 10.0, 0.8)]
 
+# km/h. US urban speeds are assumptions, walk to bicycle in MODES order; Indian speeds are the MODES values.
+MODE_SPEEDS = np.array([4.5, 40.0, 40.0, 35.0, 20.0, 35.0, 15.0]) if get_settings().market == "US" else np.array([m[1] for m in MODES])
+
 # ---------------------------------------------------------------- parameter registry
 @dataclass(frozen=True)
 class Param:
@@ -185,7 +191,12 @@ def _L(s: str) -> tuple:
 REG: list[Param] = []
 
 
+CUR = get_settings().currency
+VALUE_OF_TIME = (8.0, 100.0) if get_settings().market == "US" else (80.0, 2000.0)  # per hour, low and high
+
+
 def P(key, label, block, unit, mech, loads="", mu=0.0, sd=0.6, tr="sig", lo=0.0, hi=1.0, w=0.0, feat=None, origin="generated"):
+    label, unit = label.replace("₹", CUR), unit.replace("₹", CUR)
     REG.append(Param(key, label, block, unit, origin, mech, mu, _L(loads), sd, tr, lo, hi, w, feat))
 
 
@@ -264,7 +275,7 @@ P("ec_paid_ads_trust", "Trust in paid promotions", E, "0-1", "awareness", "novel
 P("ec_sunk_cost", "Sunk-cost effect (stays after paying)", E, "0-1", "retention", "risk_aversion:.3 habit:.2", w=-.15)
 P("ec_family_pricing_pull", "Pull of family / couple pricing", E, "0-1", "utility", "family_load:.5", w=.06, feat="attr_family")
 P("ec_monthly_cycle", "Salary-cycle spending effect", E, "0-1", "participation", "income:-.2 planning:-.15", w=.04)
-P("ec_price_threshold_round", "Sensitivity to price endings (₹999 vs ₹1,000)", E, "0-1", "utility", "price_consc:.3 planning:-.2", w=-.03, feat="price_rel")
+P("ec_price_threshold_round", "Sensitivity to price endings (a 99 ending vs a round price)", E, "0-1", "utility", "price_consc:.3 planning:-.2", w=-.03, feat="price_rel")
 P("ec_willing_deposit", "Willing to pay deposits / joining fees", E, "0-1", "retention", "income:.4 planning:.2", w=.06)
 P("ec_premium_service_add", "Buys add-on services", E, "0-1", "utility", "income:.35 status:.25 novelty:.15", w=.08, feat="attr_extras")
 P("ec_coupon_use", "Coupon usage", E, "0-1", "awareness", "price_consc:.45 digital:.25", w=.08)
@@ -365,7 +376,7 @@ for k, sp, _tol in MODES:
       "car": "status:.4 income:.3", "auto": "convenience:.3", "bus": "price_consc:.4", "metro": "time_poverty:.3 planning:.2", "cycle": "health:.5"}[k], sd=.7)
 for k, lbl, loads, unit, tr, lo, hi, mu, sd, w in [
     ("dist_tol", "Distance tolerance multiplier", "mobility:.3 convenience:-.25 time_poverty:-.2 locality:-.15 age:-.1", "×", "logn", 1.0, 3.0, 0.0, .22, 0),
-    ("value_of_time", "Value of time (₹/hour)", "income:.6 time_poverty:.4", "₹/h", "logn", 80.0, 2000.0, 0.0, .5, 0),
+    ("value_of_time", "Value of time (₹/hour)", "income:.6 time_poverty:.4", "₹/h", "logn", *VALUE_OF_TIME, 0.0, .5, 0),
     ("max_trip_min", "Maximum acceptable trip time", "mobility:.3 time_poverty:-.3 health:.1", "min", "logn", 18.0, 60.0, 0.0, .3, 0),
     ("parking_need", "Needs parking", "income:.4 mobility:.4", "0-1", "sig", 0, 1, 0.0, .6, .25),
     ("trip_chaining", "Combines trips (on the way)", "time_poverty:.4 planning:.3", "0-1", "sig", 0, 1, 0.0, .6, -0.15),
@@ -667,7 +678,8 @@ def business_features(arch_key: str, biz, comps, ref_price: float, quality_defau
     F[1:, FI["established"]] = 1.0
     F[1:, FI["has_reviews"]] = 1.0  # assumption: incumbents have a review history; OSM does not say
     prices = np.array([biz.price] + [c.price if c.price else ref_price for c in comps], float)
-    qual = np.array([biz.quality] + [c.quality if c.quality is not None else quality_default for c in comps], float)
+    _, spread_quality = lives.competitor_spread([c.name for c in comps])
+    qual = np.array([biz.quality] + [c.quality if c.quality is not None else float(np.clip(quality_default + s, 0.05, 0.95)) for c, s in zip(comps, spread_quality)], float)
     rel = prices / max(ref_price, 1e-9)
     F[:, FI["price_rel"]] = np.log(rel)
     F[:, FI["quality_c"]] = qual - 0.5
@@ -725,7 +737,7 @@ class Genome:
 def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, seg_keys: list[str], seg: np.ndarray, zone_pop: np.ndarray,
              zone_act: np.ndarray, lat: np.ndarray, lng: np.ndarray, zi: np.ndarray, blat: np.ndarray, blng: np.ndarray, circuity: float,
              max_km: float, seg_dt: np.ndarray, hh_size: float = 4.2, income_z: np.ndarray | None = None,
-             dist_km: np.ndarray | None = None, walk_min: np.ndarray | None = None) -> Genome:
+             dist_km: np.ndarray | None = None, walk_min: np.ndarray | None = None, mode_share: np.ndarray | None = None) -> Genome:
     from .geo import haversine_km
 
     N = age.size
@@ -759,10 +771,13 @@ def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, s
     # ---- travel mode from access x preference (multinomial logit)
     acc = np.stack([G[:, KI[f"mb_access_{m[0]}"]] for m in MODES], 1)
     prf = np.stack([G[:, KI[f"mb_pref_{m[0]}"]] for m in MODES], 1)
-    base = np.log(MODE_BASE_SHARES)
-    util = base + 3.0 * (acc - 0.5) + 2.0 * (prf - 0.5) + rng.gumbel(0, 1, (N, len(MODES)))
-    mode = np.argmax(util, 1)
-    speed = np.array([m[1] for m in MODES])[mode]
+    if mode_share is not None:  # real local shares, reproduced exactly: personal preference would pull away from the data
+        mode = np.argmax(np.log(mode_share + 1e-9) + rng.gumbel(0, 1, (N, len(MODES))), 1)
+    else:
+        base = np.log(MODE_BASE_SHARES)
+        util = base + 3.0 * (acc - 0.5) + 2.0 * (prf - 0.5) + rng.gumbel(0, 1, (N, len(MODES)))
+        mode = np.argmax(util, 1)
+    speed = MODE_SPEEDS[mode]
     mtol = np.array([m[2] for m in MODES])[mode]
 
     # ---- real geometry: distances to every business

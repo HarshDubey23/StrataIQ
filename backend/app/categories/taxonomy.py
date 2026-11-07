@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..config import get_settings
+
 
 @dataclass(frozen=True)
 class TaxonomyEntry:
@@ -29,7 +31,7 @@ def _e(key, label, archetype, filters, synonyms=()):
 
 TAXONOMY: tuple[TaxonomyEntry, ...] = (
     # --- membership ---
-    _e("gym", "Gym / fitness centre", "membership", ['["leisure"="fitness_centre"]', '["amenity"="gym"]', '["sport"="fitness"]', '["name"~"(^| )gym( |$)|fitness|cult.?fit|gold.?s gym|anytime fitness|snap fitness|talwalkar|crossfit|f45",i]["leisure"!="pitch"]'], ("fitness", "workout", "crossfit", "bodybuilding", "health club", "jim")),
+    _e("gym", "Gym / fitness center", "membership", ['["leisure"="fitness_centre"]', '["amenity"="gym"]', '["sport"="fitness"]', '["name"~"(^| )gym( |$)|fitness|cult.?fit|gold.?s gym|anytime fitness|snap fitness|talwalkar|crossfit|f45",i]["leisure"!="pitch"]'], ("fitness", "workout", "crossfit", "bodybuilding", "health club", "jim")),
     _e("yoga_studio", "Yoga studio", "membership", ['["sport"="yoga"]', '["leisure"="fitness_centre"]["sport"~"yoga"]', '["name"~"yoga",i]'], ("yoga", "pilates", "meditation centre")),
     _e("dance_school", "Dance school", "membership", ['["leisure"="dance"]', '["amenity"="dancing_school"]', '["name"~"dance",i]'], ("dance class", "dance academy", "zumba")),
     _e("martial_arts", "Martial arts dojo", "membership", ['["sport"~"karate|judo|taekwondo|martial_arts|boxing"]'], ("karate", "boxing", "mma", "taekwondo", "judo")),
@@ -98,13 +100,17 @@ TAXONOMY: tuple[TaxonomyEntry, ...] = (
     _e("phone_repair", "Phone / electronics repair", "appointment", ['["shop"~"^(mobile_phone|electronics_repair|computer)$"]', '["craft"="electronics_repair"]'], ("mobile repair", "phone repair", "laptop repair")),
     _e("photo_studio", "Photo studio", "appointment", ['["shop"="photo"]', '["craft"="photographer"]'], ("photo studio", "photographer")),
     _e("tattoo", "Tattoo studio", "appointment", ['["shop"="tattoo"]'], ("tattoo", "piercing")),
-    _e("print_shop", "Printing / xerox", "appointment", ['["shop"~"^(copyshop|printing)$"]', '["craft"="printer"]'], ("xerox", "printing", "photocopy", "print shop")),
+    _e("print_shop", "Print shop", "appointment", ['["shop"~"^(copyshop|printing)$"]', '["craft"="printer"]'], ("xerox", "printing", "photocopy", "print shop")),
     # --- lodging ---
     _e("hotel", "Hotel", "lodging", ['["tourism"="hotel"]'], ("hotel", "inn", "resort")),
     _e("guest_house", "Guest house / homestay", "lodging", ['["tourism"~"^(guest_house|apartment|chalet)$"]'], ("homestay", "guest house", "bnb", "b&b", "lodge", "dharamshala")),
     _e("hostel", "Backpacker hostel", "lodging", ['["tourism"="hostel"]'], ("backpacker", "hostel", "dorm")),
     _e("banquet", "Banquet / event hall", "lodging", ['["amenity"~"^(events_venue|conference_centre)$"]', '["name"~"banquet|marriage hall|party hall",i]'], ("banquet hall", "wedding venue", "party hall", "event venue")),
 )
+
+# Indian formats that mislead US founders in search and suggestions.
+if get_settings().market == "US":
+    TAXONOMY = tuple(e for e in TAXONOMY if e.key not in {"biryani", "tea_stall", "pg_hostel", "street_food", "dairy", "chinese_takeaway"})
 
 # OSM keys an LLM-proposed mapping may use. Anything else is rejected.
 ALLOWED_OSM_KEYS = {

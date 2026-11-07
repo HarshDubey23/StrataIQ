@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+from ..config import get_settings
+
 from .evidence_map import EVIDENCE_STATUS_MAP
 
 DOMAINS = {
@@ -56,6 +58,7 @@ _F: list[Factor] = []
 
 
 def f(key, label, domain, group, unit, scope, source, role, description=""):
+    unit = unit.replace("₹", get_settings().currency)
     status = EVIDENCE_STATUS_MAP.get(key, "UNSUPPORTED")
     _F.append(Factor(key, label, domain, group, unit, scope, source, role, description or label, status))
 
@@ -159,7 +162,7 @@ for k, lbl, unit, src, role in [
     ("income_tier_high", "High-income agent share", "share", "simulated", "output"),
     ("price_elasticity_est", "Arc price elasticity from sweep", "elasticity", "simulated", "output"),
     ("profit_max_price", "Price that maximises modeled profit", "₹", "simulated", "output"),
-    ("household_income", "Median monthly spend per person here (HCES 2023-24 x Meta RWI)", "₹/month", "official", "context"),
+    ("household_income", "Median monthly spend per person here (HCES 2023-24)", "₹/month", "official", "context"),
     ("consumer_spend_category", "Household spend on this category", "₹/month", "reserved", "reserved"),
     ("land_value", "Commercial land / rent benchmark", "₹/sq ft", "reserved", "reserved"),
     ("credit_access", "Access to formal credit", "index", "reserved", "reserved"),

@@ -19,6 +19,14 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
   const target = `${API}/api/${path.map(encodeURIComponent).join("/")}${req.nextUrl.search}`;
   const headers = new Headers(req.headers);
   HOP.forEach((h) => headers.delete(h));
+  // Never trust these from the browser. The last forwarded hop is the one our host appended; re-check this on each new host.
+  headers.delete("x-client-ip");
+  headers.delete("x-siq-proxy");
+  const client = req.headers.get("x-forwarded-for")?.split(",").pop()?.trim().replace(/^(\d+\.\d+\.\d+\.\d+):\d+$/, "$1");
+  if (process.env.PROXY_SECRET && client) {
+    headers.set("x-siq-proxy", process.env.PROXY_SECRET);
+    headers.set("x-client-ip", client);
+  }
   headers.set("x-forwarded-host", req.headers.get("host") || "");
   headers.set("x-forwarded-proto", req.nextUrl.protocol.replace(":", ""));
   const init: RequestInit = { method: req.method, headers, redirect: "manual", cache: "no-store" };

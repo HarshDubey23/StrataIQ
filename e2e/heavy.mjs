@@ -11,7 +11,7 @@ async function call(path, method = "GET", body) {
   console.log(`${method} ${path} -> ${r.status} in ${((Date.now() - t) / 1000).toFixed(1)}s`);
   return { status: r.status, body: j };
 }
-const idea = process.env.IDEA || "A café in Koramangala, Bengaluru, coffee at ₹250";
+const idea = process.env.IDEA || "A café in Downtown Austin, Texas, coffee at $6";
 await call("/auth/guest", "POST");
 const plan = (await call("/quickstart/plan", "POST", { text: idea })).body;
 console.log("plan:", plan.category?.label, "|", plan.place?.display_name, "| ready", plan.ready);

@@ -12,7 +12,7 @@ import { useProject } from "@/components/ProjectContext";
 import { Badge, Button, cn, Dialog, EmptyState, ErrorState, Evidence, Field, Input, Notice, NumberInput, Segmented, Select, Spinner } from "@/components/ui";
 import { IncomeMix } from "@/components/RealData";
 import { api, ApiError } from "@/lib/api";
-import { ago, money, num, pct, when } from "@/lib/format";
+import { ago, money, num, pct, when, CUR, distance } from "@/lib/format";
 import { refreshLocation, waitForSnapshot } from "@/lib/market";
 import type { CompetitorRec, MarketData, Run, SimResult } from "@/lib/types";
 
@@ -201,7 +201,7 @@ export default function MarketPage() {
             <MapPinPlus className="h-3.5 w-3.5" /> {addMode ? "Click the map to place it" : "Add competitor"}
           </Button>
         </div>
-        <div className={cn("panel absolute bottom-8 left-3 z-10 rounded-xl text-xs transition-[width] duration-300", layersOpen ? "w-56 p-3" : "w-auto p-0")}>
+        <div className={cn("panel absolute bottom-8 left-3 z-10 rounded-md text-xs transition-[width] duration-300", layersOpen ? "w-56 p-3" : "w-auto p-0")}>
           <button
             onClick={() => setLayersOpen((x) => !x)}
             aria-expanded={layersOpen}
@@ -212,7 +212,7 @@ export default function MarketPage() {
           {layersOpen && (
             [
               ["catchment", "Catchment", "border-accent"],
-              ["zones", "Population zones", "bg-[#6E5BFF]"],
+              ["zones", "Population zones", "bg-stone"],
               ["competitors", "Competitors", "bg-observed"],
               ["agents", "Synthetic customers", "bg-agent"],
               ["activity", "Activity points", "bg-assumption"],
@@ -234,7 +234,7 @@ export default function MarketPage() {
         </div>
         {loading && !refreshing && <div className="absolute right-14 top-3 z-10 rounded bg-ink-900/90 px-2 py-1"><Spinner label="Loading" /></div>}
         {(autoRunning || liveReady) && (
-          <div className="absolute inset-x-0 bottom-24 z-10 mx-auto w-fit rounded-md border border-accent/50 bg-ink-900/95 px-4 py-3 text-sm shadow-xl">
+          <div className="absolute inset-x-0 bottom-24 z-10 mx-auto w-fit rounded-md border border-accent/50 bg-ink-900/95 px-4 py-3 text-sm ">
             {autoRunning ? (
               <Spinner label="Simulating thousands of synthetic customers at real density…" />
             ) : (
@@ -247,14 +247,14 @@ export default function MarketPage() {
           </div>
         )}
         {refreshing && (
-          <div className="absolute inset-x-0 top-14 z-10 mx-auto w-fit max-w-md rounded-md border border-accent/40 bg-ink-900/95 px-4 py-3 text-sm shadow-xl">
+          <div className="absolute inset-x-0 top-14 z-10 mx-auto w-fit max-w-md rounded-md border border-accent/40 bg-ink-900/95 px-4 py-3 text-sm ">
             <Spinner label={`Loading live data from OpenStreetMap and WorldPop… ${elapsed}s`} />
             <p className="mt-1 text-xs text-ink-400">Competitors, buildings and population for the catchment. Public services can take up to a minute.</p>
           </div>
         )}
       </section>
 
-      <aside className="flex w-full flex-col border-l border-black/[0.06] bg-ink-950/80 backdrop-blur-xl lg:w-[400px]">
+      <aside className="flex w-full flex-col border-l border-black/[0.06] bg-ink-950/80 -xl lg:w-[400px]">
         <div className="flex gap-1 border-b border-black/[0.06] p-2">
           {(["evidence", "competitors", "sites", "locations"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)} data-tour={t === "sites" ? "best-sites" : undefined}
@@ -323,7 +323,7 @@ export default function MarketPage() {
                       <>
                         <div className="num text-2xl font-semibold">{num(snap.population.total)}</div>
                         <div className="mt-1 text-xs text-ink-400">
-                          {snap.catchment_method === "isochrone" ? "Travel-time catchment" : `${snap.population.radius_km?.toFixed(1)} km radius (straight-line)`} · {snap.population.zones} zones of ~{num((snap.population.spacing_km || 0) * 1000)} m ·{" "}
+                          {snap.catchment_method === "isochrone" ? "Travel-time catchment" : `${distance(snap.population.radius_km)} radius (straight-line)`} · {snap.population.zones} zones of ~{distance(snap.population.spacing_km, 2)} ·{" "}
                           {snap.population.method === "dasymetric_buildings" ? `placed using ${num(snap.population.buildings_used)} mapped buildings` : snap.population.method === "uniform" ? "spread evenly (few buildings mapped)" : snap.population.method}
                         </div>
                         {snap.population.source === "estimate_buildings" && <div className="mt-3"><PopulationFallback projectId={p.id} locationId={locId!} onSaved={refresh} /></div>}
@@ -407,7 +407,7 @@ export default function MarketPage() {
                         <button onClick={() => setSel(c.id)} className={cn("flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-ink-850", !c.active && "opacity-50")}>
                           <span className="min-w-0">
                             <span className="block truncate">{c.name}</span>
-                            <span className="block text-[11px] text-ink-400">{num(c.distance_km, 2)} km · {c.price ? money(c.price) : "price unknown"}</span>
+                            <span className="block text-[11px] text-ink-400">{distance(c.distance_km)} · {c.price ? money(c.price) : "price unknown"}</span>
                           </span>
                           <Evidence kind={c.source === "user" ? "user" : c.source === "demo" ? "demo" : c.source === "field" ? "field" : "observed"} label={c.is_hypothetical ? "Hypothetical" : undefined} />
                         </button>
@@ -449,7 +449,7 @@ function PopulationFallback({ projectId, locationId, onSaved }: { projectId: str
   const [busy, setBusy] = useState(false);
   return (
     <div className="space-y-2">
-      <p className="text-xs text-amber-800">Official population data could not be loaded. Retry later, or enter your best figure for the catchment (labelled as user-entered).</p>
+      <p className="text-xs text-warn">Official population data could not be loaded. Retry later, or enter your best figure for the catchment (labeled as user-entered).</p>
       <div className="flex gap-2">
         <NumberInput value={pop} onChange={setPop} allowEmpty suffix="people" />
         <Button
@@ -517,7 +517,7 @@ function CompetitorPanel({
       <section className="space-y-1.5 rounded-md border border-black/[0.07] p-3 text-xs">
         <div className="mb-1 font-medium text-ink-200">Observed information</div>
         <Row k="Location" v={`${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`} />
-        <Row k="Distance from site" v={`${num(c.distance_km, 2)} km (straight line)`} />
+        <Row k="Distance from site" v={`${distance(c.distance_km, 2)} (straight line)`} />
         {c.category_tag && <Row k="Map category" v={c.category_tag} />}
         {attrs.map(([k, v]) => <Row key={k} k={k} v={v} />)}
         <Row k="Source" v={c.source === "osm" ? "OpenStreetMap" : c.source === "foursquare" ? "Foursquare Places" : c.source === "user" ? "Entered by you" : "Demo dataset"} />
@@ -534,7 +534,7 @@ function CompetitorPanel({
         <div className="font-medium text-ink-200">Unknown unless you add it</div>
         <Field label="Price" kind={c.price ? "user" : "unknown"} hint={c.price ? undefined : "Not available in map data. The model assumes the local reference price."}>
           <div className="flex gap-2">
-            <NumberInput value={price} onChange={setPrice} prefix="₹" allowEmpty placeholder="unknown" />
+            <NumberInput value={price} onChange={setPrice} prefix={CUR} allowEmpty placeholder="unknown" />
             <Button size="sm" loading={busy} onClick={() => patch(price ? { price } : { clear_price: true })}>Save</Button>
           </div>
         </Field>
@@ -639,10 +639,10 @@ function AddCompetitorDialog({ draft, projectId, onClose, onAdded }: { draft: { 
       }
     >
       <div className="space-y-3">
-        <p className="text-xs text-ink-400">At {draft?.lat.toFixed(5)}, {draft?.lng.toFixed(5)}. It will be labelled as user-entered, not verified.</p>
+        <p className="text-xs text-ink-400">At {draft?.lat.toFixed(5)}, {draft?.lng.toFixed(5)}. It will be labeled as user-entered, not verified.</p>
         {err && <ErrorState message={err} />}
         <Field label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
-        <Field label="Price (if you know it)"><NumberInput value={price} onChange={setPrice} prefix="₹" allowEmpty /></Field>
+        <Field label="Price (if you know it)"><NumberInput value={price} onChange={setPrice} prefix={CUR} allowEmpty /></Field>
         <Segmented value={hyp ? "hyp" : "obs"} onChange={(v) => setHyp(v === "hyp")} options={[{ value: "obs", label: "I saw it on the ground" }, { value: "hyp", label: "Hypothetical new entrant" }]} />
         <Field label="Notes"><Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. opened last month, small, women-only" /></Field>
       </div>
@@ -669,14 +669,14 @@ function LocationsPanel({ currentId, onSelect, onChanged }: { currentId?: string
             <button onClick={() => onSelect(l.id)} className={cn("w-full rounded-md border p-3 text-left text-sm", l.id === currentId ? "border-accent bg-accent/5" : "border-black/[0.07] hover:border-ink-500")}>
               <div className="font-medium">{l.label}</div>
               <div className="truncate text-xs text-ink-400">{l.address}</div>
-              <div className="mt-1 text-[11px] text-ink-500">{l.catchment.mode === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${l.catchment.radius_km} km radius`}{l.manual_population ? ` · population ${num(l.manual_population)} (user)` : ""}</div>
+              <div className="mt-1 text-[11px] text-ink-500">{l.catchment.mode === "isochrone" ? `${l.catchment.minutes} min ${l.catchment.profile}` : `${distance(l.catchment.radius_km)} radius`}{l.manual_population ? ` · population ${num(l.manual_population)} (user)` : ""}</div>
             </button>
           </li>
         ))}
       </ul>
       {cur && cur.catchment.mode === "radius" && (
         <div className="space-y-2 rounded-md border border-black/[0.07] p-3">
-          <Field label={`Catchment radius for ${cur.label}: ${editRadius.toFixed(1)} km`}>
+          <Field label={`Catchment radius for ${cur.label}: ${distance(editRadius)}`}>
             <input type="range" min={0.5} max={6} step={0.1} value={editRadius} onChange={(e) => setEditRadius(Number(e.target.value))} className="w-full" aria-label="Catchment radius" />
           </Field>
           <Button
@@ -700,7 +700,7 @@ function LocationsPanel({ currentId, onSelect, onChanged }: { currentId?: string
         <div className="space-y-3 rounded-md border border-black/[0.07] p-3">
           <div className="text-sm font-medium">New candidate location</div>
           <LocationPicker value={place} onChange={setPlace} radiusKm={radius} height="h-56" />
-          <Field label={`Radius ${radius.toFixed(1)} km`}>
+          <Field label={`Radius ${distance(radius)}`}>
             <input type="range" min={0.5} max={6} step={0.1} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" aria-label="New location radius" />
           </Field>
           {err && <ErrorState message={err} />}

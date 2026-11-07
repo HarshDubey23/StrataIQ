@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Logo } from "@/components/brand";
 import { Button, Field, Input, NumberInput, Segmented } from "@/components/ui";
 import { api } from "@/lib/api";
+import { CUR } from "@/lib/format";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function Onboarding() {
         <div className="mb-8 flex justify-center">
           <Logo href="/app" />
         </div>
-        <div className="space-y-5 rounded-xl border border-black/[0.07] bg-black/[0.025] p-6">
+        <div className="space-y-5 rounded-md border border-black/[0.07] bg-black/[0.025] p-6">
           <div>
             <h1 className="text-lg font-semibold">A few quick questions</h1>
             <p className="mt-1 text-sm text-ink-300">They pre-fill your first analysis. Everything is optional.</p>
@@ -50,10 +51,10 @@ export default function Onboarding() {
             <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Type any business" />
           </Field>
           <Field label="Which city or area?">
-            <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Indiranagar, Bengaluru" />
+            <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. South Congress, Austin" />
           </Field>
           <Field label="Approximate investment budget">
-            <NumberInput value={budget} onChange={setBudget} prefix="₹" allowEmpty placeholder="e.g. 1500000" />
+            <NumberInput value={budget} onChange={setBudget} prefix={CUR} allowEmpty placeholder="e.g. 250000" />
           </Field>
           <Field label="What matters most?">
             <Segmented

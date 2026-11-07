@@ -12,6 +12,7 @@ from geoalchemy2.functions import ST_DWithin, ST_GeogFromText
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..categories.competitors import real_rivals
 from ..categories.archetypes import get_archetype
 from ..config import get_settings
 from ..db import session_factory
@@ -19,6 +20,7 @@ from ..engine import model as em
 from ..engine import genome as gm
 from ..engine.abm import build_population, cache_get, cache_put, run_abm
 from ..engine.economics import behaviour as eb
+from ..engine.economics import income_us as eu
 from ..engine.economics import income as ei
 from ..engine.simulate import SimulationError, simulate
 from ..models import CandidateLocation, Competitor, MarketSnapshot, Project, Scenario, SimulationRun, utcnow
@@ -182,7 +184,7 @@ def competitors_for(db: Session, project: Project, loc: CandidateLocation, radiu
         Competitor.project_id == project.id, Competitor.active.is_(True),
         ST_DWithin(Competitor.geog, ST_GeogFromText(point_wkt(loc.lat, loc.lng)), reach_m),
     ).order_by(Competitor.created_at)
-    return list(db.scalars(q))
+    return real_rivals(list(db.scalars(q)))
 
 
 def _hash(obj: dict) -> str:
@@ -202,13 +204,15 @@ def field_summary(db: Session, project: Project):
     return field_evidence([{"kind": r.kind, "data": r.data} for r in recs], frequency_fixed=bool(fq and fq.low == fq.high))
 
 
-EVIDENCE_VERSION = "real-data-1"  # bump when the evidence layer changes (part of the run's input hash)
+EVIDENCE_VERSION = "real-data-3"
+WORKER_RESIDENT_SHARE = 0.3  # assumption: a local worker buys about 30% as much here as a resident does
+ACTIVITY_EQUIVALENT = 120.0  # residents per activity point, the model's default  # bump when the evidence layer changes (part of the run's input hash)
 
 
 class MarketInputs:
     """Everything the run needs from the snapshot's real-data layers, built identically for a run and its re-inspection."""
 
-    def __init__(self, arch, category_key: str | None, snap: MarketSnapshot, seed: int, circuity: float, speed_kmh: float):
+    def __init__(self, arch, category_key: str | None, snap: MarketSnapshot, seed: int, circuity: float, speed_kmh: float, ref_price: float | None = None):
         keep = [i for i, z in enumerate(snap.zones) if z["population"] > 0]
         self.zones = [em.Zone(snap.zones[i]["lat"], snap.zones[i]["lng"], snap.zones[i]["population"], snap.zones[i].get("activity", 0)) for i in keep]
         self.zone_ll = np.array([[z.lat, z.lng] for z in self.zones]) if self.zones else np.zeros((0, 2))
@@ -224,7 +228,16 @@ class MarketInputs:
         self.income = self.behaviour = None
         self.arch = arch
         india = adm.get("country_code") in ("IN", "", None)
-        if self.zones and india:
+        us_ctx = eu.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state")) if self.zones and get_settings().market == "US" else None
+        if us_ctx:
+            if arch.demand_base == "residents_and_activity":
+                # People who work here buy here too. Census jobs by tract, counted as a share of a resident.
+                for z, jobs in zip(self.zones, us_ctx.people["zone_jobs"]):
+                    z.activity += float(jobs) * WORKER_RESIDENT_SHARE / ACTIVITY_EQUIVALENT
+            self.income = us_ctx
+            self.behaviour = eb.build(arch, category_key, us_ctx, len(self.zones), age_sex=pop_meta.get("age_sex"), seed=seed, ref_price=ref_price)
+            self.arch = eb.apply(arch, self.behaviour)
+        elif self.zones and india:
             ctx = ei.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state"), sector=adm.get("settlement"))
             if ctx.method.startswith("rwi") or adm.get("country_code") == "IN":
                 self.income = ctx
@@ -281,7 +294,7 @@ def execute_run(db: Session, project: Project, scenario: Scenario) -> Simulation
     )
     base_params = em.ResolvedParams.from_archetype(arch, inputs.get("param_overrides") or {})
     mi = MarketInputs(arch, (project.category or {}).get("key"), snap, seed, base_params.values.get("circuity", 1.3),
-                      base_params.values.get("urban_speed_kmh", 20.0))
+                      base_params.values.get("urban_speed_kmh", 20.0), ref_price=float(inputs.get("reference_price") or ref_fill or inputs["price"]))
     field = field_summary(db, project)
     mi.add_field(field.evidence)
     zones = mi.zones

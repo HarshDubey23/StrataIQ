@@ -1,18 +1,30 @@
+export const US_MARKET = (process.env.NEXT_PUBLIC_MARKET ?? "US") === "US";
+export const CUR = US_MARKET ? "$" : "₹";
+export const LOCALE = US_MARKET ? "en-US" : "en-IN";
+
 export function money(x: number | null | undefined, opts: { compact?: boolean; sign?: boolean } = {}): string {
   if (x === null || x === undefined || Number.isNaN(x)) return "—";
   const neg = x < 0;
   const a = Math.abs(x);
   let s: string;
-  if (opts.compact && a >= 1e7) s = `${(a / 1e7).toFixed(2)} Cr`;
-  else if (opts.compact && a >= 1e5) s = `${(a / 1e5).toFixed(2)} L`;
-  else s = a.toLocaleString("en-IN", { maximumFractionDigits: a < 100 ? 2 : 0 });
+  if (opts.compact && US_MARKET && a >= 1e6) s = `${(a / 1e6).toFixed(2)}M`;
+  else if (opts.compact && US_MARKET && a >= 1e4) s = `${(a / 1e3).toFixed(1)}k`;
+  else if (opts.compact && a >= 1e7) s = `${(a / 1e7).toFixed(2)} Cr`;
+  else if (opts.compact && !US_MARKET && a >= 1e5) s = `${(a / 1e5).toFixed(2)} L`;
+  else s = a.toLocaleString(LOCALE, { maximumFractionDigits: a < 100 ? 2 : 0 });
   const prefix = neg ? "−" : opts.sign ? "+" : "";
-  return `${prefix}₹${s}`;
+  return `${prefix}${CUR}${s}`;
+}
+
+/** A distance held in km, shown in the local unit. */
+export function distance(km: number | null | undefined, digits = 1): string {
+  if (km === null || km === undefined || Number.isNaN(km)) return "—";
+  return US_MARKET ? `${(km * 0.621371).toFixed(digits)} mi` : `${km.toFixed(digits)} km`;
 }
 
 export function num(x: number | null | undefined, digits = 0): string {
   if (x === null || x === undefined || Number.isNaN(x)) return "—";
-  return x.toLocaleString("en-IN", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  return x.toLocaleString(LOCALE, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
 
 export function pct(x: number | null | undefined, digits = 0): string {
@@ -22,14 +34,14 @@ export function pct(x: number | null | undefined, digits = 0): string {
 
 export function signed(x: number | null | undefined, digits = 0): string {
   if (x === null || x === undefined || Number.isNaN(x)) return "—";
-  return `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x).toLocaleString("en-IN", { maximumFractionDigits: digits })}`;
+  return `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x).toLocaleString(LOCALE, { maximumFractionDigits: digits })}`;
 }
 
 export function when(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(LOCALE, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 export function ago(iso: string | null | undefined): string {

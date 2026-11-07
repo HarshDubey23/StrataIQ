@@ -14,6 +14,14 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 // The first-visit product tour is a modal; the journey tests the app behind it, so mark it seen.
 await ctx.addInitScript(() => { try { localStorage.setItem("siq-tour-seen", "1"); } catch { /* ignore */ } });
 const page = await ctx.newPage();
+// Attached from the start so a frozen page can still be paused, to show the code it is stuck in.
+const cdp = await ctx.newCDPSession(page);
+await cdp.send("Debugger.enable");
+// Requests still open, logged when a step fails: a browser allows six per host, so stuck ones can block navigation.
+const open = new Map();
+page.on("request", (r) => open.set(r, Date.now()));
+for (const e of ["requestfinished", "requestfailed"]) page.on(e, (r) => open.delete(r));
+const openRequests = () => [...open].map(([r, t]) => `${r.method()} ${r.url().replace(/^https?:\/\/[^/]+/, "").slice(0, 90)} ${Math.round((Date.now() - t) / 1000)}s`);
 page.on("console", (m) => { if (["error", "warning"].includes(m.type())) L(`[console.${m.type()}] ${m.text().slice(0, 300)}`); });
 page.on("pageerror", (e) => { failures++; L(`[pageerror] ${e.message.slice(0, 500)}`); });
 page.on("response", (r) => { if (r.url().includes("/api/") && r.status() >= 400) L(`[http ${r.status()}] ${r.request().method()} ${r.url().replace(BASE, "")}`); });
@@ -34,9 +42,31 @@ async function shot(name) {
   await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: false });
   L(`shot ${name} @ ${page.url().replace(BASE, "")}`);
 }
+// When a step fails, tell apart a stuck server from a stuck browser page.
+async function diagnose() {
+  const timed = async (label, work) => {
+    const t = Date.now();
+    const r = await Promise.race([work().catch((e) => `error ${e}`), new Promise((ok) => setTimeout(() => ok("no answer in 10s"), 10000))]);
+    L(`  diagnose ${label}: ${r} after ${Date.now() - t}ms`);
+  };
+  await timed("server page", async () => (await fetch(`${BASE}/methodology`)).status);
+  await timed("server proxy", async () => (await fetch(`${BASE}/api/health`)).status);
+  await timed("browser script", () => page.evaluate(() => document.readyState));
+  L(`  diagnose open requests: ${JSON.stringify(openRequests())}`);
+  const stuck = page.url();
+  const cookie = (await ctx.cookies()).map((c) => `${c.name}=${c.value}`).join("; ");
+  await timed("same page outside browser", async () => {
+    const r = await fetch(stuck, { headers: { cookie } });
+    return `${r.status} ${(await r.text()).length} bytes from ${stuck.replace(BASE, "")}`;
+  });
+  const stack = new Promise((ok) => cdp.once("Debugger.paused", (e) => ok(e.callFrames.slice(0, 14).map((f) => `${f.functionName || "(anon)"} ${f.url.replace(/^.*\/_next\/static\/chunks\//, "")}:${f.location.lineNumber}:${f.location.columnNumber}`))));
+  await cdp.send("Debugger.pause").catch((e) => L(`  diagnose pause failed: ${e}`));
+  await timed("frozen at", () => stack.then((frames) => JSON.stringify(frames)));
+  await cdp.send("Debugger.resume").catch(() => {});
+}
 async function step(name, fn) {
   try { await fn(); L(`OK   ${name}`); }
-  catch (e) { failures++; L(`FAIL ${name}: ${String(e).slice(0, 400)}`); await page.screenshot({ path: `${OUT}/FAIL-${name.replace(/\W+/g, "_")}.png` }).catch(() => {}); }
+  catch (e) { failures++; L(`FAIL ${name}: ${String(e).slice(0, 400)}`); await diagnose(); await page.screenshot({ path: `${OUT}/FAIL-${name.replace(/\W+/g, "_")}.png` }).catch(() => {}); }
 }
 const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
   const r = await fetch(`/api/v1${p}`, { method: m, headers: b ? { "Content-Type": "application/json" } : {}, body: b ? JSON.stringify(b) : undefined, credentials: "include" });
@@ -44,8 +74,8 @@ const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
   return { status: r.status, body: j };
 }, [path, method, body]);
 
-await step("landing", async () => { await page.goto(BASE); await page.getByText("before you sign the lease.").first().waitFor(); await page.waitForTimeout(6000); await shot("01-landing"); });
-await step("methodology", async () => { await page.goto(`${BASE}/methodology`); await page.getByText("Customer-choice model").waitFor(); });
+await step("landing", async () => { await page.goto(BASE); await page.getByRole("heading", { name: "Know your numbers before you sign the lease." }).waitFor(); await page.waitForTimeout(6000); await shot("01-landing"); });
+await step("methodology", async () => { await page.goto(`${BASE}/methodology`); await page.getByRole("heading", { name: "How StrataIQ tests a location" }).waitFor(); });
 await step("sign up", async () => {
   await page.goto(`${BASE}/sign-up`);
   await page.fill("#email", `judge${Date.now()}@example.com`);
@@ -156,7 +186,7 @@ await step("wizard ui", async () => {
   await page.getByRole("button", { name: /Next/ }).click();
   await page.getByRole("button", { name: /Next/ }).click();
   await page.getByRole("button", { name: /Next/ }).click();
-  await page.getByLabel("Search place").fill("Connaught Place, New Delhi");
+  await page.getByLabel("Search place").fill("Downtown Austin, Texas");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.locator("ul button").first().click({ timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -174,13 +204,13 @@ await step("wizard ui", async () => {
   await shot("13b-live-pizza-competitors");
 });
 
-// ---------- Live gym project via API (Connaught Place) ----------
+// ---------- Live gym project via API (Downtown Austin) ----------
 await step("live gym journey", async () => {
   const cat = await api("/categories/resolve", "POST", { query: "gym", use_ai: false });
   const p = await api("/projects", "POST", {
-    name: "Live gym — Connaught Place", objective: "start_new", decision_goal: "profit", category: cat.body, profile: {},
-    location: { label: "Location A", address: "Connaught Place, New Delhi", lat: 28.6315, lng: 77.2167, catchment: { mode: "radius", radius_km: 2.5 } },
-    baseline: { price: 1800, quality: 0.6, marketing_spend: 15000, capacity: { max_members: 350 }, rent: 90000, payroll: 90000, utilities: 18000, other_fixed: 12000, startup_cost: 2000000 },
+    name: "Live gym — Downtown Austin", objective: "start_new", decision_goal: "profit", category: cat.body, profile: {},
+    location: { label: "Location A", address: "Downtown Austin, Texas", lat: 30.2672, lng: -97.7431, catchment: { mode: "radius", radius_km: 2.5 } },
+    baseline: { price: 49, quality: 0.6, marketing_spend: 2000, capacity: { max_members: 700 }, rent: 12000, payroll: 14000, utilities: 2500, other_fixed: 12000, startup_cost: 2000000 },
   });
   L(`project create ${p.status}`);
   const pid = p.body.id, lid = p.body.locations[0].id;
@@ -194,7 +224,9 @@ await step("live gym journey", async () => {
   L(`coverage=${JSON.stringify(snap.body.coverage)}`);
   const mk = await api(`/projects/${pid}/market?location_id=${lid}`);
   L(`competitors found: ${mk.body.competitors?.length}; first: ${mk.body.competitors?.slice(0, 3).map((c) => c.name).join(" | ")}`);
-  await page.goto(`${BASE}/app/projects/${pid}/market`);
+  // Outside map resources can hold back the browser's load event; the Competitors click below proves the page works.
+  L(`open before navigating: ${JSON.stringify(openRequests().filter((x) => x.includes("/api/")))}`);
+  await page.goto(`${BASE}/app/projects/${pid}/market`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForTimeout(6000);
   await shot("14-live-gym-market");
   const firstComp = page.locator("aside ul button").first();
