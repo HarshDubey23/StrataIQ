@@ -52,4 +52,21 @@ const r = recentTurns(long);
 assert.equal(r[0].role, "user");
 assert.ok(r.length <= 36);
 assert.equal(r.at(-1)?.content, "59");
+
+// a long talk full of tools still remembers the first question, and the latest turn keeps its tool results
+const talk: HistoryMsg[] = [];
+for (let t = 0; t < 12; t++) {
+  talk.push(
+    { role: "user", content: `q${t}` },
+    { role: "assistant", content: "", toolCalls: [call(`c${t}`)] },
+    { role: "tool", content: "result", toolCallId: `c${t}` },
+    { role: "assistant", content: `a${t}` },
+  );
+}
+const kept = recentTurns(talk);
+assert.equal(kept[0].content, "q0");
+assert.ok(kept.length <= 36);
+assert.equal(kept.filter((m) => m.role === "tool").length, 3);
+// every tool result that stays still has its call
+for (const m of kept) if (m.role === "tool") assert.ok(kept.some((x) => x.toolCalls?.some((c) => c.id === m.toolCallId)));
 console.log("voice turns ok");

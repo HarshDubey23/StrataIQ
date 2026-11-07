@@ -52,10 +52,22 @@ export function settleHistory(h: HistoryMsg[]): void {
   if (last && (last.role !== "assistant" || last.toolCalls?.length)) h.push({ role: "assistant", content: INTERRUPTED });
 }
 
-/** The latest stretch of conversation that fits the API limit, starting on a user turn so no tool result loses its call. */
-export function recentTurns<T extends { role: string }>(h: T[], limit = 36): T[] {
-  for (let i = Math.max(0, h.length - limit); i < h.length; i++) {
-    if (h[i].role === "user") return h.slice(i);
+/**
+ * The conversation that fits the API limit, starting on a user turn so no tool result loses its call.
+ * Tool traffic fills the limit fast, so turns before the last few keep only what was said: the answers carry the numbers.
+ */
+export function recentTurns<T extends { role: string; toolCalls?: unknown[] }>(h: T[], limit = 36, detailedTurns = 3): T[] {
+  let seen = 0;
+  let cut = 0;
+  for (let i = h.length - 1; i >= 0; i--) {
+    if (h[i].role === "user" && ++seen === detailedTurns) {
+      cut = i;
+      break;
+    }
   }
-  return h.slice(-1);
+  const kept = h.filter((m, i) => i >= cut || (m.role !== "tool" && !m.toolCalls?.length));
+  for (let i = Math.max(0, kept.length - limit); i < kept.length; i++) {
+    if (kept[i].role === "user") return kept.slice(i);
+  }
+  return kept.slice(-1);
 }
