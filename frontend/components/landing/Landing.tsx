@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { AnimatePresence, animate, motion, useInView, useReducedMotion } from "motion/react";
 import { CountUp, FactItem, Magnetic, Marquee, Reveal, RollLink, ScrollBar, ScrollOut, Stamp, Tilt3D, WipeSection, WordsIn, type Fact } from "@/components/motion";
 import { AtlasKey, BlockPlan, Logo, LogoMark } from "@/components/brand";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -62,7 +62,7 @@ export function useLenis() {
     let raf = 0;
     let lenis: { raf: (t: number) => void; destroy: () => void } | null = null;
     import("lenis").then(({ default: Lenis }) => {
-      lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 }) as unknown as typeof lenis;
+      lenis = new Lenis({ lerp: 0.13, wheelMultiplier: 0.9 }) as unknown as typeof lenis;
       const loop = (t: number) => {
         lenis?.raf(t);
         raf = requestAnimationFrame(loop);
@@ -158,14 +158,31 @@ function Strips({ lines, as: Tag = "h2", className, tone = "bg-paper text-night"
   return (
     <Tag className={`font-display leading-[1.12] ${className ?? ""}`} aria-label={label}>
       {lines.map((l, i) => (
-        <motion.span key={i} className={`strip -mt-px block w-fit border border-night px-[0.2em] pb-[0.06em] ${tone}`}
-          initial={still ? false : { clipPath: "inset(0 100% 0 0)" }} animate={{ clipPath: "inset(0 0% 0 0)" }} exit={still ? undefined : { clipPath: "inset(0 0 0 100%)", transition: { duration: 0.28, ease: [0.76, 0, 0.24, 1] } }}
-          transition={{ duration: 0.6, delay: delay + i * 0.09, ease: [0.76, 0, 0.24, 1] }}>
-          {l}
-        </motion.span>
+        // each line rises out of its own mask: transform only, smooth even on a weak GPU
+        <span key={i} className="-mt-px block w-fit overflow-hidden">
+          <motion.span className={`strip block border border-night px-[0.2em] pb-[0.06em] will-change-transform ${tone}`}
+            initial={still ? false : { y: "102%" }} animate={{ y: 0 }} exit={still ? undefined : { y: "-102%", transition: { duration: 0.2, ease: [0.76, 0, 0.24, 1] } }}
+            transition={{ duration: 0.5, delay: delay + i * 0.05, ease: [0.16, 1, 0.3, 1] }}>
+            {l}
+          </motion.span>
+        </span>
       ))}
     </Tag>
   );
+}
+
+/** A number that runs to its new value without re-rendering the page. */
+function Tween({ to }: { to: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const from = useRef(to);
+  useEffect(() => {
+    const c = animate(from.current, to, { duration: 0.35, ease: [0.16, 1, 0.3, 1], onUpdate: (v) => {
+      from.current = v;
+      if (ref.current) ref.current.textContent = Math.round(v).toLocaleString("en-US");
+    } });
+    return () => c.stop();
+  }, [to]);
+  return <span ref={ref}>{to.toLocaleString("en-US")}</span>;
 }
 
 function Note({ children, delay = 0.4 }: { children: ReactNode; delay?: number }) {
@@ -299,7 +316,7 @@ export default function Landing() {
       <Opening first={first} />
       {/* The one continuous shot: the real street stays under the whole story */}
       <div className="fixed inset-0 z-0 overflow-hidden bg-atlas">
-        <HeroMap spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} crosshair />
+        <HeroMap spot={spot} comps={comps} tracts={a?.tracts ?? []} scene={scene} progress={progress} crosshair active={inStory} pillar={t ? rentNow / t.rent / 1.2 : 1} />
         <div className="absolute inset-x-0 top-16 z-10"><ScrollBar /></div>
       </div>
 
@@ -319,10 +336,10 @@ export default function Landing() {
               ))}
             </nav>
 
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-5 md:bottom-auto md:top-24 md:px-10">
-              <AnimatePresence mode="wait">
+            <div className="absolute inset-0">
+              <AnimatePresence>
                 {scene === 0 && (
-                  <motion.div key="s0" exit={{ opacity: 1 }} transition={{ duration: 0.28 }} className="pointer-events-auto">
+                  <motion.div key="s0" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="pointer-events-auto absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
                     <Strips as="h1" delay={lift} label="Know your numbers before you sign the lease." lines={["Know your", "numbers before", "you sign the lease."]} className={BIG} />
                     <motion.form initial={reduced() ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: lift + 0.5, ease: [0.16, 1, 0.3, 1] }} onSubmit={find}
                       className="sheet mt-4 flex max-w-[52rem] flex-col gap-2 p-3 md:flex-row md:items-center">
@@ -350,7 +367,7 @@ export default function Landing() {
                   </motion.div>
                 )}
                 {scene === 1 && (
-                  <motion.div key="s1" exit={{ opacity: 1 }} transition={{ duration: 0.28 }}>
+                  <motion.div key="s1" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
                     {loading && !comps.length ? (
                       <Strips lines={[<span key="l" className="inline-flex items-center gap-3"><Loader2 className="h-8 w-8 animate-spin" /> Finding rivals</span>, `around ${area}`]} className={BIG} />
                     ) : comps.length ? (
@@ -365,7 +382,7 @@ export default function Landing() {
                   </motion.div>
                 )}
                 {scene === 2 && (
-                  <motion.div key="s2" exit={{ opacity: 1 }} transition={{ duration: 0.28 }}>
+                  <motion.div key="s2" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
                     {a ? (
                       <>
                         <Strips label={`${num(a.people)} people live within 2 miles.`} lines={[<span key="p" className="num"><CountUp to={a.people} /></span>, "people within 2 miles"]} className={BIG} />
@@ -379,7 +396,7 @@ export default function Landing() {
                   </motion.div>
                 )}
                 {scene === 3 && (
-                  <motion.div key="s3" exit={{ opacity: 1 }} transition={{ duration: 0.28 }}>
+                  <motion.div key="s3" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
                     <Strips label="Watch 10,000 customers decide." lines={[<span key="d">Day <DayCounter progress={progress} /> of 84</span>, "10,000 customers", "decide."]} className={BIG} />
                     <Strips as="p" delay={0.3} className="mt-2 !font-sans text-[15px]" lines={[
                       <span key="k" className="flex flex-wrap items-center gap-x-4 gap-y-1 py-1">
@@ -392,10 +409,10 @@ export default function Landing() {
                   </motion.div>
                 )}
                 {scene === 4 && (
-                  <motion.div key="s4" exit={{ opacity: 1 }} transition={{ duration: 0.28 }} className="pointer-events-auto">
+                  <motion.div key="s4" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="pointer-events-auto absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
                     {t ? (
                       <>
-                        <Strips label={`You need ${num(needed)} ${t.unit}.`} lines={["You need", <span key="n" className="num bg-you px-[0.15em]">{num(needed)}</span>, t.per_day ? `${t.unit} a day` : t.unit]} className={BIG} />
+                        <Strips label={`You need ${num(needed)} ${t.unit}.`} lines={["You need", <span key="n" className="num bg-you px-[0.15em]"><Tween to={needed} /></span>, t.per_day ? `${t.unit} a day` : t.unit]} className={BIG} />
                         <div className="sheet mt-3 max-w-xl p-4">
                           <label htmlFor="rent" className="flex items-baseline justify-between text-[15px] font-semibold">Drag the rent <span className="num font-display text-[28px]">{money(rentNow)}<span className="font-sans text-[14px] font-normal"> a month</span></span></label>
                           <input id="rent" type="range" min={Math.round(t.rent * 0.4)} max={Math.round(t.rent * 2.5)} step={100} value={rentNow} onChange={(e) => setRent(Number(e.target.value))} className="mt-2 h-8 w-full" />

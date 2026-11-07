@@ -54,15 +54,14 @@ export function AtlasSheet({ children, className, hero = false }: { children: Re
   );
 }
 
-/** A full-width section pulled open from a narrower sheet as it scrolls in. */
+/** A full-width sheet that opens out as it scrolls in. Transform only, so it never repaints the page. */
 export function WipeSection({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
   const still = useReducedMotion();
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 30%"] });
-  const side = useTransform(scrollYProgress, [0, 1], [7, 0]);
-  const clipPath = useTransform(side, (v) => `inset(0 ${v}% 0 ${v}%)`);
+  const scale = useTransform(scrollYProgress, [0, 1], [0.94, 1]);
   if (still) return <section id={id} className={className}>{children}</section>;
-  return <motion.section ref={ref} id={id} className={className} style={{ clipPath }}>{children}</motion.section>;
+  return <motion.section ref={ref} id={id} className={className} style={{ scale, transformOrigin: "50% 0%" }}>{children}</motion.section>;
 }
 
 /** A figure pressed onto the sheet like a stamp. */

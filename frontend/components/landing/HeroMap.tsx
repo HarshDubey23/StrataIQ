@@ -25,10 +25,10 @@ export interface Tract {
 type Cam = { zoom: number; pitch: number; bearing: number };
 const CAMERAS: Cam[] = [
   { zoom: 15.3, pitch: 62, bearing: -30 },
-  { zoom: 15.7, pitch: 50, bearing: 10 },
-  { zoom: 13.6, pitch: 58, bearing: 40 },
+  { zoom: 15.6, pitch: 50, bearing: 10 },
+  { zoom: 14.1, pitch: 58, bearing: 40 },
   { zoom: 14.9, pitch: 66, bearing: 95 },
-  { zoom: 14.2, pitch: 45, bearing: 170 },
+  { zoom: 14.3, pitch: 48, bearing: 170 },
 ];
 
 type RGB = [number, number, number];
@@ -151,7 +151,7 @@ function camAt(p: number): Cam {
   return { zoom: a.zoom + (b.zoom - a.zoom) * k, pitch: a.pitch + (b.pitch - a.pitch) * k, bearing: a.bearing + (b.bearing - a.bearing) * k };
 }
 
-export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress, crosshair = false }: { spot: Spot; comps: PreviewComp[]; tracts?: Tract[]; scene?: number; progress?: MutableRefObject<number>; crosshair?: boolean }) {
+export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress, crosshair = false, active = true, pillar = 1 }: { spot: Spot; comps: PreviewComp[]; tracts?: Tract[]; scene?: number; progress?: MutableRefObject<number>; crosshair?: boolean; active?: boolean; pillar?: number }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
   const deck = useRef<DeckHandle | null>(null);
@@ -162,13 +162,16 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
   const vLine = useRef<HTMLDivElement>(null);
   const read = useRef<HTMLDivElement>(null);
   // stable arrays: a new array each frame would restart every transition forever
+  const roadsFor = useRef<Spot | null>(null);
   const site = useRef<Spot[]>([spot]);
   if (site.current[0] !== spot) site.current = [spot];
-  const state = useRef({ spot, comps, tracts, scene, people: [] as Person[], walkers: [] as Person[], free: false, riseAt: 0, riseFor: null as PreviewComp[] | null, cur: CAMERAS[0] as Cam, t0: 0 });
+  const state = useRef({ spot, comps, tracts, scene, active, pillar, people: [] as Person[], walkers: [] as Person[], trips: [] as Person[], tripBucket: -1, free: false, riseAt: 0, riseFor: null as PreviewComp[] | null, cur: CAMERAS[0] as Cam, t0: 0, lastT: 0, lastSig: "", frames: 0, slow: 0, low: false });
   state.current.spot = spot;
   state.current.comps = comps;
   state.current.tracts = tracts;
   state.current.scene = scene;
+  state.current.active = active;
+  state.current.pillar = pillar;
 
   useEffect(() => {
     let cancelled = false;
@@ -180,7 +183,7 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
       try {
         // start high and flat; the first flight is the descent into the street
         m = new maplibregl.Map({
-          container: el.current, style, center: [spot.lng, spot.lat], zoom: 11.5, pitch: 0, bearing: -80, interactive: false,
+          container: el.current, style, center: [spot.lng, spot.lat], zoom: 14.05, pitch: 0, bearing: -80, interactive: false,
           attributionControl: { compact: true }, maxPitch: 80, fadeDuration: 0, pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
         });
       } catch {
@@ -194,13 +197,22 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
       const paint = () => {
         if (painted || !m.isStyleLoaded()) return;
         painted = true;
-        enhanceMap(m, { buildingsMinZoom: 12, buildingOpacity: 1 });
+        enhanceMap(m, { buildingsMinZoom: 13, buildingOpacity: 1 });
         requestAnimationFrame(() => setShown(true));
       };
       m.on("styledata", paint);
+      // reading road geometry is slow, so it happens once a street, after the map has settled, when the browser is free
       m.on("idle", () => {
-        const pts = roadPoints(m);
-        if (pts.length > 200) setRoads((old) => (old.length ? old : pts));
+        if (roadsFor.current === state.current.spot) return;
+        const forSpot = state.current.spot;
+        const later = window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 200));
+        later(() => {
+          const pts = roadPoints(m);
+          if (pts.length > 200) {
+            roadsFor.current = forSpot;
+            setRoads(pts.length > 8000 ? pts.filter((_, i) => i % Math.ceil(pts.length / 8000) === 0) : pts);
+          }
+        });
       });
       m.on("load", async () => {
         paint();
@@ -210,14 +222,30 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
         setReady(true);
         const loop = (now: number) => {
           const S = state.current;
+          // nothing draws while solid sections cover the map
+          if (!S.active) {
+            S.lastT = now;
+            raf = requestAnimationFrame(loop);
+            return;
+          }
+          const dt = Math.min(100, now - (S.lastT || now));
+          S.lastT = now;
+          // a weak GPU drops the extras, never the story
+          S.frames++;
+          if (dt > 30) S.slow++;
+          if (!S.low && S.frames === 240 && S.slow > 72) {
+            S.low = true;
+            m.setPixelRatio(1);
+          }
           const p = progress?.current ?? S.scene;
           if (S.free && !m.isMoving()) {
             const target = camAt(p);
             const c = S.cur;
-            const k = 0.075;
+            // damped by time, not frames, so the camera moves at one speed on any machine
+            const k = 1 - Math.exp(-dt / 130);
             S.cur = { zoom: c.zoom + (target.zoom - c.zoom) * k, pitch: c.pitch + (target.pitch - c.pitch) * k, bearing: c.bearing + (target.bearing - c.bearing) * k };
             // a slow drift keeps the city alive when the page is still
-            m.jumpTo({ center: [S.spot.lng, S.spot.lat], zoom: S.cur.zoom, pitch: S.cur.pitch, bearing: S.cur.bearing + (now - S.t0) * 0.0014 });
+            m.jumpTo({ center: [S.spot.lng, S.spot.lat], zoom: S.cur.zoom, pitch: S.cur.pitch, bearing: S.cur.bearing + (S.low ? 0 : (now - S.t0) * 0.0014) });
           }
           const sc = S.scene;
           const showPeople = sc >= 3;
@@ -228,13 +256,26 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
           const riseAge = now - S.riseAt;
           const riseStep = riseAge < 3200 ? Math.round(riseAge / 33) : -1;
           // scrolling through the scene is what makes people decide, nearest first
-          const reach = clamp01(p - 2.6) * 3.2;
-          const reachStep = Math.round(reach * 20);
+          const reachStep = Math.round(clamp01(p - 2.6) * 24);
+          const reach = (reachStep / 24) * 3.2;
+          const bucket = Math.ceil(reach * 3);
+          // the trips only change when the wave reaches a new ring: rebuilding them every frame froze the page
+          if (bucket !== S.tripBucket) {
+            S.tripBucket = bucket;
+            S.trips = S.walkers.filter((x) => x.d <= bucket / 3);
+          }
           const kmLat = 111.32;
           const kmLng = 111.32 * Math.cos((S.spot.lat * Math.PI) / 180);
+          // layers rebuild only when something changed; animated parts tick at 30 or 15 a second
+          const sig = `${sc}|${riseStep}|${reachStep}|${S.comps.length}|${S.tracts.length}|${S.pillar}|${S.spot.lat}|${S.people.length}|${showPeople ? Math.floor(now / 33) : S.low ? 0 : Math.floor(now / 66)}`;
+          if (sig === S.lastSig) {
+            raf = requestAnimationFrame(loop);
+            return;
+          }
+          S.lastSig = sig;
           const t = (now / 22) % 1400;
-          const pulse = (now / 12) % 260;
-          const tMax = Math.max(1, ...S.tracts.map((x) => x.people));
+          const pulse = S.low ? 0 : (now / 12) % 260;
+          const tMax = S.tracts.reduce((x, y) => Math.max(x, y.people), 1);
           const color = (x: Person) => (x.d > reach ? rgba(STONE, 150) : x.choice === "you" ? rgba(YOU, 255) : x.choice === "rival" ? rgba(WHITE, 255) : rgba(STONE, 90));
           d?.setLayers((DL) => [
             new DL.ScatterplotLayer({
@@ -249,9 +290,8 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
               transitions: { getElevation: { duration: 1300, easing: easeOut } }, updateTriggers: { getElevation: [sc, tMax], getFillColor: sc === 2, getLineColor: sc === 2 },
             }),
             showPeople && new DL.TripsLayer({
-              id: "trips", data: S.walkers.filter((x) => x.d <= reach), getPath: (x: Person) => x.path, getTimestamps: (x: Person) => x.ts,
+              id: "trips", data: S.trips, getPath: (x: Person) => x.path, getTimestamps: (x: Person) => x.ts,
               getColor: (x: Person) => (x.choice === "you" ? YOU : WHITE), widthMinPixels: 2.5, trailLength: 90, currentTime: t, fadeTrail: true, capRounded: true, jointRounded: true, opacity: sc === 4 ? 0.45 : 0.95,
-              updateTriggers: { getPath: reachStep },
             }),
             new DL.ScatterplotLayer({
               id: "people", data: S.people, getPosition: (x: Person) => x.home, radiusUnits: "meters", radiusMinPixels: showPeople ? 2.5 : 0,
@@ -275,8 +315,8 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
             }),
             new DL.ColumnLayer({
               id: "site", data: site.current, diskResolution: 4, angle: 45, radius: 42, extruded: true, wireframe: true, material: FLAT,
-              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 4 ? 620 : 420, getFillColor: rgba(YOU, 255), getLineColor: INK,
-              transitions: { getElevation: { duration: 1400, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: sc === 4 },
+              getPosition: (s: Spot) => [s.lng, s.lat], getElevation: sc === 4 ? 200 + 330 * S.pillar : 420, getFillColor: rgba(YOU, 255), getLineColor: INK,
+              transitions: { getElevation: { duration: 500, easing: easeOut, enter: () => [0] } }, updateTriggers: { getElevation: [sc === 4, S.pillar] },
             }),
           ].filter(Boolean));
           raf = requestAnimationFrame(loop);
@@ -298,10 +338,14 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
     const people = makePeople(spot, comps, tracts, roads);
     state.current.people = people;
     state.current.walkers = people.filter((p) => p.choice !== "none");
+    state.current.tripBucket = -1;
   }, [spot, comps, tracts, roads]);
 
   // a new street throws away the old street's roads
-  useEffect(() => setRoads([]), [spot]);
+  useEffect(() => {
+    roadsFor.current = null;
+    setRoads([]);
+  }, [spot]);
 
   // the descent (on load and when the street changes), then hand the camera to the scroll
   useEffect(() => {
@@ -310,7 +354,7 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
     const S = state.current;
     S.free = false;
     const cam = camAt(progress?.current ?? S.scene);
-    m.flyTo({ center: [spot.lng, spot.lat], ...cam, duration: 3800, curve: 1.2, essential: true });
+    m.flyTo({ center: [spot.lng, spot.lat], ...cam, duration: 2600, curve: 1.3, essential: true });
     const done = () => {
       S.cur = { zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing() };
       S.t0 = performance.now();
