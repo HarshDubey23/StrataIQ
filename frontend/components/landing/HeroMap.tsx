@@ -131,6 +131,11 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
         return;
       }
       map.current = m;
+      // the page must never sit on an empty map: if this one has not loaded soon, the canvas plan takes over
+      const giveUp = setTimeout(() => {
+        if (!cancelled) onStruggling?.();
+      }, 8000);
+      m.on("error", (e) => console.warn("map error", e.error?.message));
       // the story's words sit on the left, so the site stays in the open part of the map
       if (window.innerWidth >= 1024) m.setPadding({ left: Math.min(620, window.innerWidth * 0.42), top: 0, right: 0, bottom: 0 });
       else m.setPadding({ top: 0, left: 0, right: 0, bottom: window.innerHeight * 0.45 });
@@ -143,7 +148,9 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
         m.setLayoutProperty("siq-buildings-3d", "visibility", low ? "none" : "visible");
         m.setLayoutProperty("siq-buildings-flat", "visibility", low ? "visible" : "none");
       };
-      m.on("load", () => {
+      // the style is enough to start: roads and cubes appear as tiles arrive, with no wait for every tile
+      m.once("style.load", () => {
+        clearTimeout(giveUp);
         if (cancelled) return;
         for (const id of ["catchment", "tracts", "rivals", "site", "people", "walkers"]) m.addSource(id, { type: "geojson", data: FC([]), buffer: 8, tolerance: 1 });
         m.addLayer({ id: "people", source: "people", type: "circle", layout: { visibility: "none" }, paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 2.2, 16, 4], "circle-color": "#cfe0f5" } });
@@ -229,7 +236,7 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
           }
 
           // your site: its height follows the rent you drag
-          const pTarget = sc === 4 ? 110 + 220 * S.pillar : 170;
+          const pTarget = sc === 4 ? 200 + 240 * S.pillar : 300;
           if (Math.abs(S.pillarH - pTarget) > 1 && dataDue) {
             S.pillarH += (pTarget - S.pillarH) * (1 - Math.exp(-dt / 120));
             (m.getSource("site") as GeoJSONSource).setData(FC([cube(S.spot.lng, S.spot.lat, 26, S.pillarH)]));
@@ -298,12 +305,18 @@ export default function HeroMap({ spot, comps, tracts = [], scene = 0, progress,
     const S = live.current;
     S.free = false;
     const cam = camAt(progress?.current ?? S.scene);
-    m.flyTo({ center: [spot.lng, spot.lat], ...cam, duration: 2200, curve: 1.3, essential: true });
+    // weak devices skip the flight: tiles for the final view are all they should have to load
+    if (S.low) m.jumpTo({ center: [spot.lng, spot.lat], ...cam });
+    else m.flyTo({ center: [spot.lng, spot.lat], ...cam, duration: 2200, curve: 1.3, essential: true });
     const done = () => {
       S.cur = { zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing() };
       S.t0 = performance.now();
       S.free = true;
     };
+    if (S.low) {
+      done();
+      return;
+    }
     m.once("moveend", done);
     return () => {
       m.off("moveend", done);

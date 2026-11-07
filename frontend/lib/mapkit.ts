@@ -48,7 +48,9 @@ export async function atlasStyle(): Promise<StyleSpecification | string> {
       { id: "siq-buildings-flat", source, "source-layer": "building", type: "fill", minzoom: 14, layout: { visibility: "none" }, paint: { "fill-color": "#cfe0f5", "fill-outline-color": "#0f1f3d" } },
       { id: "siq-buildings-3d", source, "source-layer": "building", type: "fill-extrusion", minzoom: 14, paint: { "fill-extrusion-color": "#f7f8fa", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 1, "fill-extrusion-vertical-gradient": false } },
     );
-    return { ...s, layers: keep, light: { anchor: "map", color: "#dbe8f7", intensity: 0.16, position: [1.15, 210, 30] }, glyphs: undefined, sprite: undefined };
+    // nothing left uses text or icons, so those keys go; the validator rejects a key set to undefined
+    const { glyphs: _glyphs, sprite: _sprite, ...rest } = s;
+    return { ...rest, sources: { [source]: s.sources[source] }, layers: keep, light: { anchor: "map", color: "#dbe8f7", intensity: 0.08, position: [1.15, 210, 30] } };
   } catch {
     return STYLE_FALLBACK;
   }

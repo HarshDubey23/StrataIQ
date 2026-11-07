@@ -411,7 +411,8 @@ export default function Landing() {
   const c = CATS.find((x) => x.key === cat)!;
   const comps = preview?.spot && Math.abs(preview.spot.lat - spot.lat) < 1e-6 ? preview.competitors : [];
   const named = comps.map((x) => x.name).filter((n) => n && n !== "Unnamed");
-  const area = spot.label.split(",")[0];
+  const firstPart = spot.label.split(",")[0];
+  const area = /^\d/.test(firstPart) || firstPart.length > 22 ? "this address" : firstPart;
   const a = peek?.area;
   const t = peek?.typical;
   const rentNow = rent ?? t?.rent ?? 0;
