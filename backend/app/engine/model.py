@@ -22,6 +22,7 @@ import numpy as np
 from scipy.special import ndtr
 
 from ..categories.archetypes import Archetype
+from . import lives
 from .geo import compute_spatial_matrices
 
 
@@ -139,6 +140,8 @@ class MarketArrays:
     price_known: np.ndarray  # [J] bool
     quality: np.ndarray  # [J] (unknown -> NaN)
     quality_known: np.ndarray  # [J] bool
+    price_spread: np.ndarray  # [J] price multiplier for competitors with no recorded price
+    quality_spread: np.ndarray  # [J] quality shift for competitors with no recorded quality
     ref_price: float
     ref_price_status: str
     travel_time_min: np.ndarray | None = None  # [Z, J] travel-time in minutes
@@ -182,9 +185,11 @@ def build_arrays(arch: Archetype, zones: list[Zone], comps: list[Competitor], bi
     else:
         ref, ref_status = float(biz.price), "assumption_equals_own_price"
     prices = np.array([biz.price] + [c.price if c.price and c.price > 0 else np.nan for c in comps], float)
+    spread_price, spread_quality = lives.competitor_spread([c.name for c in comps])
     quality = np.array([biz.quality] + [c.quality if c.quality is not None else np.nan for c in comps], float)
     return MarketArrays(
         dist_km=d, weight=weight, prices=prices, price_known=~np.isnan(prices),
+        price_spread=np.concatenate([[1.0], spread_price]), quality_spread=np.concatenate([[0.0], spread_quality]),
         quality=quality, quality_known=~np.isnan(quality), ref_price=ref, ref_price_status=ref_status,
         travel_time_min=tt, dist_source=meta["dist_source"], travel_time_source=meta["travel_time_source"],
         seg_share_z=seg_share_z,
@@ -228,9 +233,9 @@ def _run_choice(arch: Archetype, m: MarketArrays, biz: BusinessInputs, p: dict[s
     # Prices per draw: unknown competitor prices = ref * competitor_price_ratio draw.
     prices = np.broadcast_to(m.prices, (D, J)).copy()
     unk = ~m.price_known
-    prices[:, unk] = (m.ref_price * p["competitor_price_ratio"])[:, None]
+    prices[:, unk] = (m.ref_price * p["competitor_price_ratio"])[:, None] * m.price_spread[unk]
     quality = np.broadcast_to(m.quality, (D, J)).copy()
-    quality[:, ~m.quality_known] = p["competitor_quality"][:, None]
+    quality[:, ~m.quality_known] = np.clip(p["competitor_quality"][:, None] + m.quality_spread[~m.quality_known], 0.05, 0.95)
 
     aw = np.ones((D, J))
     aw[:, 0] = awareness(biz.marketing_spend, p["awareness_base"], p["marketing_half_saturation"])

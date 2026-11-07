@@ -132,3 +132,22 @@ def test_real_us_catchment_runs_end_to_end_with_believable_prices():
     pay = np.array([r[cols.index("wtp")] for r in out["agents"]["rows"]], float)
     assert (income > 0).all() and np.corrcoef(np.log(income), np.log(pay))[0, 1] > 0.3
     assert 15 < np.median(pay) < 200  # dollars a month for a $49 gym, not rupee-scale numbers
+
+
+@real_data
+def test_income_does_not_decide_who_is_in_the_market():
+    """Regression: income and in-market draws once shared a random stream, leaving only the poorest agents in the market."""
+    arch = ARCHETYPES["membership"]
+    zones = [em.Zone(30.25 + 0.004 * i, -97.76 + 0.004 * j, 1200.0) for i in range(6) for j in range(6)]
+    comps = [em.Competitor(f"Rival {i}", f"Rival {i}", 30.255 + 0.004 * i, -97.75) for i in range(6)]
+    biz = em.BusinessInputs(30.26, -97.745, price=49.0, rent=7000, payroll=14000, capacity={"max_members": 700})
+    ctx = iu.build_context([z.lat for z in zones], [z.lng for z in zones], state="Texas")
+    beh = eb.build(arch, "gym", ctx, len(zones))
+    arch2 = eb.apply(arch, beh)
+    out = run_abm(arch2, zones, comps, biz, em.ResolvedParams.from_archetype(arch2, {}, beh.params), 49.0, n_agents=5000, days=60, seed=1, income=ctx, behaviour=beh)
+    cols, rows = out["agents"]["columns"], out["agents"]["rows"]
+    income = np.array([r[cols.index("mpce")] for r in rows], float)
+    in_market = np.array([r[cols.index("in_market")] for r in rows], bool)
+    assert in_market.sum() > 100
+    assert 0.6 < np.median(income[in_market]) / np.median(income) < 1.8
+    assert out["steady_units"] > 40  # a $49 gym among 43,000 people should not be left with a handful of members

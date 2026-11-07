@@ -156,7 +156,7 @@ await step("wizard ui", async () => {
   await page.getByRole("button", { name: /Next/ }).click();
   await page.getByRole("button", { name: /Next/ }).click();
   await page.getByRole("button", { name: /Next/ }).click();
-  await page.getByLabel("Search place").fill("Connaught Place, New Delhi");
+  await page.getByLabel("Search place").fill("Downtown Austin, Texas");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.locator("ul button").first().click({ timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -174,13 +174,13 @@ await step("wizard ui", async () => {
   await shot("13b-live-pizza-competitors");
 });
 
-// ---------- Live gym project via API (Connaught Place) ----------
+// ---------- Live gym project via API (Downtown Austin) ----------
 await step("live gym journey", async () => {
   const cat = await api("/categories/resolve", "POST", { query: "gym", use_ai: false });
   const p = await api("/projects", "POST", {
-    name: "Live gym — Connaught Place", objective: "start_new", decision_goal: "profit", category: cat.body, profile: {},
-    location: { label: "Location A", address: "Connaught Place, New Delhi", lat: 28.6315, lng: 77.2167, catchment: { mode: "radius", radius_km: 2.5 } },
-    baseline: { price: 1800, quality: 0.6, marketing_spend: 15000, capacity: { max_members: 350 }, rent: 90000, payroll: 90000, utilities: 18000, other_fixed: 12000, startup_cost: 2000000 },
+    name: "Live gym — Downtown Austin", objective: "start_new", decision_goal: "profit", category: cat.body, profile: {},
+    location: { label: "Location A", address: "Downtown Austin, Texas", lat: 30.2672, lng: -97.7431, catchment: { mode: "radius", radius_km: 2.5 } },
+    baseline: { price: 49, quality: 0.6, marketing_spend: 2000, capacity: { max_members: 700 }, rent: 12000, payroll: 14000, utilities: 2500, other_fixed: 12000, startup_cost: 2000000 },
   });
   L(`project create ${p.status}`);
   const pid = p.body.id, lid = p.body.locations[0].id;
@@ -194,7 +194,8 @@ await step("live gym journey", async () => {
   L(`coverage=${JSON.stringify(snap.body.coverage)}`);
   const mk = await api(`/projects/${pid}/market?location_id=${lid}`);
   L(`competitors found: ${mk.body.competitors?.length}; first: ${mk.body.competitors?.slice(0, 3).map((c) => c.name).join(" | ")}`);
-  await page.goto(`${BASE}/app/projects/${pid}/market`);
+  // Outside map resources can hold back the browser's load event; the Competitors click below proves the page works.
+  await page.goto(`${BASE}/app/projects/${pid}/market`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForTimeout(6000);
   await shot("14-live-gym-market");
   const firstComp = page.locator("aside ul button").first();

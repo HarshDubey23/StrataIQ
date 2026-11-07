@@ -99,7 +99,7 @@ def site_scan(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: 
     out = []
     for k, (la, ln, kind) in enumerate(cand):
         m = MarketArrays(dist_km=np.concatenate([d_c[:, k:k + 1], comp_d], axis=1), weight=w, prices=m0.prices, price_known=m0.price_known,
-                         quality=m0.quality, quality_known=m0.quality_known, ref_price=m0.ref_price, ref_price_status=m0.ref_price_status)
+                         quality=m0.quality, quality_known=m0.quality_known, price_spread=m0.price_spread, quality_spread=m0.quality_spread, ref_price=m0.ref_price, ref_price_status=m0.ref_price_status)
         r = run_choice(arch, m, b0, pv)
         e = _econ(arch, b0, float(r["units_by_alt"][0, 0]), pv)
         dc = haversine_km(la, ln, clat, clng) if comps else np.zeros(0)

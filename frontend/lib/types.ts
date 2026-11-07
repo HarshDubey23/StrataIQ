@@ -584,6 +584,7 @@ export interface AgentXray {
   summary: Record<string, number>;
   segment: string;
   mode: string;
+  occupation?: string;
   scale: number;
   note: string;
 }

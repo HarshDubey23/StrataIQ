@@ -4,7 +4,7 @@ on:
     inputs:
       idea:
         description: Idea sentence
-        default: "A café in Koramangala, Bengaluru, coffee at ₹250"
+        default: "A café in Downtown Austin, Texas, coffee at $6"
 jobs:
   heavy:
     runs-on: ubuntu-latest

@@ -34,6 +34,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..config import get_settings
+from . import lives
 
 GENOME_SIZE = 615
 
@@ -674,7 +675,8 @@ def business_features(arch_key: str, biz, comps, ref_price: float, quality_defau
     F[1:, FI["established"]] = 1.0
     F[1:, FI["has_reviews"]] = 1.0  # assumption: incumbents have a review history; OSM does not say
     prices = np.array([biz.price] + [c.price if c.price else ref_price for c in comps], float)
-    qual = np.array([biz.quality] + [c.quality if c.quality is not None else quality_default for c in comps], float)
+    _, spread_quality = lives.competitor_spread([c.name for c in comps])
+    qual = np.array([biz.quality] + [c.quality if c.quality is not None else float(np.clip(quality_default + s, 0.05, 0.95)) for c, s in zip(comps, spread_quality)], float)
     rel = prices / max(ref_price, 1e-9)
     F[:, FI["price_rel"]] = np.log(rel)
     F[:, FI["quality_c"]] = qual - 0.5

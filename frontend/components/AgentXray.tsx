@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge, ErrorState, Spinner, cn } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { CHANNEL_LABEL, MECH_LABEL, ORIGIN_LABEL, fmtParam, getRegistry, pctColor } from "@/lib/genome";
-import { money, CUR, LOCALE } from "@/lib/format";
+import { money, CUR, LOCALE, US_MARKET } from "@/lib/format";
 import type { AgentXray as Xray, GenomeRegistry } from "@/lib/types";
 
 const MODE_LABEL: Record<string, string> = { walk: "walks", two_wheeler: "two-wheeler", car: "car", auto: "auto", bus: "bus", metro: "metro", cycle: "cycle" };
@@ -87,7 +87,11 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
               <Badge>{x.segment}</Badge>
               <Badge>{MODE_LABEL[x.mode] || x.mode}</Badge>
               <Badge>{s.dist_km} km from you</Badge>
-              {typeof s.mpce === "number" && <Badge>spends {CUR}{Math.round(s.mpce).toLocaleString(LOCALE)}/month per person</Badge>}
+              {x.occupation && <Badge>{x.occupation}</Badge>}
+              {typeof s.mpce === "number" && <Badge>{US_MARKET ? "income" : "spends"} {CUR}{Math.round(s.mpce).toLocaleString(LOCALE)}/month per person</Badge>}
+              {typeof s.friends_customers === "number" && s.friends_customers > 0 && <Badge>{s.friends_customers} friend{s.friends_customers > 1 ? "s" : ""} or family are your customers</Badge>}
+              {typeof s.opinion === "number" && s.opinion >= 0.3 && <Badge tone="ok">likes you after visiting or hearing about you</Badge>}
+              {typeof s.opinion === "number" && s.opinion <= -0.3 && <Badge tone="danger">had a bad experience or heard one</Badge>}
               <Badge>WTP {money(s.wtp)}</Badge>
               {price !== undefined && <Badge tone={s.wtp >= price ? "ok" : "danger"}>{s.wtp >= price ? "can afford you" : "you're above their WTP"}</Badge>}
               <Badge tone={choice === 0 ? "accent" : choice > 0 ? "warn" : "neutral"}>

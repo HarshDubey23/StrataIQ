@@ -77,6 +77,8 @@ async def agent_xray(run_id: str, agent: int, user: User = Depends(current_user)
     x["summary"] = dict(zip(abm["agents"]["columns"], row))
     x["segment"] = abm["agents"]["segments"][row[abm["agents"]["columns"].index("segment")]]
     x["mode"] = abm["agents"]["modes"][row[abm["agents"]["columns"].index("mode")]]
+    if "occupation" in abm["agents"]["columns"]:  # runs saved before agents had lives have no such column
+        x["occupation"] = abm["agents"]["occupations"][row[abm["agents"]["columns"].index("occupation")]]
     x["scale"] = abm["scale"]
     x["note"] = "Synthetic agent. Values are model assumptions conditioned on real local evidence, not data about a real person."
     return x

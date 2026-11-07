@@ -150,7 +150,7 @@ await step("voice analyst (grounded answers)", async () => {
 
 await step("quick start from one sentence", async () => {
   await page.goto(`${BASE}/app`);
-  await page.getByLabel("Your business idea").fill("A café in Indiranagar, Bengaluru, coffee at ₹250");
+  await page.getByLabel("Your business idea").fill("A café in Downtown Austin, Texas, coffee at $6");
   await page.getByRole("button", { name: /Understand it/ }).click();
   await page.getByRole("button", { name: /Analyse this idea with live data/ }).waitFor({ timeout: 60000 });
   await shot("20-quickstart-plan", 1500);
