@@ -29,6 +29,7 @@ const FAQ: [string, string][] = [
   ["What do I need to start?", "Just your idea and an address. StrataIQ fills in the market data and starting costs, and you can replace any number with your own quotes."],
   ["What makes this different from a demographics report?", "A report tells you who lives nearby. StrataIQ shows what they would do: choose you, choose a rival, or stay home, at your price, on your street."],
   ["How does it reach its numbers?", "Every forecast is a range built from local data and your inputs, with each assumption shown so you can check it and change it."],
+  ["Has it been tested on real data?", "Yes. We score its market-size estimates against Census business payroll in up to 1,810 US counties it never trained on. Median error is 26% for grocery and 32% for restaurants, roughly half of what population alone gets for restaurants. Single-store revenue is the next test."],
   ["Where does it work?", "Anywhere in the United States, from a downtown corner to a small-town main street."],
 ];
 

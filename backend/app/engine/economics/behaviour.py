@@ -37,6 +37,11 @@ ELASTICITY = {
     "lodging": (1.5, 1.0, 2.0, "assumption", "No published India estimate"),
 }
 US_ELASTICITY_SCALE = 0.5
+# How local market size rises with income, fitted on half of US counties against Census payroll and scored on the rest.
+# See docs/VALIDATION.md. Types with no direct fit use their model group's fit.
+MARKET_ELASTICITY_US = {"gym": 2.8, "cafe": 3.0, "restaurant": 3.0, "salon": 3.0, "beauty_salon": 3.0, "dentist": 1.7, "grocery": 1.65, "pharmacy": 0.0, "clothing": 1.2}
+MARKET_ELASTICITY_GROUP = {"membership": 2.8, "dine_in": 3.0, "takeaway": 3.0, "retail": 1.2, "appointment": 1.7, "lodging": 1.2}
+MARKET_LIFT_LIMITS = (0.25, 4.0)  # fitted across whole counties, so held within limits for one neighbourhood
 TASTE_SIGMA = (0.3, 0.2, 0.45)  # log-sd of WTP among people with the same consumption (assumption)
 HEALTH_KEYS = {"dentist", "clinic", "physio", "diagnostics", "pharmacy", "optician"}
 
@@ -123,7 +128,12 @@ def build(arch: Archetype, category_key: str | None, ctx: IncomeContext, n_zones
     xn = nat.ppf((np.arange(4000) + 0.5) / 4000)
     lift = float(mult.mean() / ((xn / x_ref) ** eps).mean())
     if us:
-        pass  # India's published rates do not transfer; the archetype's labelled assumption stays until US evidence is added
+        e = MARKET_ELASTICITY_US.get(category_key, MARKET_ELASTICITY_GROUP[arch.key])
+        ref = nat.median
+        lift = float(np.clip(((x / ref) ** e).mean() / ((xn / ref) ** e).mean(), *MARKET_LIFT_LIMITS))
+        base = arch.params["participation"]
+        params["participation"] = (base.value * lift, base.low * lift, base.high * lift, "derived",
+                                   f"Starting rate x{lift:.2f} for this neighbourhood's incomes. Income effect {e:g} fitted on US counties against Census payroll; starting rate is an assumption")
     elif category_key in PARTICIPATION:
         (v, lo, hi), status, src = PARTICIPATION[category_key]
         params["participation"] = (v * lift, lo * lift, hi * lift, status,

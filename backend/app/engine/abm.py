@@ -584,7 +584,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             got = choice >= 0
             newm = due[got]
             habit[newm, choice[got]] = np.minimum(habit[newm, choice[got]] + habit_rate[newm], habit_cap[newm])
-            lives.remember_visit(rng, opinion, newm, choice[got], crowding=max(0.0, current_members / max(daily_cap, 1e-9) - 0.85) * 2)
+            lives.remember_visit(rng, opinion, newm, choice[got], crowding=float(np.clip((current_members / max(daily_cap, 1e-9) - 0.85) * 2, 0, 1)))
             opinion[rejected_now, 0] = np.clip(opinion[rejected_now, 0] - 0.3, -lives.OPINION_LIMIT, lives.OPINION_LIMIT)
             fy = due[(choice == 0) & (first_you[due] < 0)]
             first_you[fy] = day
@@ -626,7 +626,7 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             got = choice >= 0
             b = buyers[got]
             habit[b, choice[got]] = np.minimum(habit[b, choice[got]] + habit_rate[b], habit_cap[b])
-            lives.remember_visit(rng, opinion, b, choice[got], crowding=max(0.0, orders / max(cap_units_day, 1e-9) - 0.85) * 2)
+            lives.remember_visit(rng, opinion, b, choice[got], crowding=float(np.clip((orders / max(cap_units_day, 1e-9) - 0.85) * 2, 0, 1)))
             opinion[rejected, 0] = np.clip(opinion[rejected, 0] - 0.3, -lives.OPINION_LIMIT, lives.OPINION_LIMIT)
             np.add.at(spent, b, pop.meta["prices"][choice[got]])
             prev = last_choice[buyers]

@@ -61,8 +61,12 @@ def test_rich_and_poor_neighbourhoods_get_different_segments_and_wtp():
     assert rich.zone_shares[0, premium] > poor.zone_shares[0, premium] + 0.3
     assert rich.summary["participation_lift"] > poor.summary["participation_lift"]
     assert sum(s.share for s in rich.segments) == pytest.approx(1.0)
-    # India's published rates and labels must not leak into a US catchment.
-    assert "participation" not in rich.params
+    # Local demand follows incomes, from the fit against real county payroll, within limits.
+    assert rich.params["participation"][0] > poor.params["participation"][0] > 0
+    assert rich.params["participation"][3] == "derived" and "Census payroll" in rich.params["participation"][4]
+    base = arch.params["participation"].value
+    assert base * 0.25 <= poor.params["participation"][0] and rich.params["participation"][0] <= base * 4
+    # India's labels must not leak into a US catchment.
     assert "India" not in " ".join(c["label"] for c in rich.summary["classes"])
     assert rich.summary["histogram"][-1]["hi"] is None and sum(h["share"] for h in rich.summary["histogram"]) == pytest.approx(1.0, abs=0.01)
     assert rich.summary["elasticity"]["status"] == "assumption"
@@ -171,7 +175,7 @@ def test_real_us_catchment_runs_end_to_end_with_believable_prices():
     arch2 = eb.apply(arch, beh)
     assert simulate(arch2, zones, comps, biz, {}, mc_draws=40, seed=1, evidence=beh.params, seg_share_z=beh.zone_shares, with_sensitivity=False)["summary"]
     params = em.ResolvedParams.from_archetype(arch2, {}, beh.params)
-    assert params.status["participation"] == "assumption"
+    assert params.status["participation"] == "derived"
     out = run_abm(arch2, zones, comps, biz, params, 49.0, n_agents=600, days=14, seed=3, income=ctx, behaviour=beh)
     cols = out["agents"]["columns"]
     income = np.array([r[cols.index("mpce")] for r in out["agents"]["rows"]], float)
