@@ -1,0 +1,66 @@
+# Production stack for one server. Only Caddy is reachable from the internet; it handles HTTPS.
+#   Run deploy/setup.sh on the server, it creates deploy/.env and starts this.
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+
+  web:
+    restart: unless-stopped
+    build:
+      context: ../frontend
+      args:
+        API_URL: http://api:8000
+        NEXT_PUBLIC_MARKET: ${MARKET:-US}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+        NEXT_PUBLIC_PAYMENT_URL: ${PAYMENT_URL:-}
+    environment:
+      API_URL: http://api:8000
+      PROXY_SECRET: ${PROXY_SECRET:?set PROXY_SECRET in deploy/.env}
+    depends_on: [api]
+
+  api:
+    restart: unless-stopped
+    build: ../backend
+    # No forwarded-header trust: nothing but our own proxy can reach this port.
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    environment:
+      APP_ENV: production
+      MARKET: ${MARKET:-US}
+      DATABASE_URL: postgresql://strataiq:${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}@db:5432/strataiq
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in deploy/.env}
+      PROXY_SECRET: ${PROXY_SECRET}
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: https://${DOMAIN}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: strataiq
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: strataiq
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U strataiq"]
+      interval: 5s
+      retries: 20
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
