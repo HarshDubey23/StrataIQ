@@ -27,7 +27,7 @@ const MODE_COLORS = ["#16A34A", "#0284C7", "#DB2777", "#CA8A04", "#EA580C", "#93
 
 function ageColor(a: number) {
   if (a < 15) return "#60A5FA";
-  if (a < 30) return "#2F49FF";
+  if (a < 30) return "#D93A1E";
   if (a < 50) return "#D97706";
   return "#E5484D";
 }
@@ -76,7 +76,7 @@ export default function LiveMap(p: LiveMapProps) {
         });
         for (const id of ["catch", "heat", "trails", "moving", "sel"]) m.addSource(id, { type: "geojson", data: EMPTY });
         m.addSource("idle", { type: "geojson", data: EMPTY, promoteId: "i" });
-        m.addLayer({ id: "catch-line", type: "line", source: "catch", paint: { "line-color": "#2F49FF", "line-width": 1.4, "line-dasharray": [2, 2], "line-opacity": 0.7 } });
+        m.addLayer({ id: "catch-line", type: "line", source: "catch", paint: { "line-color": "#D93A1E", "line-width": 1.4, "line-dasharray": [2, 2], "line-opacity": 0.7 } });
         m.addLayer({ id: "heat", type: "heatmap", source: "heat", paint: {
           "heatmap-weight": ["get", "w"], "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 15, 1.4],
           "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 11, 14, 14, 38, 16, 70],
@@ -86,7 +86,7 @@ export default function LiveMap(p: LiveMapProps) {
         m.addLayer({ id: "trails", type: "line", source: "trails", paint: { "line-color": ["get", "c"], "line-width": 0.7, "line-opacity": 0.22 } });
         m.addLayer({ id: "idle", type: "circle", source: "idle", paint: {
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, ["case", ["boolean", ["feature-state", "cust"], false], 2.2, 1.3], 14, ["case", ["boolean", ["feature-state", "cust"], false], 3.8, 2.5], 16, ["case", ["boolean", ["feature-state", "cust"], false], 5.5, 3.8]],
-          "circle-color": ["case", ["boolean", ["feature-state", "cust"], false], "#2F49FF", ["get", "c"]],
+          "circle-color": ["case", ["boolean", ["feature-state", "cust"], false], "#D93A1E", ["get", "c"]],
           "circle-opacity": ["case", ["boolean", ["feature-state", "cust"], false], 0.95, ["get", "o"]],
         } });
         m.addLayer({ id: "moving", type: "circle", source: "moving", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 1.8, 14, 3.2, 16, 5], "circle-color": ["get", "c"], "circle-opacity": 0.95, "circle-blur": 0.15 } });
@@ -141,7 +141,7 @@ export default function LiveMap(p: LiveMapProps) {
       const d = document.createElement("div");
       const sz = you ? 22 : 10 + Math.min(14, (shares[b.idx - 1] || 0) * 60);
       d.title = you ? "Your business" : `${b.name} (modeled share ${Math.round((shares[b.idx - 1] || 0) * 100)}%)`;
-      d.style.cssText = `width:${sz}px;height:${sz}px;border-radius:999px;background:${you ? "#2F49FF" : "#F59E0B"};border:2px solid #F3F4F7;box-shadow:0 0 0 ${you ? 6 : 3}px ${you ? "rgba(47,73,255,.28)" : "rgba(245,158,11,.28)"};${you ? "animation:siqpulse 1.6s infinite" : ""}`;
+      d.style.cssText = `width:${sz}px;height:${sz}px;border-radius:999px;background:${you ? "#D93A1E" : "#F59E0B"};border:2px solid #F3F4F7;box-shadow:0 0 0 ${you ? 6 : 3}px ${you ? "rgba(47,73,255,.28)" : "rgba(245,158,11,.28)"};${you ? "animation:siqpulse 1.6s infinite" : ""}`;
       return new maplibregl.Marker({ element: d }).setLngLat([b.lng, b.lat]).addTo(m);
     });
   }, [ready, p.abm]);
@@ -191,7 +191,7 @@ export default function LiveMap(p: LiveMapProps) {
       features: f
         ? f.a.map((a, k): GeoJSON.Feature => {
             const b = biz[f.c[k]] || biz[0];
-            return { type: "Feature", geometry: { type: "LineString", coordinates: [[rows[a][ci.lng], rows[a][ci.lat]], [b.lng, b.lat]] }, properties: { c: f.c[k] === 0 ? "#2F49FF" : "#F59E0B" } };
+            return { type: "Feature", geometry: { type: "LineString", coordinates: [[rows[a][ci.lng], rows[a][ci.lat]], [b.lng, b.lat]] }, properties: { c: f.c[k] === 0 ? "#D93A1E" : "#F59E0B" } };
           })
         : [],
     });

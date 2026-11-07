@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
-  StrataIQ — "Survey blue", one system for the landing page and the app.
+  StrataIQ — navy ink, off-white paper, coral for action, electric blue for data.
   Three grounds: cobalt (the landing field, primary actions), night (navigation, billboards),
   paper (work surfaces). Archivo throughout, wide for headlines; mono uppercase for labels;
   square corners and hairlines instead of soft shadows. Data colours always encode provenance:
@@ -12,26 +12,26 @@
 */
 @theme {
   --font-sans: var(--font-archivo), var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-archivo), var(--font-inter-tight), ui-sans-serif, sans-serif;
+  --font-display: "Clash Grotesk", var(--font-archivo), ui-sans-serif, sans-serif;
   --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
   --font-mono: var(--font-jbmono), ui-monospace, SFMono-Regular, monospace;
   --font-deva: var(--font-tiro), serif;
 
-  --color-ink-950: #ededf0; /* page */
+  --color-ink-950: #f3f4f1; /* page */
   --color-ink-900: #ffffff; /* surface */
-  --color-ink-850: #f6f6f8;
-  --color-ink-800: #e8e8ec;
-  --color-ink-700: #dcdce2; /* hairline */
-  --color-ink-600: #c9c9d1;
-  --color-ink-500: #95959f;
-  --color-ink-400: #66666f; /* tertiary text */
-  --color-ink-300: #45454d; /* secondary text */
-  --color-ink-200: #26262b;
-  --color-ink-100: #0c0c0e; /* primary text */
-  --color-paper: #ededf0;
-  --color-night: #0c0c0e;     /* navigation, billboards */
-  --color-night-800: #1b1b1f;
-  --color-night-700: #2a2a30;
+  --color-ink-850: #f7f8f5;
+  --color-ink-800: #e6e8e8;
+  --color-ink-700: #d6dade; /* hairline */
+  --color-ink-600: #c0c6ce;
+  --color-ink-500: #7f8896;
+  --color-ink-400: #5a6474; /* tertiary text */
+  --color-ink-300: #3d4757; /* secondary text */
+  --color-ink-200: #1f2a3f;
+  --color-ink-100: #0b1b3a; /* primary text */
+  --color-paper: #f3f4f1;
+  --color-night: #0b1b3a;     /* navigation, billboards */
+  --color-night-800: #16274a;
+  --color-night-700: #23365c;
 
   /* square corners everywhere; rounded-full stays round for dots and pills */
   --radius-xs: 1px;
@@ -41,14 +41,15 @@
   --radius-xl: 5px;
   --radius-2xl: 6px;
 
-  --color-accent: #2f49ff;      /* you: candidate site, your customers (cobalt) */
-  --color-accent-dim: #dfe4ff;
+  --color-accent: #d93a1e;      /* you and every primary action (coral) */
+  --color-data: #2447f9;        /* data highlights (electric blue) */
+  --color-accent-dim: #fbe3dd;
   --color-observed: #b45309;    /* observed competitor (OpenStreetMap / Foursquare) */
   --color-field: #3f7a14;       /* verified on the ground by a field researcher */
   --color-userdata: #7c3aed;    /* user-entered evidence */
   --color-model: #0f766e;       /* model estimate */
   --color-assumption: #6b7180;  /* assumption */
-  --color-agent: #e5484d;       /* synthetic agents */
+  --color-agent: #2447f9;       /* synthetic agents */
   --color-warn: #a16207;
   --color-danger: #dc2626;
   --color-ok: #15803d;

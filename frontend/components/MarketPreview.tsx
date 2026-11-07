@@ -50,7 +50,7 @@ export function MarketPreview() {
             })}
             <circle cx={cx} cy={cy} r={178} fill="rgba(34,211,238,0.05)" stroke="rgba(34,211,238,0.5)" strokeDasharray="5 5" />
             {agents.map((a, i) => (
-              <circle key={i} cx={a.x} cy={a.y} r={1.9} fill={a.you ? "#2F49FF" : "#E5484D"} opacity={a.you ? 0.95 : 0.7} />
+              <circle key={i} cx={a.x} cy={a.y} r={1.9} fill={a.you ? "#D93A1E" : "#E5484D"} opacity={a.you ? 0.95 : 0.7} />
             ))}
             {comps.map((c, i) => (
               <g key={i}>
@@ -59,7 +59,7 @@ export function MarketPreview() {
               </g>
             ))}
             <circle cx={cx} cy={cy} r={16} fill="rgba(34,211,238,0.18)" />
-            <circle cx={cx} cy={cy} r={7} fill="#2F49FF" stroke="#0a0e14" strokeWidth={2} />
+            <circle cx={cx} cy={cy} r={7} fill="#D93A1E" stroke="#0a0e14" strokeWidth={2} />
           </g>
         </svg>
         <div className="space-y-4 border-t border-black/[0.07] p-4 md:border-l md:border-t-0">

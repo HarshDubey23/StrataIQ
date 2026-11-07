@@ -22,7 +22,7 @@ export function PriceCurve({ data, current, unit }: { data: NonNullable<SimResul
         <YAxis yAxisId="u" orientation="right" tickFormatter={(v) => num(v)} {...AX} width={44} />
         <Tooltip {...TT} formatter={(v, n) => (String(n) === "units" ? [num(Number(v)), unit] : [money(Number(v)), "Operating profit"])} labelFormatter={(l) => `Price ₹${num(Number(l))}`} />
         <ReferenceLine yAxisId="p" y={0} stroke="#75716A" strokeDasharray="3 3" />
-        <ReferenceLine yAxisId="p" x={current} stroke="#2F49FF" strokeDasharray="4 3" label={{ value: "current", fill: "#2F49FF", fontSize: 10, position: "top" }} />
+        <ReferenceLine yAxisId="p" x={current} stroke="#D93A1E" strokeDasharray="4 3" label={{ value: "current", fill: "#D93A1E", fontSize: 10, position: "top" }} />
         <Line yAxisId="p" type="monotone" dataKey="profit" stroke="#0F766E" strokeWidth={2} dot={false} />
         <Line yAxisId="u" type="monotone" dataKey="units" stroke="#A9A59B" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
       </ComposedChart>
@@ -39,7 +39,7 @@ export function MarketingCurve({ data, current }: { data: NonNullable<SimResult[
         <YAxis tickFormatter={compactMoney} {...AX} width={56} />
         <Tooltip {...TT} formatter={(v) => [money(Number(v)), "Operating profit"]} labelFormatter={(l) => `Marketing ${money(Number(l))}/mo`} />
         <ReferenceLine y={0} stroke="#75716A" strokeDasharray="3 3" />
-        <ReferenceLine x={current} stroke="#2F49FF" strokeDasharray="4 3" />
+        <ReferenceLine x={current} stroke="#D93A1E" strokeDasharray="4 3" />
         <Line type="monotone" dataKey="profit" stroke="#0F766E" strokeWidth={2} dot={{ r: 2 }} />
       </ComposedChart>
     </ResponsiveContainer>
@@ -66,7 +66,7 @@ export function Tornado({ data, base }: { data: NonNullable<SimResult["sensitivi
           }}
         />
         <ReferenceLine x={0} stroke="#A9A59B" />
-        <Bar dataKey="range" fill="#2F49FF" radius={2}>
+        <Bar dataKey="range" fill="#D93A1E" radius={2}>
           {rows.map((r, i) => <Cell key={i} fill={r.raw.status === "user" ? "#7C3AED" : "#9AA8FF"} />)}
         </Bar>
       </BarChart>

@@ -42,7 +42,7 @@ export const MECH_LABEL: Record<string, string> = {
 };
 
 export const GROUP_COLOR: Record<string, string> = {
-  you: "#2F49FF",
+  you: "#D93A1E",
   competitor: "#F59E0B",
   none: "#64748b",
   not_in_market: "#D8D4CA",

@@ -14,6 +14,11 @@ const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 // The first-visit product tour is a modal; the journey tests the app behind it, so mark it seen.
 await ctx.addInitScript(() => { try { localStorage.setItem("siq-tour-seen", "1"); } catch { /* ignore */ } });
 const page = await ctx.newPage();
+// Requests still open, logged when a step fails: a browser allows six per host, so stuck ones can block navigation.
+const open = new Map();
+page.on("request", (r) => open.set(r, Date.now()));
+for (const e of ["requestfinished", "requestfailed"]) page.on(e, (r) => open.delete(r));
+const openRequests = () => [...open].map(([r, t]) => `${r.method()} ${r.url().replace(/^https?:\/\/[^/]+/, "").slice(0, 90)} ${Math.round((Date.now() - t) / 1000)}s`);
 page.on("console", (m) => { if (["error", "warning"].includes(m.type())) L(`[console.${m.type()}] ${m.text().slice(0, 300)}`); });
 page.on("pageerror", (e) => { failures++; L(`[pageerror] ${e.message.slice(0, 500)}`); });
 page.on("response", (r) => { if (r.url().includes("/api/") && r.status() >= 400) L(`[http ${r.status()}] ${r.request().method()} ${r.url().replace(BASE, "")}`); });
@@ -44,7 +49,7 @@ const api = (path, method = "GET", body) => page.evaluate(async ([p, m, b]) => {
   return { status: r.status, body: j };
 }, [path, method, body]);
 
-await step("landing", async () => { await page.goto(BASE); await page.getByText("before you sign the lease.").first().waitFor(); await page.waitForTimeout(6000); await shot("01-landing"); });
+await step("landing", async () => { await page.goto(BASE); await page.getByRole("heading", { name: "Test the location before you sign." }).waitFor(); await page.waitForTimeout(6000); await shot("01-landing"); });
 await step("methodology", async () => { await page.goto(`${BASE}/methodology`); await page.getByText("Customer-choice model").waitFor(); });
 await step("sign up", async () => {
   await page.goto(`${BASE}/sign-up`);
@@ -195,6 +200,7 @@ await step("live gym journey", async () => {
   const mk = await api(`/projects/${pid}/market?location_id=${lid}`);
   L(`competitors found: ${mk.body.competitors?.length}; first: ${mk.body.competitors?.slice(0, 3).map((c) => c.name).join(" | ")}`);
   // Outside map resources can hold back the browser's load event; the Competitors click below proves the page works.
+  L(`open before navigating: ${JSON.stringify(openRequests().filter((x) => x.includes("/api/")))}`);
   await page.goto(`${BASE}/app/projects/${pid}/market`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForTimeout(6000);
   await shot("14-live-gym-market");

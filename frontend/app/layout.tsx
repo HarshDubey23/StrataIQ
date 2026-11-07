@@ -12,16 +12,20 @@ const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-
 const tiro = Tiro_Devanagari_Hindi({ subsets: ["devanagari"], weight: "400", variable: "--font-tiro", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "StrataIQ — Test your business on a live model of the street",
-  description:
-    "Pick any business and any place. StrataIQ loads the real competitors and population around it, adds ground data from a field researcher, simulates 10,000 customers on a 3D map, and shows profit, risk and break-even before you invest.",
+  title: "StrataIQ: test a business location before you sign",
+  description: "See the real competitors and neighbourhood around any US location, and how many customers a day you need to break even.",
 };
 
-export const viewport: Viewport = { themeColor: "#f3f4f7", colorScheme: "light" };
+export const viewport: Viewport = { themeColor: "#f3f4f1", colorScheme: "light" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable} ${tiro.variable} ${archivo.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="" />
+        <link href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500&display=swap" rel="stylesheet" />
+      </head>
       <body className="grain min-h-screen font-sans">
         {children}
         {process.env.NEXT_PUBLIC_VOICE === "1" && <VoiceDock />}

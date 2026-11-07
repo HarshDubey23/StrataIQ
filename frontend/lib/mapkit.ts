@@ -18,7 +18,7 @@ export const C = {
   road: "#ffffff",
   roadMajor: "#ffffff",
   label: "#6b7180",
-  you: [47, 73, 255] as [number, number, number],
+  you: [217, 58, 30] as [number, number, number],
   youSoft: [138, 155, 255] as [number, number, number],
   comp: [245, 158, 11] as [number, number, number],
   agent: [229, 72, 77] as [number, number, number],
@@ -45,7 +45,7 @@ function safe(fn: () => void) {
 }
 
 /** Survey-blueprint palette for the landing city: one blue field, white line work. */
-export const BP = { field: "#2F49FF", water: "#2236D6", park: "#3A55FF", line: "#FFFFFF" };
+export const BP = { field: "#D93A1E", water: "#2236D6", park: "#3A55FF", line: "#FFFFFF" };
 
 /** Landing look: the street as a blueprint. Fills vanish into the blue, roads become white lines,
  *  buildings become glassy pale-blue blocks with white footprints, labels go. */
@@ -217,7 +217,7 @@ export function popColor(t: number, alpha = 150): [number, number, number, numbe
   const stops: [number, [number, number, number]][] = [
     [0, [214, 220, 255]],
     [0.45, [120, 140, 255]],
-    [0.75, [47, 73, 255]],
+    [0.75, [217, 58, 30]],
     [1, [229, 72, 77]],
   ];
   for (let i = 1; i < stops.length; i++) {

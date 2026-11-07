@@ -142,15 +142,15 @@ export default function MapView(props: Props) {
         m.addSource("siq-activity", { type: "geojson", data: EMPTY });
         m.addSource("siq-agents", { type: "geojson", data: EMPTY });
         m.addSource("siq-comps", { type: "geojson", data: EMPTY });
-        m.addLayer({ id: "siq-catchment-fill", type: "fill", source: "siq-catchment", paint: { "fill-color": "#2F49FF", "fill-opacity": 0.035 } });
-        m.addLayer({ id: "siq-catchment-line", type: "line", source: "siq-catchment", paint: { "line-color": "#2F49FF", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.8 } });
+        m.addLayer({ id: "siq-catchment-fill", type: "fill", source: "siq-catchment", paint: { "fill-color": "#D93A1E", "fill-opacity": 0.035 } });
+        m.addLayer({ id: "siq-catchment-line", type: "line", source: "siq-catchment", paint: { "line-color": "#D93A1E", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.8 } });
         m.addLayer({
           id: "siq-zones",
           type: "circle",
           source: "siq-zones",
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 4, 14, 14, 16, 34],
-            "circle-color": ["interpolate", ["linear"], ["get", "v"], 0, "#dfe4ff", 0.25, "#b9c3ff", 0.5, "#8a9bff", 0.75, "#5a72ff", 1, "#2f49ff"],
+            "circle-color": ["interpolate", ["linear"], ["get", "v"], 0, "#dfe4ff", 0.25, "#b9c3ff", 0.5, "#8a9bff", 0.75, "#5a72ff", 1, "#D93A1E"],
             "circle-opacity": 0.5,
             "circle-blur": 0.6,
           },
@@ -263,7 +263,7 @@ export default function MapView(props: Props) {
     const m = map.current;
     if (!ready || !m) return;
     const mode = props.agentColor || "red";
-    const color = (choice: number) => (mode === "red" ? "#E5484D" : choice === 0 ? "#2F49FF" : choice < 0 ? "#A9A59B" : "#E5484D");
+    const color = (choice: number) => (mode === "red" ? "#E5484D" : choice === 0 ? "#D93A1E" : choice < 0 ? "#A9A59B" : "#E5484D");
     (m.getSource("siq-agents") as GeoJSONSource).setData(fc((props.agents || []).map(([lat, lng, seg, ch]) => pt(lng, lat, { c: color(ch), s: seg, ch }))));
   }, [ready, props.agents, props.agentColor]);
 
@@ -301,9 +301,9 @@ export default function MapView(props: Props) {
       d.type = "button";
       d.setAttribute("aria-label", `Candidate ${c.label}`);
       d.style.cssText = `display:flex;align-items:center;gap:6px;padding:3px 8px 3px 4px;border-radius:999px;font:600 11px var(--font-inter-tight),sans-serif;cursor:pointer;
-        background:${c.active ? "#2F49FF" : "#FFFFFF"};color:${c.active ? "#F3F4F7" : "#131312"};border:1px solid ${c.active ? "#8A9BFF" : "#D8D4CA"};box-shadow:0 6px 16px -6px rgba(13,16,40,.35)`;
+        background:${c.active ? "#D93A1E" : "#FFFFFF"};color:${c.active ? "#F3F4F7" : "#131312"};border:1px solid ${c.active ? "#8A9BFF" : "#D8D4CA"};box-shadow:0 6px 16px -6px rgba(13,16,40,.35)`;
       const dot = document.createElement("span");
-      dot.style.cssText = `width:10px;height:10px;border-radius:999px;background:${c.active ? "#F3F4F7" : "#2F49FF"}`;
+      dot.style.cssText = `width:10px;height:10px;border-radius:999px;background:${c.active ? "#F3F4F7" : "#D93A1E"}`;
       const t = document.createElement("span");
       t.textContent = c.label;
       if (c.active) {

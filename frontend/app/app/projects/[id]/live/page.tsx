@@ -288,7 +288,7 @@ export default function LiveMarket() {
                 return <div key={s} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: ["#E5484D", "#D97706", "#7C3AED"][i] }} /> {c ? `${c.label} · ${pct(c.share)} here` : s}</div>;
               })}
               {colorMode === "mode" && abm.agents.modes.map((s, i) => <div key={s} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: ["#16A34A", "#0284C7", "#DB2777", "#CA8A04", "#EA580C", "#9333EA", "#65A30D"][i] }} /> {MODE_LABEL[s] || s}</div>)}
-              {colorMode === "age" && [["#60A5FA", "0–14"], ["#2F49FF", "15–29"], ["#D97706", "30–49"], ["#E5484D", "50+"]].map(([c, l]) => <div key={l} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: c }} /> {l}</div>)}
+              {colorMode === "age" && [["#60A5FA", "0–14"], ["#D93A1E", "15–29"], ["#D97706", "30–49"], ["#E5484D", "50+"]].map(([c, l]) => <div key={l} className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: c }} /> {l}</div>)}
               <div className="mt-1.5 border-t border-black/[0.07] pt-1.5 text-ink-500">
                 {num(abm.n_agents)} synthetic agents · each ≈ {num(abm.scale)} residents · {abm.genome ? `${abm.genome.per_agent} parameters each` : "profile per agent"}. Placed by {market?.snapshot?.population.source === "worldpop" ? "WorldPop" : "estimated"} density. Click any dot to X-ray its decision.
               </div>
@@ -357,9 +357,9 @@ export default function LiveMarket() {
                   <XAxis dataKey="d" stroke="#75716A" fontSize={10} />
                   <YAxis stroke="#75716A" fontSize={10} width={36} />
                   <Tooltip {...TT} />
-                  <ReferenceLine x={day + 1} stroke="#2F49FF" />
+                  <ReferenceLine x={day + 1} stroke="#D93A1E" />
                   {capDay && <ReferenceLine y={capDay} stroke="#E5484D" strokeDasharray="4 3" label={{ value: "capacity", fill: "#E5484D", fontSize: 9, position: "insideTopRight" }} />}
-                  <Area dataKey="you" name="this strategy" stroke="#2F49FF" fill="#2F49FF" fillOpacity={0.15} isAnimationActive={false} />
+                  <Area dataKey="you" name="this strategy" stroke="#D93A1E" fill="#D93A1E" fillOpacity={0.15} isAnimationActive={false} />
                   {cmp && <Line dataKey="before" name="before" stroke="#939eb3" strokeDasharray="4 3" dot={false} strokeWidth={1.5} isAnimationActive={false} />}
                 </ComposedChart>
               </ResponsiveContainer>
@@ -371,7 +371,7 @@ export default function LiveMarket() {
                   <XAxis dataKey="d" stroke="#75716A" fontSize={10} />
                   <YAxis stroke="#75716A" fontSize={10} width={28} domain={[0, 100]} />
                   <Tooltip {...TT} />
-                  <ReferenceLine x={day + 1} stroke="#2F49FF" />
+                  <ReferenceLine x={day + 1} stroke="#D93A1E" />
                   <Line dataKey="aware" stroke="#C59BFF" dot={false} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
