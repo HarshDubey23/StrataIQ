@@ -242,6 +242,7 @@ class MarketInputs:
         self.income = self.behaviour = None
         self.arch = arch
         india = adm.get("country_code") in ("IN", "", None)
+        self.metro = not india or gm.has_metro(adm.get("place_name"), adm.get("district"))
         us_ctx = eu.build_context(self.zone_ll[:, 0], self.zone_ll[:, 1], state=adm.get("state")) if self.zones and get_settings().market == "US" else None
         if us_ctx:
             if arch.demand_base == "residents_and_activity":
@@ -341,7 +342,7 @@ def execute_run(db: Session, project: Project, scenario: Scenario) -> Simulation
                       days=84, seed=seed, age_sex=snap.population.get("age_sex"), spacing_km=float(snap.population.get("spacing_km") or 0.35),
                       overrides=inputs.get("param_overrides") or {}, profile=snapshot_inputs["profile"], offer=inputs.get("offer"),
                       radius_km=radius, month0=snapshot_inputs["month0"], cache_key=run.id,
-                      income=mi.income, behaviour=mi.behaviour, route_fn=mi.route_fn)
+                      income=mi.income, behaviour=mi.behaviour, route_fn=mi.route_fn, metro=mi.metro)
         res["income"] = mi.behaviour.summary if mi.behaviour else None
         res["routing"] = {"share_routed": round(route_share, 3), "source": "osrm" if route_share > 0 else "haversine_circuity",
                           "note": "Road-network distance (OSRM, OpenStreetMap roads) from every zone to the site and nearest competitors"
@@ -417,7 +418,8 @@ def population_for_run(db: Session, run: SimulationRun):
                                seed=int(run.seed), age_sex=snap.population.get("age_sex"), spacing_km=float(snap.population.get("spacing_km") or 0.35),
                                profile=ins.get("profile") or project.profile, offer=sc.get("offer"), overrides=sc.get("param_overrides") or {},
                                month0=int(ins.get("month0", gm.month_now())), days=int(abm.get("days", 84)),
-                               income=mi.income if mi else None, behaviour=mi.behaviour if mi else None, route_fn=mi.route_fn if mi else None)
+                               income=mi.income if mi else None, behaviour=mi.behaviour if mi else None, route_fn=mi.route_fn if mi else None,
+                               metro=mi.metro if mi else True)
         cols = abm["agents"]["columns"]
         im = cols.index("in_market")
         pop.gen.G[:, gm.KI["ev_in_market"]] = [r[im] for r in abm["agents"]["rows"]]

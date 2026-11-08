@@ -154,6 +154,18 @@ MODE_BASE_SHARES = np.array([0.283, 0.426] + [0.291 * w / 40 for w in (8, 10, 12
 MODES = [("walk", 4.5, 0.55), ("two_wheeler", 18.0, 1.25), ("car", 16.0, 1.4), ("auto", 14.0, 1.1), ("bus", 11.0, 0.95), ("metro", 25.0, 1.2), ("cycle", 10.0, 0.8)]
 MODE_INDEX = {m[0]: k for k, m in enumerate(MODES)}
 
+# Indian cities with a metro in passenger service (assumption, checked Nov 2026); elsewhere no agent takes one.
+METRO_CITIES = ("delhi", "new delhi", "noida", "greater noida", "gurugram", "gurgaon", "ghaziabad", "faridabad", "mumbai", "navi mumbai", "thane",
+                "kolkata", "chennai", "bengaluru", "bangalore", "hyderabad", "secunderabad", "jaipur", "kochi", "ernakulam", "lucknow", "kanpur",
+                "agra", "nagpur", "pune", "ahmedabad", "gandhinagar", "surat", "bhopal", "indore", "patna", "meerut")
+
+
+def has_metro(*places: str | None) -> bool:
+    import re
+    names = " | ".join(p.lower() for p in places if p)
+    # whole words only: "Prayagraj" contains "agra"
+    return any(re.search(rf"\b{re.escape(c)}\b", names) for c in METRO_CITIES)
+
 # km/h. US urban speeds are assumptions, walk to bicycle in MODES order; Indian speeds are the MODES values.
 MODE_SPEEDS = np.array([4.5, 40.0, 40.0, 35.0, 20.0, 35.0, 15.0]) if get_settings().market == "US" else np.array([m[1] for m in MODES])
 
@@ -738,7 +750,8 @@ class Genome:
 def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, seg_keys: list[str], seg: np.ndarray, zone_pop: np.ndarray,
              zone_act: np.ndarray, lat: np.ndarray, lng: np.ndarray, zi: np.ndarray, blat: np.ndarray, blng: np.ndarray, circuity: float,
              max_km: float, seg_dt: np.ndarray, hh_size: float = 4.2, income_z: np.ndarray | None = None,
-             dist_km: np.ndarray | None = None, walk_min: np.ndarray | None = None, mode_share: np.ndarray | None = None) -> Genome:
+             dist_km: np.ndarray | None = None, walk_min: np.ndarray | None = None, mode_share: np.ndarray | None = None,
+             metro: bool = True) -> Genome:
     from .geo import haversine_km
 
     N = age.size
@@ -776,6 +789,8 @@ def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, s
     too_young = np.zeros((N, len(MODES)), bool)
     too_young[:, MODE_INDEX["car"]] = age < 18
     too_young[:, MODE_INDEX["two_wheeler"]] = age < 16
+    if not metro:  # nobody rides a metro in a city that has none
+        too_young[:, MODE_INDEX["metro"]] = True
     if mode_share is not None:  # real local shares, reproduced exactly: personal preference would pull away from the data
         mode = np.argmax(np.where(too_young, -np.inf, np.log(mode_share + 1e-9) + rng.gumbel(0, 1, (N, len(MODES)))), 1)
     else:

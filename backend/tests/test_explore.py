@@ -131,3 +131,16 @@ def test_a_refresh_retires_rivals_the_source_no_longer_lists():
     assert vanished_rivals(rows, {"osm/ccd"}, here, 2.5, True) == [gone]
     assert vanished_rivals(rows, {"osm/ccd"}, here, 2.5, False) == []  # the search failed: change nothing
     assert vanished_rivals(rows, set(), here, 2.5, True) == []  # an empty answer is not proof that all closed
+
+
+def test_nobody_rides_a_metro_in_a_city_without_one():
+    from app.engine import genome as gm
+    assert gm.has_metro("Lucknow", "Lucknow") and gm.has_metro(None, "New Delhi") and not gm.has_metro("Prayagraj", "Prayagraj")
+    rng = np.random.default_rng(3)
+    N = 4000
+    kw = dict(age=rng.uniform(18, 70, N), female=rng.random(N) < 0.5, seg_keys=["a"], seg=np.zeros(N, int), zone_pop=np.array([1.0]),
+              zone_act=np.array([0.0]), lat=np.full(N, 25.45), lng=np.full(N, 81.83), zi=np.zeros(N, int), blat=np.array([25.45]),
+              blng=np.array([81.83]), circuity=1.3, max_km=5, seg_dt=np.ones(N))
+    no = gm.generate(np.random.default_rng(4), metro=False, **kw).G[:, gm.KI["ev_mode"]].astype(int)
+    yes = gm.generate(np.random.default_rng(4), **kw).G[:, gm.KI["ev_mode"]].astype(int)
+    assert not (no == gm.MODE_INDEX["metro"]).any() and (yes == gm.MODE_INDEX["metro"]).any()

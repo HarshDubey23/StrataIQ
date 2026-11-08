@@ -142,7 +142,7 @@ class Population:
 def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: BusinessInputs, params: ResolvedParams,
                      ref_price: float, *, n_agents: int, seed: int, age_sex: dict | None, spacing_km: float, profile: dict | None,
                      offer: dict | None, overrides: dict | None, month0: int, days: int,
-                     income=None, behaviour=None, route_fn=None) -> Population:
+                     income=None, behaviour=None, route_fn=None, metro: bool = True) -> Population:
     """``income`` (IncomeContext) gives each agent a real-data MPCE; ``behaviour`` (BehaviourEvidence) turns it into WTP;
     ``route_fn(points) -> (km [Z,J], walk_min [Z,J] | None)`` gives road-network distances. All optional: without them
     the population falls back to the archetype assumptions, and the run records which path was used."""
@@ -201,7 +201,8 @@ def build_population(arch: Archetype, zones: list[Zone], comps: list[Competitor]
     gen = gm.generate(np.random.default_rng(seed + 7), age=age, female=female, seg_keys=[s.key for s in arch.segments], seg=seg,
                       zone_pop=pop, zone_act=act, lat=lat, lng=lng, zi=zi, blat=blat, blng=blng, circuity=P["circuity"],
                       max_km=P["max_km"], seg_dt=seg_dt, income_z=income_z, dist_km=dist_agent, walk_min=walk_agent,
-                      hh_size=4.2 if people is None else people["hh_size"][zi], mode_share=None if people is None else people["modes"][zi])
+                      hh_size=4.2 if people is None else people["hh_size"][zi], mode_share=None if people is None else people["modes"][zi],
+                      metro=metro)
     if behaviour is not None and mpce is not None:
         # WTP = reference price x (MPCE / x_ref)^elasticity x taste. The taste factor keeps each agent's generated
         # deviation from its genome (standardised, log-sd = the assumed taste spread); the income part is real data.
@@ -433,13 +434,13 @@ def run_abm(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: Bu
             ref_price: float, *, n_agents: int = 10000, days: int = 84, seed: int = 42, age_sex: dict | None = None,
             spacing_km: float = 0.35, frame_every: int = 2, overrides: dict | None = None, profile: dict | None = None,
             offer: dict | None = None, radius_km: float | None = None, month0: int | None = None, cache_key: str | None = None,
-            income=None, behaviour=None, route_fn=None) -> dict:
+            income=None, behaviour=None, route_fn=None, metro: bool = True) -> dict:
     t0 = time.perf_counter()
     D = {**DEFAULTS, **{k: v for k, v in (overrides or {}).items() if k in DEFAULTS}}
     month0 = gm.month_now() if month0 is None else month0
     pop = build_population(arch, zones, comps, biz, params, ref_price, n_agents=n_agents, seed=seed, age_sex=age_sex, spacing_km=spacing_km,
                            profile=profile, offer=offer, overrides=overrides, month0=month0, days=days,
-                           income=income, behaviour=behaviour, route_fn=route_fn)
+                           income=income, behaviour=behaviour, route_fn=route_fn, metro=metro)
     t_gen = time.perf_counter()
     if cache_key:
         cache_put(cache_key, pop)
