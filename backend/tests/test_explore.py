@@ -101,7 +101,7 @@ def test_a_synthetic_person_only_knows_their_own_simulation():
     assert "Your business" not in str(f) and "0.4," not in str(f["places_i_compared"][0]["main_reasons"])
     assert f["my_traits_that_decided_it"] == ["Relies on online reviews"]  # traits with no effect are left out
     x["final_choice"] = -1
-    assert persona_facts(x, {"age": 30}, "x", "orders")["my_choice_this_season"].startswith("none of them")
+    assert persona_facts(x, {"age": 30}, "x", "orders")["my_choice_this_season"].startswith("nowhere")
 
 
 def test_the_persona_keeps_a_choice_that_is_not_among_its_top_options():

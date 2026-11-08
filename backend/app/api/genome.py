@@ -134,7 +134,7 @@ def persona_facts(x: dict, summary: dict, home: str, unit: str, new_name: str = 
         "spending_group": x["segment"].get("label") if isinstance(x.get("segment"), dict) else x.get("segment"),
         "most_i_would_pay_per_visit": round(float(summary.get("wtp") or 0)), "unit": unit,
         "heard_of_the_new_business": bool(summary.get("aware")), "looking_this_season": bool(summary.get("in_market")),
-        "my_choice_this_season": name(chosen) if chosen else (chosen_name if x["final_choice"] > 0 and chosen_name else "none of them: I stayed home or spent the money elsewhere"),
+        "my_choice_this_season": name(chosen) if chosen else (chosen_name if x["final_choice"] > 0 and chosen_name else "nowhere (stayed home or spent the money on something else)"),
         "places_i_compared": [place(o) for o in x["options"][:4]],
         "the_new_business": place(you) if you else None,
         "my_traits_that_decided_it": [d["label"] for d in drivers if abs(d.get("effect", 0)) > 0.05][:4],
