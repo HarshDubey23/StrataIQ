@@ -11,7 +11,7 @@ import { AtlasKey, BlockPlan, Logo, LogoMark } from "@/components/brand";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
 import type { Tract } from "./HeroMap";
-import { money, num, US_MARKET } from "@/lib/format";
+import { money, num, REPORT_PRICE, US_MARKET } from "@/lib/format";
 import { deviceTier, type Tier } from "@/lib/device";
 import { suggestPlaces, type Place } from "@/lib/places";
 
@@ -33,8 +33,7 @@ const HEAD = "font-display text-[clamp(2.5rem,1.6rem+2.8vw,4.25rem)] leading-[1.
 const BIG = "text-[clamp(3rem,1.5rem+6vw,7rem)]";
 const NONE_T: Tract[] = [];
 const NONE_C: PreviewComp[] = [];
-// the report price is set per market by the deployment; India has none fixed yet, so no number is shown
-const PRICE = process.env.NEXT_PUBLIC_REPORT_PRICE ?? (US_MARKET ? "$29" : "");
+const PRICE = REPORT_PRICE;
 const RADIUS = US_MARKET ? "2 miles" : "2 km";
 const SHEETS = ["Your address", "Your rivals", "Your neighborhood", "Your customers", "Your numbers"];
 

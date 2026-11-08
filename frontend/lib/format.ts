@@ -1,6 +1,8 @@
 export const US_MARKET = (process.env.NEXT_PUBLIC_MARKET ?? "US") === "US";
 export const CUR = US_MARKET ? "$" : "₹";
 export const LOCALE = US_MARKET ? "en-US" : "en-IN";
+/** One full report for one location, priced per market by the deployment (NEXT_PUBLIC_REPORT_PRICE). */
+export const REPORT_PRICE = process.env.NEXT_PUBLIC_REPORT_PRICE || (US_MARKET ? "$29" : "₹999");
 
 export function money(x: number | null | undefined, opts: { compact?: boolean; sign?: boolean } = {}): string {
   if (x === null || x === undefined || Number.isNaN(x)) return "—";

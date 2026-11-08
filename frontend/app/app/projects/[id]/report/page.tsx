@@ -6,7 +6,7 @@ import { useProject } from "@/components/ProjectContext";
 import { ReportView, type ReportContent } from "@/components/ReportView";
 import { Badge, Button, EmptyState, ErrorState, Select, Skeleton } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
-import { when } from "@/lib/format";
+import { when, REPORT_PRICE } from "@/lib/format";
 
 interface ReportMeta {
   id: string;
@@ -59,7 +59,7 @@ export default function ReportPage() {
     <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
       {process.env.NEXT_PUBLIC_PAYMENT_URL && (
         <a href={process.env.NEXT_PUBLIC_PAYMENT_URL} target="_blank" rel="noreferrer" className="no-print flex flex-wrap items-center justify-between gap-3 bg-accent p-4 text-white">
-          <span className="text-[17px] font-medium">Get the full report for this location: $29, one payment</span>
+          <span className="text-[17px] font-medium">Get the full report for this location: {REPORT_PRICE}, one payment</span>
           <span className="bg-white px-4 py-2 text-[16px] font-medium text-night">Pay securely</span>
         </a>
       )}

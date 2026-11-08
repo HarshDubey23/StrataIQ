@@ -57,6 +57,7 @@ services:
       args:
         API_URL: http://api_in:8000
         NEXT_PUBLIC_MARKET: IN
+        NEXT_PUBLIC_REPORT_PRICE: ${REPORT_PRICE_IN:-₹999}
         NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
         NEXT_PUBLIC_VOICE: ${VOICE:-}
     environment:
