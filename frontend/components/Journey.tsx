@@ -1,4 +1,5 @@
 "use client";
+import { US_MARKET } from "@/lib/format";
 
 /**
  * Guidance for people who have never done a market study: a five-step journey with the next step always one
@@ -120,7 +121,7 @@ export function Journey({ project }: { project: Project }) {
     { key: "decide", seg: "/decisions", label: "Decisions", hint: "Go / no-go and what could make it wrong", done: visited.includes("decisions") },
     { key: "lease", seg: "/lease", label: "Lease Counter", hint: "Your walk-away rent, your personal risk and a counteroffer to send", done: visited.includes("lease") },
     { key: "report", seg: "/report", label: "Report", hint: "Share a feasibility report", done: visited.includes("report") },
-  ];
+  ].filter((s) => US_MARKET || s.key !== "lease"); // the Lease Counter models US lease terms (CAM, personal guarantee)
   const next = steps.find((s) => !s.done);
   const doneN = steps.filter((s) => s.done).length;
   const moreActive = MORE.find((m) => (m.seg === "" ? path === base : path.startsWith(base + m.seg)));

@@ -12,3 +12,18 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 }
+
+# StrataIQ India
+{$DOMAIN_IN} {
+	encode zstd gzip
+	reverse_proxy web_in:3000 {
+		lb_try_duration 30s
+		lb_try_interval 250ms
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

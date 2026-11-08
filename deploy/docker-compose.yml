@@ -7,11 +7,12 @@ services:
     ports: ["80:80", "443:443"]
     environment:
       DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+      DOMAIN_IN: ${DOMAIN_IN:-india.20-244-118-254.sslip.io}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    depends_on: [web]
+    depends_on: [web, web_in]
 
   web:
     restart: unless-stopped
@@ -41,6 +42,40 @@ services:
       PROXY_SECRET: ${PROXY_SECRET}
       COOKIE_SECURE: "true"
       CORS_ORIGINS: https://${DOMAIN}
+      FSQ_API_KEY: ${FSQ_API_KEY:-}
+      ORS_API_KEY: ${ORS_API_KEY:-}
+      SPEKO_API_KEY: ${SPEKO_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # StrataIQ India: the same code with Indian data (MARKET=IN), its own database and its own address
+  web_in:
+    restart: unless-stopped
+    build:
+      context: ../frontend
+      args:
+        API_URL: http://api_in:8000
+        NEXT_PUBLIC_MARKET: IN
+        NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+        NEXT_PUBLIC_VOICE: ${VOICE:-}
+    environment:
+      API_URL: http://api_in:8000
+      PROXY_SECRET: ${PROXY_SECRET}
+    depends_on: [api_in]
+
+  api_in:
+    restart: unless-stopped
+    build: ../backend
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    environment:
+      APP_ENV: production
+      MARKET: IN
+      DATABASE_URL: postgresql://strataiq:${DB_PASSWORD}@db:5432/strataiq_in
+      JWT_SECRET: ${JWT_SECRET}
+      PROXY_SECRET: ${PROXY_SECRET}
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: https://${DOMAIN_IN:-india.20-244-118-254.sslip.io}
       FSQ_API_KEY: ${FSQ_API_KEY:-}
       ORS_API_KEY: ${ORS_API_KEY:-}
       SPEKO_API_KEY: ${SPEKO_API_KEY:-}

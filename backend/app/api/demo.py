@@ -79,6 +79,7 @@ LIVE_SPOTS_US = {
     "phoenix": ("Downtown Phoenix, Arizona", 33.4484, -112.0740),
 }
 LIVE_SPOTS_IN = {
+    "civil-lines": ("Civil Lines, Prayagraj", 25.4528, 81.8340),
     "cp-delhi": ("Connaught Place, New Delhi", 28.6315, 77.2167),
     "indiranagar": ("Indiranagar, Bengaluru", 12.9719, 77.6412),
     "bandra": ("Bandra West, Mumbai", 19.0596, 72.8295),

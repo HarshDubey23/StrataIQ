@@ -62,6 +62,15 @@ def place_name(lat: float, lng: float) -> str:
         return "Prayagraj"
 
 
+def _small(x, depth=0):
+    """Scalars and short lists only: the story needs the numbers, not the per-agent arrays."""
+    if isinstance(x, dict):
+        return {k: _small(v, depth + 1) for k, v in x.items() if depth < 3}
+    if isinstance(x, list):
+        return [_small(v, depth + 1) for v in x[:24]] if len(x) <= 24 else f"[{len(x)} items]"
+    return x
+
+
 async def main(out_path: str) -> None:
     assert get_settings().market == "IN", "run with MARKET=IN"
     with session_factory()() as db:
@@ -102,7 +111,10 @@ async def main(out_path: str) -> None:
         comps = db.scalars(select(Competitor).where(Competitor.project_id == p.id, Competitor.active.is_(True))).all()
         out = {"project_id": p.id, "run_id": run.id, "report_token": TOKEN, "inputs": BASE,
                "scenarios": {s.name: (runs[s.id].results or {}).get("summary") for s in p.scenarios if s.id in runs},
-               "results_keys": list((run.results or {}).keys())}
+               "results_keys": list((run.results or {}).keys()),
+               "finance": {s.name: _small((runs[s.id].results or {}).get("finance")) for s in p.scenarios if s.id in runs},
+               "monte_carlo": {s.name: _small((runs[s.id].results or {}).get("monte_carlo")) for s in p.scenarios if s.id in runs},
+               "income": _small((run.results or {}).get("income")), "limitations": (run.results or {}).get("limitations")}
         out["competitors"] = sorted(({"name": c.name, "source": c.source, "lat": c.lat, "lng": c.lng, "dist_km": round(haversine_km(LAT, LNG, c.lat, c.lng), 2),
                                       "kind": (c.tags or {}).get("amenity") or (c.tags or {}).get("shop") or (c.tags or {}).get("category")} for c in comps),
                                     key=lambda c: c["dist_km"])
@@ -117,11 +129,13 @@ async def main(out_path: str) -> None:
     cols = abm["agents"]["columns"]
     rows = abm["agents"]["rows"]
     rng = np.random.default_rng(7)
+    in_market = np.array([r[cols.index("in_market")] for r in rows], bool)
+    final = np.where(in_market, final, -2)  # people not looking for a café this season are not part of the story
     picks = list(rng.choice(np.where(final == 0)[0], 3, replace=False)) if (final == 0).sum() >= 3 else list(np.where(final == 0)[0])
     for j in [j for j, _ in sorted(((j, int((final == j).sum())) for j in set(final.tolist()) if j > 0), key=lambda x: -x[1])[:4]]:
         picks.append(int(rng.choice(np.where(final == j)[0])))
-    if (final < 0).any():
-        picks.append(int(rng.choice(np.where(final < 0)[0])))
+    if (final == -1).any():
+        picks.append(int(rng.choice(np.where(final == -1)[0])))
     people = []
     for i in picks:
         i = int(i)

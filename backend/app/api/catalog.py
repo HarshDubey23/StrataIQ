@@ -91,6 +91,7 @@ PREVIEW_SPOTS = {
     "austin": {"label": "Downtown Austin, Texas", "lat": 30.2672, "lng": -97.7431},
     "miami": {"label": "Wynwood, Miami, Florida", "lat": 25.8005, "lng": -80.1990},
     "phoenix": {"label": "Downtown Phoenix, Arizona", "lat": 33.4484, "lng": -112.0740},
+    "civil-lines": {"label": "Civil Lines, Prayagraj", "lat": 25.4528, "lng": 81.8340},
     "cp-delhi": {"label": "Connaught Place, New Delhi", "lat": 28.6315, "lng": 77.2167},
     "indiranagar": {"label": "Indiranagar, Bengaluru", "lat": 12.9719, "lng": 77.6412},
     "bandra": {"label": "Bandra West, Mumbai", "lat": 19.0596, "lng": 72.8295},
@@ -121,6 +122,48 @@ async def preview(spot: str = Query(default="austin"), category: str = Query(def
                        "attribution": " · ".join([prov.get("attribution") or ""] + [a["attribution"] for a in prov.get("also") or []])}}
 
 
+async def _peek_india(entry, q: str | None, lat: float | None, lng: float | None, label: str | None) -> dict:
+    """The Indian first look: WorldPop people within 2 km and MoSPI HCES 2023-24 spending for the state, urban or rural."""
+    from ..api.quickstart import ARCH_COSTS, ARCH_PRICE, TYPICAL_PRICE
+    from ..engine.economics import income
+    from ..engine.geo import circle_polygon
+    from ..providers import population
+
+    cache = Cache(session_factory())
+    if lat is None or lng is None:
+        if not q:
+            raise HTTPException(422, "Enter an address")
+        try:
+            found, _ = await osm.geocode(q, limit=1, cache=cache, country_codes="in")
+        except ProviderError as e:
+            raise HTTPException(502, f"Address search is busy right now ({e.message[:100]})") from e
+        if not found:
+            raise HTTPException(404, "We could not find that address in India. Try an area and city, like Civil Lines, Prayagraj.")
+        lat, lng, label = found[0]["lat"], found[0]["lng"], found[0]["display_name"]
+    try:
+        adm, _ = await osm.reverse_admin(lat, lng, cache)
+    except ProviderError:
+        adm = {}
+    if adm.get("country_code") not in (None, "", "IN"):
+        raise HTTPException(422, "That place is outside India. This StrataIQ has Indian data, so try an Indian address.")
+    try:
+        people, _ = await population.worldpop_total([circle_polygon(lat, lng, 2.0)], cache)
+    except ProviderError as e:
+        raise HTTPException(502, f"Population data is busy right now ({e.message[:100]})") from e
+    sector = "rural" if adm.get("settlement") == "rural" else "urban"
+    state = income.normalise_state(adm.get("state"))
+    spend = income.curve(sector, state).median
+    arch = ARCHETYPES[entry.archetype]
+    return {
+        "place": {"label": label or q or "", "lat": lat, "lng": lng},
+        "category": {"key": entry.key, "label": entry.label},
+        "area": {"people": round(people), "median_household_income": round(spend), "jobs": None, "tracts": [], "radius_km": 2,
+                 "source": f"People: WorldPop. Spending per person: MoSPI HCES 2023-24, {adm.get('state') or 'India'}, {sector}"},
+        "typical": {"price": float(TYPICAL_PRICE.get(entry.key, ARCH_PRICE[entry.archetype])), "unit": arch.unit_label, "per_day": entry.archetype != "membership",
+                    "variable_cost_ratio": arch.params["variable_cost_ratio"].value, **ARCH_COSTS[entry.archetype]},
+    }
+
+
 @router.get("/market/peek")
 async def peek(category: str = Query(default="gym"), q: str | None = Query(default=None, min_length=3, max_length=200),
                lat: float | None = Query(default=None, ge=-85, le=85), lng: float | None = Query(default=None, ge=-180, le=180), label: str | None = Query(default=None, max_length=200)):
@@ -131,6 +174,8 @@ async def peek(category: str = Query(default="gym"), q: str | None = Query(defau
     entry = next((e for e in TAXONOMY if e.key == category), None)
     if entry is None or category not in PREVIEW_CATS:
         raise HTTPException(404, "Unknown category")
+    if get_settings().market != "US":
+        return await _peek_india(entry, q, lat, lng, label)
     if lat is None or lng is None:
         if not q:
             raise HTTPException(422, "Enter an address")

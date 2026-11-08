@@ -11,7 +11,7 @@ import { AtlasKey, BlockPlan, Logo, LogoMark } from "@/components/brand";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SPOTS, type PreviewComp, type Spot } from "./spots";
 import type { Tract } from "./HeroMap";
-import { money, num } from "@/lib/format";
+import { money, num, US_MARKET } from "@/lib/format";
 import { deviceTier, type Tier } from "@/lib/device";
 import { suggestPlaces, type Place } from "@/lib/places";
 
@@ -33,15 +33,28 @@ const HEAD = "font-display text-[clamp(2.5rem,1.6rem+2.8vw,4.25rem)] leading-[1.
 const BIG = "text-[clamp(3rem,1.5rem+6vw,7rem)]";
 const NONE_T: Tract[] = [];
 const NONE_C: PreviewComp[] = [];
+// the report price is set per market by the deployment; India has none fixed yet, so no number is shown
+const PRICE = process.env.NEXT_PUBLIC_REPORT_PRICE ?? (US_MARKET ? "$29" : "");
+const RADIUS = US_MARKET ? "2 miles" : "2 km";
 const SHEETS = ["Your address", "Your rivals", "Your neighborhood", "Your customers", "Your numbers"];
 
-const FAQ: [string, string][] = [
+const FAQ_IN: [string, string][] = [
+  ["What do I need to start?", "Just your idea and an address. StrataIQ fills in the market data and starting costs in rupees, and you can replace any number with your own quotes."],
+  ["Where does the India data come from?", "People from WorldPop, spread over the real buildings on OpenStreetMap. Spending from MoSPI's Household Consumption Expenditure Survey 2023-24 for your state, urban or rural. How people travel from MoSPI's National Household Travel Survey. Rivals from OpenStreetMap and Foursquare."],
+  ["What makes this different from a footfall count?", "Footfall tells you who walks past. StrataIQ shows what they would do: come to you, go to a rival, or stay home, at your price, on your street."],
+  ["What can it not see?", "Your exact neighbourhood's income. India has no public street-level income data that may be used commercially, so spending follows your state's official curve. Every number says where it came from."],
+  ["Where does it work?", "Anywhere in India, from a city market to a small-town main road."],
+];
+
+const FAQ_US: [string, string][] = [
   ["What do I need to start?", "Just your idea and an address. StrataIQ fills in the market data and starting costs, and you can replace any number with your own quotes."],
   ["What makes this different from a demographics report?", "A report tells you who lives nearby. StrataIQ shows what they would do: choose you, choose a rival, or stay home, at your price, on your street."],
   ["How does it reach its numbers?", "Every forecast is a range built from local data and your inputs, with each assumption shown so you can check it and change it."],
   ["Has it been tested on real data?", "Yes. We score its market-size estimates against Census business payroll in up to 1,810 US counties it never trained on. Median error is 26% for grocery and 32% for restaurants, roughly half of what population alone gets for restaurants. Single-store sales are harder: in a test against 5,546 Texas bars and restaurants, location data explained under 3% of the difference between venues, because concept and operator matter far more. So use a forecast to test your plan, not as a promise."],
   ["Where does it work?", "Anywhere in the United States, from a downtown corner to a small-town main street."],
 ];
+
+const FAQ = US_MARKET ? FAQ_US : FAQ_IN;
 
 const PLAN: Fact[] = [
   { label: "Customers you need to break even", detail: "The exact number of sales or members you need each month to cover rent, staff and running costs, next to what the model forecasts for your street." },
@@ -104,7 +117,7 @@ function AddressBox({ value, onChange, onPick }: { value: string; onChange: (v: 
     <div className="relative min-w-0 flex-1">
       <label htmlFor="address" className="sr-only">Street address, city and state</label>
       <input id="address" role="combobox" aria-expanded={open && items.length > 0} aria-controls="address-list" aria-autocomplete="list" aria-activedescendant={at >= 0 ? `place-${at}` : undefined} autoComplete="off"
-        value={value} placeholder="US address: 1402 South Lamar, Austin, TX"
+        value={value} placeholder={US_MARKET ? "US address: 1402 South Lamar, Austin, TX" : "Address: Civil Lines, Prayagraj"}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => { setRecent(readRecent()); setOpen(true); }}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
@@ -335,7 +348,7 @@ const Below = memo(function Below() {
               <Tilt3D>
                 <Link href="/sample-report" aria-label="Open the sample report">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/product/report.png" alt="The first page of a StrataIQ report for a gym in South Austin, with the verdict, key numbers and charts" width={1440} height={1100} loading="lazy" className="w-full border border-night bg-paper" />
+                  <img src="/product/report.png" alt="The first page of a StrataIQ report, with the verdict, key numbers and charts" width={1440} height={1100} loading="lazy" className="w-full border border-night bg-paper" />
                 </Link>
               </Tilt3D>
             </ScrollOut>
@@ -344,12 +357,13 @@ const Below = memo(function Below() {
 
         <section className="relative overflow-hidden border-t border-night bg-paper py-14">
           <p className="mb-6 px-5 text-[18px] font-semibold md:px-10 lg:px-14">Built on public data</p>
-          <Marquee items={["U.S. Census ACS", "Census LODES jobs", "County Business Patterns", "OpenStreetMap", "Foursquare Places", "WorldPop"]} />
+          <Marquee items={US_MARKET ? ["U.S. Census ACS", "Census LODES jobs", "County Business Patterns", "OpenStreetMap", "Foursquare Places", "WorldPop"]
+            : ["MoSPI HCES 2023-24", "MoSPI NHTS travel survey", "WorldPop", "OpenStreetMap", "Foursquare Places", "OSRM road routes"]} />
         </section>
 
         <section id="pricing" className="relative border-t border-night bg-atlas px-5 py-24 text-white md:px-10 lg:px-14">
           <div className="mx-auto max-w-6xl">
-            <WordsIn text="$29 now, or years on the wrong lease." className={HEAD} />
+            <WordsIn text={PRICE ? `${PRICE} now, or years on the wrong lease.` : "One report now, or years on the wrong lease."} className={HEAD} />
             <div className="mt-10 grid gap-10 sm:grid-cols-2">
               <Reveal>
                 <p className="font-display text-[5rem] leading-none">Free</p>
@@ -357,7 +371,7 @@ const Below = memo(function Below() {
                 <button onClick={scrollToAddress} className="mt-4 border-b border-current text-[18px] font-medium">Start with an address</button>
               </Reveal>
               <Reveal delay={0.1}>
-                <Stamp className="font-display text-[5rem] leading-none">$29</Stamp>
+                <Stamp className="font-display text-[5rem] leading-none">{PRICE || "Full report"}</Stamp>
                 <p className="mt-3 max-w-[40ch] text-[18px] leading-[1.45]">The full report for one location: profit range, price tests, your walk-away rent, a counteroffer letter and your checklist. One payment, no subscription.</p>
                 <RollLink href="/sample-report" className="mt-4 border-b border-current text-[18px] font-medium">See a sample report</RollLink>
               </Reveal>
@@ -422,7 +436,7 @@ export default function Landing() {
   const { progress, scene } = useStoryProgress();
   useLenis();
 
-  // everything here comes from the API: Census figures first because they are instant, then live rivals
+  // everything here comes from the API: area figures first, then live rivals
   const load = useCallback(async () => {
     setLoading(true);
     setPreview(null);
@@ -591,14 +605,14 @@ export default function Landing() {
                   <motion.div key="s2" exit={{ opacity: 1 }} transition={{ duration: 0.2 }} className="absolute inset-x-4 bottom-5 md:inset-x-10 md:bottom-auto md:top-24">
                     {a ? (
                       <>
-                        <Strips label={`${num(a.people)} people live within 2 miles.`} lines={[<span key="p" className="num"><CountUp to={a.people} /></span>, "people within 2 miles"]} className={BIG} />
+                        <Strips label={`${num(a.people)} people live within ${RADIUS}.`} lines={[<span key="p" className="num"><CountUp to={a.people} /></span>, `people within ${RADIUS}`]} className={BIG} />
                         <div className="mt-3 grid max-w-xl grid-cols-2 gap-2">
-                          <Strips as="p" delay={0.25} lines={[<span key="i" className="num">{money(a.median_household_income, { compact: true })}</span>, <span key="il" className="block font-sans text-[15px] font-medium leading-[1.5]">median household income</span>]} className="text-[clamp(2rem,1.2rem+2.4vw,3.5rem)]" />
-                          <Strips as="p" delay={0.35} lines={[<span key="j" className="num">{num(a.jobs)}</span>, <span key="jl" className="block font-sans text-[15px] font-medium leading-[1.5]">jobs located here</span>]} className="text-[clamp(2rem,1.2rem+2.4vw,3.5rem)]" />
+                          <Strips as="p" delay={0.25} lines={[<span key="i" className="num">{money(a.median_household_income, { compact: true })}</span>, <span key="il" className="block font-sans text-[15px] font-medium leading-[1.5]">{US_MARKET ? "median household income" : "median spend per person a month"}</span>]} className="text-[clamp(2rem,1.2rem+2.4vw,3.5rem)]" />
+                          {a.jobs != null && <Strips as="p" delay={0.35} lines={[<span key="j" className="num">{num(a.jobs)}</span>, <span key="jl" className="block font-sans text-[15px] font-medium leading-[1.5]">jobs located here</span>]} className="text-[clamp(2rem,1.2rem+2.4vw,3.5rem)]" />}
                         </div>
-                        <Note delay={0.55}>Each pink mark is a real Census tract, sized by its population. {a.source}.</Note>
+                        <Note delay={0.55}>{US_MARKET ? "Each pink mark is a real Census tract, sized by its population. " : ""}{a.source}.</Note>
                       </>
-                    ) : <Strips lines={["Reading the", "Census…"]} className={BIG} />}
+                    ) : <Strips lines={["Counting the", "people…"]} className={BIG} />}
                   </motion.div>
                 )}
                 {scene === 3 && (
@@ -611,7 +625,7 @@ export default function Landing() {
                         <span className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-3 rounded-full border border-night bg-stone" /> Stayed home</span>
                       </span>,
                     ]} />
-                    <Note delay={0.5}>Keep scrolling to move through the days. This is a drawing of how it works: people sit on real streets in real Census numbers, but these choices are illustrative. Your test runs the full simulation.</Note>
+                    <Note delay={0.5}>Keep scrolling to move through the days. This is a drawing of how it works: people sit on real streets in real {US_MARKET ? "Census" : "WorldPop"} numbers, but these choices are illustrative. Your test runs the full simulation.</Note>
                   </motion.div>
                 )}
                 {scene === 4 && (
@@ -621,9 +635,9 @@ export default function Landing() {
                         <Strips label={`You need ${num(needed)} ${t.unit}.`} lines={["You need", <span key="n" className="num bg-you px-[0.15em]"><Tween to={needed} /></span>, t.per_day ? `${t.unit} a day` : t.unit]} className={BIG} />
                         <div className="sheet mt-3 max-w-xl p-4">
                           <label htmlFor="rent" className="flex items-baseline justify-between text-[15px] font-semibold">Drag the rent <span className="num font-display text-[28px]">{money(rentNow)}<span className="font-sans text-[14px] font-normal"> a month</span></span></label>
-                          <input id="rent" type="range" min={Math.round(t.rent * 0.4)} max={Math.round(t.rent * 2.5)} step={100} value={rentNow} onChange={(e) => setRent(Number(e.target.value))} className="mt-2 h-8 w-full" />
+                          <input id="rent" type="range" min={Math.round(t.rent * 0.4)} max={Math.round(t.rent * 2.5)} step={US_MARKET ? 100 : 1000} value={rentNow} onChange={(e) => setRent(Number(e.target.value))} className="mt-2 h-8 w-full" />
                           <p className="mt-1 text-[14px] leading-snug">
-                            {!t.per_day && oneIn ? <>That is about 1 in every {num(oneIn)} people within 2 miles. </> : null}
+                            {!t.per_day && oneIn ? <>That is about 1 in every {num(oneIn)} people within {RADIUS}. </> : null}
                             At {money(t.price)} each with typical {c.label} costs of {money(fixed - rentNow)} a month besides rent. <span className="inline-block border border-night bg-stone px-1 text-[12px] font-medium">Estimated</span>
                           </p>
                           <button onClick={() => void runReal()} disabled={busy} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 border border-night bg-you px-5 text-[17px] font-semibold transition-colors hover:bg-you-deep active:translate-y-px disabled:opacity-60">

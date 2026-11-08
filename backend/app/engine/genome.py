@@ -152,6 +152,7 @@ _CAT_ROLE = {
 # across the other modes in the previous assumed proportions (8:10:12:5:5) - those five are assumptions.
 MODE_BASE_SHARES = np.array([0.283, 0.426] + [0.291 * w / 40 for w in (8, 10, 12, 5, 5)])
 MODES = [("walk", 4.5, 0.55), ("two_wheeler", 18.0, 1.25), ("car", 16.0, 1.4), ("auto", 14.0, 1.1), ("bus", 11.0, 0.95), ("metro", 25.0, 1.2), ("cycle", 10.0, 0.8)]
+MODE_INDEX = {m[0]: k for k, m in enumerate(MODES)}
 
 # km/h. US urban speeds are assumptions, walk to bicycle in MODES order; Indian speeds are the MODES values.
 MODE_SPEEDS = np.array([4.5, 40.0, 40.0, 35.0, 20.0, 35.0, 15.0]) if get_settings().market == "US" else np.array([m[1] for m in MODES])
@@ -771,12 +772,16 @@ def generate(rng: np.random.Generator, *, age: np.ndarray, female: np.ndarray, s
     # ---- travel mode from access x preference (multinomial logit)
     acc = np.stack([G[:, KI[f"mb_access_{m[0]}"]] for m in MODES], 1)
     prf = np.stack([G[:, KI[f"mb_pref_{m[0]}"]] for m in MODES], 1)
+    # nobody drives before the licence age: a car from 18, a two-wheeler from 16 (India's 50cc gearless licence)
+    too_young = np.zeros((N, len(MODES)), bool)
+    too_young[:, MODE_INDEX["car"]] = age < 18
+    too_young[:, MODE_INDEX["two_wheeler"]] = age < 16
     if mode_share is not None:  # real local shares, reproduced exactly: personal preference would pull away from the data
-        mode = np.argmax(np.log(mode_share + 1e-9) + rng.gumbel(0, 1, (N, len(MODES))), 1)
+        mode = np.argmax(np.where(too_young, -np.inf, np.log(mode_share + 1e-9) + rng.gumbel(0, 1, (N, len(MODES)))), 1)
     else:
         base = np.log(MODE_BASE_SHARES)
         util = base + 3.0 * (acc - 0.5) + 2.0 * (prf - 0.5) + rng.gumbel(0, 1, (N, len(MODES)))
-        mode = np.argmax(util, 1)
+        mode = np.argmax(np.where(too_young, -np.inf, util), 1)
     speed = MODE_SPEEDS[mode]
     mtol = np.array([m[2] for m in MODES])[mode]
 

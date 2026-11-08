@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ReportView, type ReportContent } from "@/components/ReportView";
 import { ErrorState, Skeleton } from "@/components/ui";
+import { US_MARKET } from "@/lib/format";
 
 export default function SampleReport() {
   const [c, setC] = useState<ReportContent | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    fetch("/api/v1/shared/reports/sample-report-downtown-austin").then((r) => (r.ok ? r.json() : Promise.reject())).then((r) => setC(r.content)).catch(() => setFailed(true));
+    fetch(`/api/v1/shared/reports/${US_MARKET ? "sample-report-downtown-austin" : "sample-report-civil-lines-prayagraj"}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((r) => setC(r.content)).catch(() => setFailed(true));
   }, []);
   return (
     <div className="min-h-screen bg-paper px-4 py-8 text-night">
@@ -19,7 +20,7 @@ export default function SampleReport() {
           <button onClick={() => window.print()} className="min-h-11 border border-night bg-you px-5 text-[16px] font-semibold text-night hover:bg-you-deep">Download PDF</button>
         </div>
         <p className="mt-3 bg-atlas p-4 text-[17px] leading-snug text-white">
-          This is a sample report. The market data is real and was loaded live for South Austin; the prices and costs are example inputs, not a real business.{" "}
+          This is a sample report. The market data is real and was loaded live for {US_MARKET ? "South Austin" : "Civil Lines, Prayagraj"}; the prices and costs are example inputs, not a real business.{" "}
           <Link href="/" className="whitespace-nowrap font-medium underline underline-offset-4">Test your own location</Link>
         </p>
       </div>

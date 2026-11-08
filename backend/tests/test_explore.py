@@ -62,3 +62,25 @@ def test_quickstart_reads_english_and_hinglish():
     assert p["place"] == "Indiranagar, Bengaluru" and p["price"] == 250 and p["budget"] == 2_000_000
     h = parse_idea("Mujhe Koramangala mein ek pizza shop kholna hai")
     assert h["place"] == "Koramangala" and "pizza" in h["business"]
+
+
+def test_children_do_not_drive():
+    from app.engine import genome as gm
+    rng = np.random.default_rng(1)
+    N = 4000
+    age = rng.uniform(0, 80, N)
+    gen = gm.generate(np.random.default_rng(2), age=age, female=rng.random(N) < 0.5, seg_keys=["a"], seg=np.zeros(N, int),
+                      zone_pop=np.array([1.0]), zone_act=np.array([0.0]), lat=np.full(N, 25.45), lng=np.full(N, 81.83), zi=np.zeros(N, int),
+                      blat=np.array([25.45]), blng=np.array([81.83]), circuity=1.3, max_km=5, seg_dt=np.ones(N))
+    mode = gen.G[:, gm.KI["ev_mode"]].astype(int)
+    assert not ((age < 18) & (mode == gm.MODE_INDEX["car"])).any()
+    assert not ((age < 16) & (mode == gm.MODE_INDEX["two_wheeler"])).any()
+    assert ((age >= 18) & (mode == gm.MODE_INDEX["car"])).any()  # adults still drive
+
+
+def test_india_first_look_uses_the_official_state_curve():
+    # MoSPI HCES 2023-24: a city in Uttar Pradesh spends more per person than its villages, and the median is in the right range
+    from app.engine.economics import income
+    up_urban = income.curve("urban", income.normalise_state("Uttar Pradesh")).median
+    up_rural = income.curve("rural", income.normalise_state("Uttar Pradesh")).median
+    assert 3500 < up_urban < 6500 and 2500 < up_rural < up_urban

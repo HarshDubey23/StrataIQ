@@ -41,11 +41,12 @@ def assign_occupations(rng: np.random.Generator, age: np.ndarray, employed_rate:
     r = rng.random(age.size)
     if employed_rate is None or college_rate is None:
         return np.select(
-            [age < 18, (age < 25) & (r < 0.55), age >= 70, (age >= 62) & (r < 0.6), r < 0.14, r < 0.34],
-            [STUDENT, STUDENT, RETIRED, RETIRED, HOME, SHIFT], OFFICE)
+            [age < 5, age < 18, (age < 25) & (r < 0.55), age >= 70, (age >= 62) & (r < 0.6), r < 0.14, r < 0.34],
+            [HOME, STUDENT, STUDENT, RETIRED, RETIRED, HOME, SHIFT], OFFICE)
     studying = (age < 25) & (r < college_rate)
     working = rng.random(age.size) < employed_rate
-    return np.select([age < 18, studying, age >= 65, ~working, rng.random(age.size) < 0.2], [STUDENT, STUDENT, RETIRED, HOME, SHIFT], OFFICE)
+    # under-fives are at home, not at school
+    return np.select([age < 5, age < 18, studying, age >= 65, ~working, rng.random(age.size) < 0.2], [HOME, STUDENT, STUDENT, RETIRED, HOME, SHIFT], OFFICE)
 
 
 def build_routines(rng: np.random.Generator, occupation: np.ndarray, arch_key: str) -> np.ndarray:

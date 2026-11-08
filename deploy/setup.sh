@@ -30,6 +30,9 @@ fi
 
 mkdir -p backups
 sudo docker compose up -d --build
+# StrataIQ India keeps its own database on the same server; its API retries until this exists
+until sudo docker compose exec -T db pg_isready -U strataiq >/dev/null 2>&1; do sleep 2; done
+sudo docker compose exec -T db psql -U strataiq -tc "SELECT 1 FROM pg_database WHERE datname='strataiq_in'" | grep -q 1   || sudo docker compose exec -T db psql -U strataiq -c "CREATE DATABASE strataiq_in"
 
 # Nightly database backup, kept for 7 days.
 # shortcut: backups stay on this server, so losing the disk loses them; copy them off-site before holding paying customers' data long term.
