@@ -103,7 +103,7 @@ class AskIn(BaseModel):
 
 
 PULL_WORDS = {"price": "the price for my budget", "quality": "quality", "travel": "distance and travel time", "time_fit": "opening hours that fit my day",
-              "attributes": "what the place offers", "expectation": "falling short of what I expect", "trust_novelty": "a known name versus a new place",
+              "attributes": "what the place offers", "expectation": "falling short of what I expect", "trust_novelty": "trust in a known name",
               "lifestyle_fit": "fit with my lifestyle"}
 
 
@@ -113,7 +113,8 @@ def _strength(v: float) -> str:
     return f"{size} reason {'for' if v > 0 else 'against'}"
 
 
-def persona_facts(x: dict, summary: dict, home: str, unit: str, new_name: str = "the new business", reasons: list | None = None) -> dict:
+def persona_facts(x: dict, summary: dict, home: str, unit: str, new_name: str = "the new business", reasons: list | None = None,
+                  chosen_name: str | None = None) -> dict:
     """Only what the simulation knows about this synthetic person, in words a person would use: where, who, how they travel,
     what they compared, and why. Model scores never leave this function as numbers."""
     def name(o):
@@ -122,8 +123,10 @@ def persona_facts(x: dict, summary: dict, home: str, unit: str, new_name: str = 
     chosen = next((o for o in x["options"] if o["idx"] == x["final_choice"]), None)
     def place(o):
         top = sorted(o["parts"].items(), key=lambda kv: -abs(kv[1]))[:3]
+        def words(k, v):  # for the new place, the trust channel is curiosity, for an incumbent it is its known name
+            return "wanting to try a new place" if k == "trust_novelty" and o["idx"] == 0 else PULL_WORDS.get(k, k)
         return {"name": name(o), "distance_km": round(o["dist_km"], 1), "minutes_away": round(o["time_min"]), "within_reach": o["reachable"],
-                "main_reasons": [f"{PULL_WORDS.get(k, k)}: {_strength(v)}" for k, v in top if abs(v) > 0.05]}
+                "main_reasons": [f"{words(k, v)}: {_strength(v)}" for k, v in top if abs(v) > 0.05]}
     drivers = reasons if reasons is not None else x["drivers_vs_you"]
     return {
         "home": home, "age": int(summary.get("age") or 0), "gender": "woman" if summary.get("female") else "man",
@@ -131,7 +134,7 @@ def persona_facts(x: dict, summary: dict, home: str, unit: str, new_name: str = 
         "spending_group": x["segment"].get("label") if isinstance(x.get("segment"), dict) else x.get("segment"),
         "most_i_would_pay_per_visit": round(float(summary.get("wtp") or 0)), "unit": unit,
         "heard_of_the_new_business": bool(summary.get("aware")), "looking_this_season": bool(summary.get("in_market")),
-        "my_choice_this_season": name(chosen) if chosen else "none of them: I stayed home or spent the money elsewhere",
+        "my_choice_this_season": name(chosen) if chosen else (chosen_name if x["final_choice"] > 0 and chosen_name else "none of them: I stayed home or spent the money elsewhere"),
         "places_i_compared": [place(o) for o in x["options"][:4]],
         "the_new_business": place(you) if you else None,
         "my_traits_that_decided_it": [d["label"] for d in drivers if abs(d.get("effect", 0)) > 0.05][:4],
@@ -166,14 +169,16 @@ async def converse(run_id: str, agent: int, question: str, history: list[dict]) 
             reasons = gm.explain(agent, pop.gen, pop.up, pop.names, best, pct)["drivers_vs_you"]
     unit = ARCHETYPES[category["archetype"]].unit_label if category.get("archetype") in ARCHETYPES else "visits"
     new_name = f"the new {str(category.get('label') or 'business').split('/')[0].strip().lower()}"
-    facts = persona_facts(x, row, ", ".join(home.split(", ")[:3]) if home else "near the site", unit, new_name, reasons)
+    facts = persona_facts(x, row, ", ".join(home.split(", ")[:3]) if home else "near the site", unit, new_name, reasons,
+                          chosen_name=pop.names[int(final[agent])] if int(final[agent]) > 0 else None)
     india = get_settings().market != "US"
     system = (
         "You are one synthetic person in a StrataIQ market simulation, not a real human. Speak in the first person as this person, "
         + ("in natural Hinglish written in Roman script (Hindi words, simple English where people use it). " if india else "in plain, warm American English. ")
         + "Two to four short sentences, like a person talking, never like a report. Use ONLY the facts in the JSON: never invent a business, a price, "
         "a place or a memory that is not there. my_choice_this_season is fixed: say it exactly as given. Explain it with the real distances, minutes "
-        "and main_reasons in everyday words. Write numbers as digits (0.7 km, 6 minutes, Rs 162). If asked something the facts do not cover, say you do not know. "
+        "and main_reasons in everyday words; never read out the field names. Write every number as digits, never as words (0.7 km, 6 minutes, Rs 162). "
+        "If asked something the facts do not cover, say you do not know. "
         "If asked whether you are real, say you are a synthetic person built from local data. Money in " + ("rupees." if india else "dollars.")
         + " Facts: " + json.dumps(facts, default=str)
     )
@@ -183,7 +188,7 @@ async def converse(run_id: str, agent: int, question: str, history: list[dict]) 
         async with httpx.AsyncClient(timeout=45) as c:
             r = await c.post(f"{s.speko_url}/v1/complete", headers={"Authorization": f"Bearer {_key()}", "Accept": "text/event-stream"},
                              json={"messages": messages, "intent": {"language": "hi" if india else "en", "optimizeFor": "balanced"},
-                                   "systemPrompt": system, "temperature": 0.5, "maxTokens": 300})
+                                   "systemPrompt": system, "temperature": 0.5, "maxTokens": 450})
     except httpx.HTTPError as e:
         raise HTTPException(502, f"The conversation service is unreachable: {type(e).__name__}") from e
     if r.status_code >= 400:

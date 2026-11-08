@@ -102,3 +102,12 @@ def test_a_synthetic_person_only_knows_their_own_simulation():
     assert f["my_traits_that_decided_it"] == ["Relies on online reviews"]  # traits with no effect are left out
     x["final_choice"] = -1
     assert persona_facts(x, {"age": 30}, "x", "orders")["my_choice_this_season"].startswith("none of them")
+
+
+def test_the_persona_keeps_a_choice_that_is_not_among_its_top_options():
+    from app.api.genome import persona_facts
+    o = {"idx": 0, "name": "Your business", "reachable": True, "dist_km": 0.6, "time_min": 6, "utility": 1.0, "parts": {"trust_novelty": 1.2, "travel": -0.4}}
+    x = {"final_choice": 7, "options": [o], "drivers_vs_you": []}
+    f = persona_facts(x, {"age": 18}, "Civil Lines", "orders", "the new café", chosen_name="Nainital Momos")
+    assert f["my_choice_this_season"] == "Nainital Momos"
+    assert f["the_new_business"]["main_reasons"][0] == "wanting to try a new place: strong reason for"
