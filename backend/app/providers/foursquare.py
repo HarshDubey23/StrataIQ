@@ -103,6 +103,15 @@ async def _search(lat: float, lng: float, radius_m: int, query: str, pages: int 
 GENERIC = {"outlet", "shop", "store", "place", "centre", "center", "studio", "parlour", "parlor", "joint", "house", "the", "and", "&"}
 
 
+# Places a fuzzy "café" search finds that sell something else: internet cafés and paan shops.
+_NOT_A_RIVAL = re.compile(r"\b(cyber|internet|net)\s*caf|\bpaa?n\s*(bhandar|bhandaar|shop|corner|wala|centre|center)\b", re.IGNORECASE)
+
+
+def not_a_rival(hay: str, words: list[str]) -> bool:
+    """True for an internet café or paan shop, unless that is the business being studied."""
+    return bool(_NOT_A_RIVAL.search(hay)) and not any(w in ("cyber", "internet", "paan", "pan") for w in words)
+
+
 def _keywords(terms: list[str]) -> list[str]:
     out: list[str] = []
     for t in terms:
@@ -141,6 +150,8 @@ async def fsq_pois(lat: float, lng: float, radius_m: int, terms: list[str]) -> l
             cat_names = [c.get("name") for c in (p.get("categories") or []) if c.get("name")]
             hay = ((p.get("name") or "") + " " + " ".join(cat_names)).lower()
             if not by_category and words and not any(w in hay or (w.endswith("s") and w[:-1] in hay) for w in words):
+                continue
+            if not_a_rival(hay, words):
                 continue
             loc = p.get("location") or {}
             tags = {"name": p.get("name") or "", "fsq:categories": "; ".join(cat_names)[:200]}

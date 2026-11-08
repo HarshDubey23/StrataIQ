@@ -111,3 +111,10 @@ def test_the_persona_keeps_a_choice_that_is_not_among_its_top_options():
     f = persona_facts(x, {"age": 18}, "Civil Lines", "orders", "the new café", chosen_name="Nainital Momos")
     assert f["my_choice_this_season"] == "Nainital Momos"
     assert f["the_new_business"]["main_reasons"][0] == "wanting to try a new place: strong reason for"
+
+
+def test_internet_cafes_and_paan_shops_are_not_cafe_rivals():
+    from app.providers.foursquare import not_a_rival
+    assert not_a_rival("cyber cafe internet cafe", ["cafe"]) and not_a_rival("lallu pan bhandar café", ["cafe"])
+    assert not not_a_rival("café coffee day café", ["cafe"]) and not not_a_rival("kulhad coffee cafe", ["cafe"])
+    assert not not_a_rival("banarasi paan bhandar", ["paan"])  # unless paan is the business
