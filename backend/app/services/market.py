@@ -251,6 +251,10 @@ async def build_snapshot(*, lat: float, lng: float, catchment: dict, category: d
                 sources.append(prov)
                 sources.extend({**a, "layer": nm} for a in also)
     comps = vals["competitors"] or []
+    # an internet café or a paan shop is not a café's rival, whichever source listed it
+    from ..providers.foursquare import _keywords, not_a_rival
+    words = _keywords([t.split("/")[0].strip() for t in [category.get("query"), category.get("label")] if t])
+    comps = [c for c in comps if not not_a_rival(f"{c.get('name') or ''} {(c.get('tags') or {}).get('fsq:categories', '')}", words)]
     context = []
     for c in vals["context"] or []:
         kind = classify_poi(c["tags"])
