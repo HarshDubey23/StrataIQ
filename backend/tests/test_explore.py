@@ -144,3 +144,10 @@ def test_nobody_rides_a_metro_in_a_city_without_one():
     no = gm.generate(np.random.default_rng(4), metro=False, **kw).G[:, gm.KI["ev_mode"]].astype(int)
     yes = gm.generate(np.random.default_rng(4), **kw).G[:, gm.KI["ev_mode"]].astype(int)
     assert not (no == gm.MODE_INDEX["metro"]).any() and (yes == gm.MODE_INDEX["metro"]).any()
+
+
+def test_a_rival_at_the_edge_of_the_searched_ring_is_retired_too():
+    from types import SimpleNamespace as R
+    from app.services.runs import vanished_rivals
+    edge = R(source_ref="osm/cyber", lat=25.4528 - 0.0212, lng=81.8340, active=True)  # about 2.35 km south, inside a 2.5 km ring
+    assert vanished_rivals([edge], {"osm/ccd"}, (25.4528, 81.8340), 2.5, True) == [edge]

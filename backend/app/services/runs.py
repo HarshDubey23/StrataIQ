@@ -189,7 +189,8 @@ def vanished_rivals(rows: list, found_refs: set[str], center: tuple[float, float
     if not source_ok or not found_refs:
         return []
     from ..engine.geo import haversine_km
-    return [r for r in rows if r.active and r.source_ref not in found_refs and haversine_km(center[0], center[1], r.lat, r.lng) <= reach_km * 0.95]
+    # the same ring the rival search used and the run reads (competitors_for): radius + 1 km
+    return [r for r in rows if r.active and r.source_ref not in found_refs and haversine_km(center[0], center[1], r.lat, r.lng) <= reach_km]
 
 
 def competitors_for(db: Session, project: Project, loc: CandidateLocation, radius_km: float) -> list[Competitor]:
