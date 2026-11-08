@@ -73,7 +73,7 @@ async def main(out_path: str) -> None:
         db.add(user)
         db.flush()
         p = Project(owner_id=user.id, name="Café, Civil Lines, Prayagraj", objective="start_new", decision_goal="profit",
-                    category=from_taxonomy_key("cafe", "cafe"),
+                    category=from_taxonomy_key("cafe", "cafe").as_dict(),
                     profile={"description": "An example. Market data is live; the business inputs are from public listings.",
                              "positioning": ["Premium experience", "Better service"], "operating_hours": "8am–11pm"},
                     status="created", is_demo=False)
