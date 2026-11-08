@@ -166,6 +166,10 @@ async def refresh_snapshot(db: Session, project: Project, loc: CandidateLocation
             row.name, row.lat, row.lng, row.tags = name[:200], c["lat"], c["lng"], c["tags"]
             row.geog = point_wkt(c["lat"], c["lng"])
             row.source_updated_at, row.retrieved_at = updated, retrieved
+    competitors_ok = not any(e.get("source") == "competitors" for e in snap["errors"] if isinstance(e, dict))
+    for row in vanished_rivals(list(existing.values()), {c["ref"] for c in snap["competitors"]}, (loc.lat, loc.lng),
+                               float(snap["radius_km"]) + 1.0, competitors_ok):
+        row.active = False
     ms = into or MarketSnapshot(project_id=project.id, location_id=loc.id)
     ms.status, ms.catchment_geojson, ms.catchment_method = snap["status"], snap["catchment_geojson"], snap["catchment_method"]
     ms.zones, ms.population = snap["zones"], snap["population"] | {"radius_km": snap["radius_km"]}
@@ -176,6 +180,16 @@ async def refresh_snapshot(db: Session, project: Project, loc: CandidateLocation
     db.commit()
     db.refresh(ms)
     return ms
+
+
+def vanished_rivals(rows: list, found_refs: set[str], center: tuple[float, float], reach_km: float, source_ok: bool) -> list:
+    """Rivals the live source no longer lists here (closed, or no longer counted, like an internet café for a café).
+    Only when the rival search worked, and only inside the area just searched, so a provider outage or another
+    location's rivals never vanish."""
+    if not source_ok or not found_refs:
+        return []
+    from ..engine.geo import haversine_km
+    return [r for r in rows if r.active and r.source_ref not in found_refs and haversine_km(center[0], center[1], r.lat, r.lng) <= reach_km * 0.95]
 
 
 def competitors_for(db: Session, project: Project, loc: CandidateLocation, radius_km: float) -> list[Competitor]:

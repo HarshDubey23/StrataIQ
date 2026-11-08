@@ -118,3 +118,16 @@ def test_internet_cafes_and_paan_shops_are_not_cafe_rivals():
     assert not_a_rival("cyber cafe internet cafe", ["cafe"]) and not_a_rival("lallu pan bhandar café", ["cafe"])
     assert not not_a_rival("café coffee day café", ["cafe"]) and not not_a_rival("kulhad coffee cafe", ["cafe"])
     assert not not_a_rival("banarasi paan bhandar", ["paan"])  # unless paan is the business
+
+
+def test_a_refresh_retires_rivals_the_source_no_longer_lists():
+    from types import SimpleNamespace as R
+    from app.services.runs import vanished_rivals
+    here = (25.4528, 81.8340)
+    gone = R(source_ref="fsq/cyber", lat=25.4530, lng=81.8345, active=True)
+    kept = R(source_ref="osm/ccd", lat=25.4535, lng=81.8341, active=True)
+    far = R(source_ref="fsq/other-site", lat=25.60, lng=81.90, active=True)  # another location's rival
+    rows = [gone, kept, far]
+    assert vanished_rivals(rows, {"osm/ccd"}, here, 2.5, True) == [gone]
+    assert vanished_rivals(rows, {"osm/ccd"}, here, 2.5, False) == []  # the search failed: change nothing
+    assert vanished_rivals(rows, set(), here, 2.5, True) == []  # an empty answer is not proof that all closed
