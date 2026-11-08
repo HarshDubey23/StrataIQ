@@ -89,14 +89,16 @@ def test_india_first_look_uses_the_official_state_curve():
 def test_a_synthetic_person_only_knows_their_own_simulation():
     from app.api.genome import persona_facts
     opt = lambda i, name, km: {"idx": i, "name": name, "reachable": True, "dist_km": km, "time_min": km * 12, "utility": 1.0,  # noqa: E731
-                               "parts": {"travel": -km, "price": -0.2, "quality": 0.3, "trust_novelty": 0.1, "attributes": 0.05}}
+                               "parts": {"travel": -km, "price": -0.2, "quality": 0.3, "trust_novelty": 0.1, "attributes": 0.01}}
     x = {"final_choice": 3, "occupation": "office", "mode": "walk", "segment": "mainstream",
          "options": [opt(3, "Café Coffee Day", 0.4), opt(0, "Your business", 1.6)],
-         "drivers_vs_you": [{"label": "Relies on online reviews", "effect": -0.77}]}
-    f = persona_facts(x, {"age": 36, "female": True, "wtp": 1511.4, "aware": 1, "in_market": 1}, "Civil Lines, Prayagraj", "orders")
-    assert f["chose"] == "Café Coffee Day" and f["the_new_business"]["distance_km"] == 1.6
-    assert f["home"] == "Civil Lines, Prayagraj" and f["age"] == 36 and f["gender"] == "woman" and f["most_they_would_pay_per_visit"] == 1511
-    assert list(f["places_compared"][0]["pulls"])[0] == "travel"  # strongest pull first: 0.4 km away outweighs quality
-    assert f["reasons_vs_the_new_business"][0]["trait"] == "Relies on online reviews"
+         "drivers_vs_you": [{"label": "Relies on online reviews", "effect": -0.77}, {"label": "Cash preference", "effect": 0.0}]}
+    f = persona_facts(x, {"age": 36, "female": True, "wtp": 1511.4, "aware": 1, "in_market": 1}, "Civil Lines, Prayagraj", "orders", "the new café")
+    assert f["my_choice_this_season"] == "Café Coffee Day" and f["the_new_business"]["name"] == "the new café"
+    assert f["the_new_business"]["distance_km"] == 1.6 and f["home"] == "Civil Lines, Prayagraj" and f["most_i_would_pay_per_visit"] == 1511
+    # reasons are words, strongest first, and model scores never appear as numbers
+    assert f["places_i_compared"][0]["main_reasons"][0] == "distance and travel time: some reason against"
+    assert "Your business" not in str(f) and "0.4," not in str(f["places_i_compared"][0]["main_reasons"])
+    assert f["my_traits_that_decided_it"] == ["Relies on online reviews"]  # traits with no effect are left out
     x["final_choice"] = -1
-    assert persona_facts(x, {"age": 30}, "x", "orders")["chose"].startswith("nobody")
+    assert persona_facts(x, {"age": 30}, "x", "orders")["my_choice_this_season"].startswith("none of them")
