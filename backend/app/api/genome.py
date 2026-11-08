@@ -125,9 +125,13 @@ def persona_facts(x: dict, summary: dict, home: str, unit: str) -> dict:
 @router.post("/simulation-runs/{run_id}/agents/{agent}/ask")
 async def ask_agent(run_id: str, agent: int, body: AskIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
     """Talk to one synthetic person. The answer may use only this agent's simulated facts, and it says it is synthetic."""
+    _owned_run(run_id, user, db)
+    return await converse(run_id, agent, body.question, [t.model_dump() for t in body.history])
+
+
+async def converse(run_id: str, agent: int, question: str, history: list[dict]) -> dict:
     from .voice import _key, parse_sse
 
-    _owned_run(run_id, user, db)
     pop, abm, pct, category, summary = await run_in_threadpool(_load, run_id)
     if not 0 <= agent < pop.N:
         raise HTTPException(404, "No such agent")
@@ -149,7 +153,7 @@ async def ask_agent(run_id: str, agent: int, body: AskIn, user: User = Depends(c
         "If asked whether you are real, say you are a synthetic person built from local data. Money in " + ("rupees." if india else "dollars.")
         + " Facts: " + json.dumps(facts, default=str)
     )
-    messages = [t.model_dump() for t in body.history] + [{"role": "user", "content": body.question}]
+    messages = list(history) + [{"role": "user", "content": question}]
     s = get_settings()
     try:
         async with httpx.AsyncClient(timeout=45) as c:

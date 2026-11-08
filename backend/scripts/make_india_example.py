@@ -149,6 +149,20 @@ async def main(out_path: str) -> None:
             "options": [{k: o[k] for k in ("name", "dist_km", "time_min", "utility", "parts")} for o in x["options"][:4]],
             "drivers": [{k: d[k] for k in ("label", "effect")} for d in x["drivers_vs_you"][:4]],
         })
+    # each person answers in their own words, through the same route the product uses
+    from app.api.genome import converse
+    asks = ["Aap kaun ho, kahan rehte ho, aur café ke liye aapne kahan jaana chuna? Kyun?", "Naye café mein kya hota to aap wahan aate?"]
+    for person in people:
+        talk, history = [], []
+        for q in asks:
+            try:
+                r = await converse(run.id, person["agent"], q, history)
+            except Exception as e:  # noqa: BLE001 - keep the run; the story can skip one answer
+                talk.append({"q": q, "error": str(e)[:200]})
+                continue
+            talk.append({"q": q, "a": r["answer"]})
+            history += [{"role": "user", "content": q}, {"role": "assistant", "content": r["answer"]}]
+        person["talk"] = talk
     out["people"] = people
     out["agent_count"] = int(pop.N)
     out["names"] = pop.names[:30]
