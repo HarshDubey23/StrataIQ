@@ -1,4 +1,6 @@
 """Decision search: site scan, strategy optimizer, capacity costs, quick-start parsing."""
+from dataclasses import replace
+
 import numpy as np
 
 from app.categories.archetypes import ARCHETYPES
@@ -42,6 +44,16 @@ def test_optimizer_never_worse_than_current():
     assert out["best"]["profit"] >= out["current"]["profit"]
     assert out["best_without_new_capacity"]["capacity_scale"] == 1.0
     assert out["evaluated"] == len(out["prices"]) * len(out["spends"]) * len(out["scales"])
+
+
+def test_optimizer_works_at_any_price():
+    # $57.50 and $47 used to crash: the grid rounded to $5 steps and lost the current plan
+    arch, zones, comps, biz = _market()
+    for price, vc in ((57.5, 20.0), (47.0, 15.0), (4.75, 1.5)):
+        b = replace(biz, price=price, variable_cost_per_unit=vc, marketing_spend=1500.0)
+        out = optimize(arch, zones, comps, b, ResolvedParams.from_archetype(arch))
+        assert out["current"]["price"] == price and out["current"]["marketing_spend"] == 1500.0
+        assert len(out["prices"]) >= 6 and out["best"]["profit"] >= out["current"]["profit"]
 
 
 def test_quickstart_reads_english_and_hinglish():

@@ -137,7 +137,9 @@ def optimize(arch: Archetype, zones: list[Zone], comps: list[Competitor], biz: B
     b0 = replace(biz, reference_price=m0.ref_price)
     pv = params.draws(1, None)
     p0 = float(biz.price)
-    prices = sorted({round(p0 * f / 5) * 5 or p0 for f in (0.7, 0.8, 0.88, 0.94, 1.0, 1.06, 1.12, 1.2, 1.3, 1.45)})
+    # round to a step that suits the price, and always keep the founder's own price so "current" is on the grid
+    step = 5.0 if p0 >= 50 else 1.0 if p0 >= 5 else 0.25
+    prices = sorted({p0, *(round(p0 * f / step) * step or p0 for f in (0.7, 0.8, 0.88, 0.94, 1.06, 1.12, 1.2, 1.3, 1.45))})
     hs = float(params.values.get("marketing_half_saturation", 20000))
     s0 = float(biz.marketing_spend or 0)
     spends = sorted({0.0, s0, *[round(x, -3) for x in (0.25 * hs, 0.5 * hs, hs, 2 * hs, 3 * hs, 2 * s0, 0.5 * s0)]})
