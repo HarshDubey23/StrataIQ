@@ -15,6 +15,56 @@ function cellBg(v: number) {
   return v >= 0 ? `rgba(52,211,153,${0.08 + a * 0.5})` : `rgba(244,63,94,${0.08 + a * 0.5})`;
 }
 
+type Turn = { role: "user" | "assistant"; content: string };
+
+/** Talk to this synthetic person. The server lets it use only its own simulated facts. */
+function AskPerson({ runId, agent }: { runId: string; agent: number }) {
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    setTurns([]);
+    setErr(null);
+  }, [runId, agent]);
+  async function ask(e: React.FormEvent) {
+    e.preventDefault();
+    const question = q.trim();
+    if (question.length < 2 || busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await api<{ answer: string }>(`/simulation-runs/${runId}/agents/${agent}/ask`, { method: "POST", json: { question, history: turns.slice(-8) } });
+      setTurns((t) => [...t, { role: "user", content: question }, { role: "assistant", content: r.answer }]);
+      setQ("");
+    } catch (e2) {
+      setErr(e2 instanceof ApiError ? e2.message : "Could not ask right now");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="rounded-md border border-black/[0.08] bg-white p-3">
+      <div className="text-xs font-semibold text-ink-100">Ask this person</div>
+      <p className="mt-0.5 text-[11px] text-ink-400">A synthetic person, not a real one. Answers use only this agent&apos;s simulated facts.</p>
+      {turns.length > 0 && (
+        <div className="mt-2 space-y-1.5" aria-live="polite">
+          {turns.map((t, i) => (
+            <p key={i} className={cn("rounded px-2 py-1.5 text-[13px] leading-snug", t.role === "user" ? "ml-8 bg-ink-900 text-ink-200" : "mr-8 bg-you/30 text-ink-100")}>{t.content}</p>
+          ))}
+        </div>
+      )}
+      <form onSubmit={ask} className="mt-2 flex gap-1.5">
+        <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} aria-label="Your question to this person"
+          placeholder={US_MARKET ? "Why did you pick that place?" : "Aapne ye café kyun chuna?"}
+          className="min-h-9 flex-1 border border-night bg-white px-2 text-[13px]" />
+        <button type="submit" disabled={busy || q.trim().length < 2} className="min-h-9 border border-night bg-you px-3 text-[13px] font-semibold disabled:opacity-50">{busy ? "…" : "Ask"}</button>
+      </form>
+      {err && <p role="alert" className="mt-1 text-[12px] text-danger">{err}</p>}
+    </div>
+  );
+}
+
 export default function AgentXray({ runId, agent, onClose, price, className }: { runId: string; agent: number; onClose: () => void; price?: number; className?: string }) {
   const [x, setX] = useState<Xray | null>(null);
   const [reg, setReg] = useState<GenomeRegistry | null>(null);
@@ -99,6 +149,8 @@ export default function AgentXray({ runId, agent, onClose, price, className }: {
               </Badge>
               {!s.aware && s.in_market ? <Badge tone="warn">never heard of you</Badge> : null}
             </div>
+
+            <AskPerson runId={runId} agent={agent} />
 
             {/* decision table */}
             <div>

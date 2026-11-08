@@ -6,17 +6,25 @@ deterministically from the run's stored inputs and seed when not cached.
 from __future__ import annotations
 
 import base64
+import json
+from typing import Literal
 
+import httpx
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from ..categories.archetypes import ARCHETYPES
+from ..config import get_settings
 from ..db import get_db, session_factory
 from ..engine import genome as gm
 from ..engine.simulate import SimulationError
 from ..models import Project, SimulationRun, User
 from ..security import current_user, owned_project
+from ..providers import osm
+from ..providers.http import Cache
 from ..services.runs import population_for_run
 
 router = APIRouter(tags=["genome"])
@@ -82,6 +90,80 @@ async def agent_xray(run_id: str, agent: int, user: User = Depends(current_user)
     x["scale"] = abm["scale"]
     x["note"] = "Synthetic agent. Values are model assumptions conditioned on real local evidence, not data about a real person."
     return x
+
+
+class AskTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=1200)
+
+
+class AskIn(BaseModel):
+    question: str = Field(min_length=2, max_length=400)
+    history: list[AskTurn] = Field(default_factory=list, max_length=10)
+
+
+def persona_facts(x: dict, summary: dict, home: str, unit: str) -> dict:
+    """Only what the simulation knows about this synthetic person: where, who, how they travel, what they compared, and why."""
+    you = next((o for o in x["options"] if o["idx"] == 0), None)
+    chosen = next((o for o in x["options"] if o["idx"] == x["final_choice"]), None)
+    def place(o):
+        return {"name": o["name"], "distance_km": o["dist_km"], "minutes_away": o["time_min"], "in_reach": o["reachable"],
+                "pulls": {k: v for k, v in sorted(o["parts"].items(), key=lambda kv: -abs(kv[1]))[:4]}}
+    return {
+        "home": home, "age": int(summary.get("age") or 0), "gender": "woman" if summary.get("female") else "man",
+        "life": x.get("occupation"), "travels_by": x.get("mode"),
+        "spending_group": x["segment"].get("label") if isinstance(x.get("segment"), dict) else x.get("segment"),
+        "most_they_would_pay_per_visit": round(float(summary.get("wtp") or 0)), "unit": unit,
+        "heard_of_the_new_business": bool(summary.get("aware")), "looking_this_season": bool(summary.get("in_market")),
+        "chose": chosen["name"] if chosen else "nobody (stayed home or bought elsewhere)",
+        "places_compared": [place(o) for o in x["options"][:4]],
+        "the_new_business": place(you) if you else None,
+        "reasons_vs_the_new_business": [{"trait": d["label"], "effect": d["effect"]} for d in x["drivers_vs_you"][:5]],
+    }
+
+
+@router.post("/simulation-runs/{run_id}/agents/{agent}/ask")
+async def ask_agent(run_id: str, agent: int, body: AskIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Talk to one synthetic person. The answer may use only this agent's simulated facts, and it says it is synthetic."""
+    from .voice import _key, parse_sse
+
+    _owned_run(run_id, user, db)
+    pop, abm, pct, category, summary = await run_in_threadpool(_load, run_id)
+    if not 0 <= agent < pop.N:
+        raise HTTPException(404, "No such agent")
+    final = _final(abm)
+    x = gm.explain(agent, pop.gen, pop.up, pop.names, int(final[agent]), pct)
+    row = dict(zip(abm["agents"]["columns"], abm["agents"]["rows"][agent]))
+    x["segment"] = abm["agents"]["segments"][row["segment"]]
+    x["mode"] = abm["agents"]["modes"][row["mode"]]
+    if "occupation" in row:
+        x["occupation"] = abm["agents"]["occupations"][row["occupation"]]
+    home = await osm.reverse(float(row["lat"]), float(row["lng"]), Cache(session_factory()))
+    facts = persona_facts(x, row, ", ".join(home.split(", ")[:3]) if home else "near the site", ARCHETYPES[category["archetype"]].unit_label if category.get("archetype") in ARCHETYPES else "visits")
+    india = get_settings().market != "US"
+    system = (
+        "You are one synthetic person in a StrataIQ market simulation, not a real human. Speak in the first person as this person, "
+        + ("in natural Hinglish written in Roman script (Hindi words, simple English where people use it). " if india else "in plain, warm American English. ")
+        + "Two to four short sentences. Use ONLY the facts in the JSON: never invent a business, a price, a place or a memory that is not there. "
+        "Explain your choice with the real distances, minutes and the strongest pulls listed. If asked something the facts do not cover, say you do not know. "
+        "If asked whether you are real, say you are a synthetic person built from local data. Money in " + ("rupees." if india else "dollars.")
+        + " Facts: " + json.dumps(facts, default=str)
+    )
+    messages = [t.model_dump() for t in body.history] + [{"role": "user", "content": body.question}]
+    s = get_settings()
+    try:
+        async with httpx.AsyncClient(timeout=45) as c:
+            r = await c.post(f"{s.speko_url}/v1/complete", headers={"Authorization": f"Bearer {_key()}", "Accept": "text/event-stream"},
+                             json={"messages": messages, "intent": {"language": "hi" if india else "en", "optimizeFor": "balanced"},
+                                   "systemPrompt": system, "temperature": 0.5, "maxTokens": 300})
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"The conversation service is unreachable: {type(e).__name__}") from e
+    if r.status_code >= 400:
+        raise HTTPException(502, f"The conversation service answered {r.status_code}")
+    answer = (parse_sse(r.text).get("text") or "").strip()
+    if not answer:
+        raise HTTPException(502, "No answer this time. Ask again.")
+    return {"answer": answer, "facts": facts}
 
 
 @router.get("/simulation-runs/{run_id}/genome-matrix")
