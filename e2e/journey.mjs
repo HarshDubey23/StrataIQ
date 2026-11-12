@@ -90,7 +90,7 @@ await step("sign up", async () => {
 
 // ---------- Offline demo ----------
 await step("demo project", async () => {
-  await page.getByRole("button", { name: /Open labelled demo/ }).click();
+  await page.getByRole("button", { name: /Open a sample project/ }).click();
   await page.waitForURL(/live/);
   await page.getByText("Live market simulation").waitFor({ timeout: 60000 });
   await page.waitForTimeout(4000);
@@ -124,7 +124,7 @@ await step("demo project", async () => {
   await page.waitForTimeout(2000);
   await shot("04d-demo-dna-xray");
   await page.getByRole("button", { name: /Generate survey/ }).click();
-  await page.getByText("Van Westendorp").first().waitFor({ timeout: 30000 });
+  await page.getByText(/\d+ questions/).first().waitFor({ timeout: 30000 });
   await page.getByText("Get real feedback").scrollIntoViewIfNeeded();
   await page.waitForTimeout(800);
   await shot("04e-demo-survey-kit");
