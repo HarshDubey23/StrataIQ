@@ -9,7 +9,7 @@ on:
 jobs:
   docker-web:
     # The production image once built the wrong root layout, which only showed on a real server.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t web ./frontend
@@ -22,7 +22,7 @@ jobs:
           test -n "$css" && curl -sf -o /dev/null "localhost:3000$css"
 
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       db:
         image: postgis/postgis:16-3.4
@@ -73,7 +73,7 @@ jobs:
   backend-live:
     # Real calls to OpenStreetMap / WorldPop to prove the live data path works.
     # Public services can rate-limit, so this job is informative rather than blocking.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     env:
       RUN_LIVE: "1"
@@ -103,7 +103,7 @@ jobs:
           PY
 
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
@@ -137,7 +137,7 @@ jobs:
   e2e:
     # Full stack in CI: PostGIS + FastAPI + Next.js production build, driven by a real browser.
     # Screenshots and the journey log are pushed to the `e2e-results` branch for review.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend, frontend]
     permissions:
       contents: write

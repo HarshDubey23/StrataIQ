@@ -37,7 +37,10 @@ def test_live_worldpop():
         total, prov = asyncio.run(population.worldpop_total([circle_polygon(LAT, LNG, 1.0)]))
     except ProviderError as e:
         # network-level failures of the public service (timeouts, dropped connections), not a bug here
-        if re.search(r"Timeout|ReadError|ConnectError|RemoteProtocolError|did not finish in time", str(e)):
+        # Network failures, or the public stats service answering 404/5xx for every request, are outages on
+        # WorldPop's side, not a bug here. The engine falls back and labels the population source.
+        if re.search(r"Timeout|ReadError|ConnectError|RemoteProtocolError|did not finish in time"
+                     r"|HTTPStatusError (Client|Server) error '(404|5\d\d)", str(e)):
             pytest.skip(f"WorldPop unavailable: {e}")
         raise
     assert total > 1000
