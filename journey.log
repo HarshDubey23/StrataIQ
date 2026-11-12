@@ -1,0 +1,81 @@
+FAIL landing: TimeoutError: locator.waitFor: Timeout 60000ms exceeded.
+Call log:
+  - waiting for getByRole('heading', { name: 'See if your location wins before you sign.' }) to be visible
+
+FAIL open live demo (guest): TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Pizza', exact: true })
+
+FAIL competitor list: TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: /Competitors/ }).first()
+
+shot 11-overview @ /sign-in?next=%2Fapp%2Fprojects%2Fnull
+OK   overview (10s)
+[http 401] GET /api/v1/projects/null
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+FAIL simulation: TypeError: proj.scenarios is not iterable
+FAIL live agents: TimeoutError: locator.waitFor: Timeout 90000ms exceeded.
+Call log:
+  - waiting for getByText('Live market simulation') to be visible
+
+[http 401] GET /api/v1/projects/null
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+FAIL live: smooth daily orders + strategy lab: TypeError: Cannot read properties of undefined (reading 'find')
+[http 401] GET /api/v1/projects/null/sites
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+sites [401]: current profit=undefined demand=undefined; top=; scanned=undefined
+[http 401] GET /api/v1/projects/null/optimize
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+optimize [401]: tested=undefined current=undefined best={}
+FAIL best sites + optimizer: TimeoutError: locator.waitFor: Timeout 90000ms exceeded.
+Call log:
+  - waiting for getByText('Where should you open?') to be visible
+
+FAIL decisions: TimeoutError: locator.waitFor: Timeout 60000ms exceeded.
+Call log:
+  - waiting for getByText('What could make this result wrong?') to be visible
+
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: kitne competitors hain? -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: what is my profit -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: what is the break even -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: try price 300 -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: how do agents decide whom to choose? -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: what insights do you see on this map? -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: double the marketing -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: where should I open? -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: find the best strategy -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: P10 ka matlab kya hai -> [401] undefined
+[http 401] POST /api/v1/projects/null/assistant/ask
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+Q: give me a tour -> [401] undefined
+[http 401] GET /api/v1/projects/null/assistant/facts
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+facts: competitors=undefined pop=undefined baseline_profit=undefined
+[http 401] POST /api/v1/assistant/agent
+[console.error] Failed to load resource: the server responded with a status of 401 ()
+voice agent [401] text={"detail":"Not signed in"} tools=
+FAIL voice analyst (grounded answers): Error: voice agent returned 401
+FAIL quick start from one sentence: TimeoutError: locator.fill: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByLabel('Your business idea')
