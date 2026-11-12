@@ -1,9 +1,6 @@
 name: Keep the database awake
 
-# Weekly, not every 10 minutes: on Render's free tier a ping that keeps the API awake
-# around the clock uses up the workspace's 750 instance hours. Once a week is enough
-# to check the API and its Neon database answer (/api/health runs
-# `select 1`). The first visit after a quiet spell still takes about a minute.
+# Weekly health check of the live API on Azure and its database
 on:
   schedule:
     - cron: "17 6 * * 1"
@@ -16,5 +13,5 @@ jobs:
     steps:
       - name: Ping API health
         run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 180 "https://strataiq-api-c2dc.onrender.com/api/health" || true)
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 180 "https://strataiq-app.centralindia.cloudapp.azure.com/api/health" || true)
           echo "api health -> $code"

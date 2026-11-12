@@ -1,7 +1,7 @@
 name: Live smoke test
 
 # Runs the judge journey against the PUBLIC deployment after each push to main
-# (Vercel builds take a few minutes) and publishes screenshots to the `live-results` branch.
+# (waits for the Azure deployment to answer) and publishes screenshots to the `live-results` branch.
 on:
   push:
     branches: [main]
@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: write
     env:
-      BASE_URL: https://strataiq-vbuo.onrender.com
+      BASE_URL: https://strataiq-app.centralindia.cloudapp.azure.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,8 +26,8 @@ jobs:
           node-version: "22"
       - name: Wait for the new deployment
         run: |
-          sleep 480
-          for i in $(seq 1 30); do curl -sf https://strataiq-api-c2dc.onrender.com/api/health && break; sleep 10; done
+          sleep 120
+          for i in $(seq 1 30); do curl -sf https://strataiq-app.centralindia.cloudapp.azure.com/api/health && break; sleep 10; done
       - name: Journey on live URL
         working-directory: e2e
         run: |

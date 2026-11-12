@@ -8,7 +8,7 @@ An AI-powered geospatial market simulator: describe any local business, pick any
 10,000 synthetic customers — each with a 615-parameter genome grounded in official data — choose between you,
 your real competitors, and not buying at all.
 
-[**Live demo**](https://strataiq-vbuo.onrender.com) · [Methodology](docs/MODEL.md) · [Data sources](docs/DATA_SOURCES.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO.md)
+[**Live demo**](https://strataiq-app.centralindia.cloudapp.azure.com) · [Methodology](docs/MODEL.md) · [Data sources](docs/DATA_SOURCES.md) · [Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO.md) · [Product film](https://drive.google.com/file/d/1NvFSsfhI7kDLHTHAPqO7GH-YF3f3Uqm7/view?usp=sharing)
 
 ![StrataIQ landing page](docs/screenshots/landing.jpg)
 
@@ -126,7 +126,9 @@ production build, and a Playwright judge journey that captures the screenshots a
 
 ## Deployment
 
-Frontend and API both run on Render's free tier: `frontend/` as a Node web service (`npm start`, with `API_URL`
+The live app runs on Azure (Central India): https://strataiq-app.centralindia.cloudapp.azure.com.
+
+It can also run on Render's free tier: `frontend/` as a Node web service (`npm start`, with `API_URL`
 pointing at the API) and `backend/` as a Docker web service from `backend/Dockerfile`, which runs the Alembic
 migrations on start. Postgres + PostGIS is a Neon project (Singapore). Free instances sleep after 15 idle minutes, so the
 first visit after a quiet spell takes about a minute. Vercel still works too (`backend/` as a Python function with
