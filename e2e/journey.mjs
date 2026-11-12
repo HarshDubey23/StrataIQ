@@ -156,7 +156,7 @@ await step("field research", async () => {
   await page.getByText("Field research").first().waitFor({ timeout: 30000 });
   await shot("08b-field-request");
   await page.getByRole("button", { name: /Request field researcher/ }).click();
-  await page.getByText("ASSIGNMENT").waitFor({ timeout: 30000 });
+  await page.getByText(/^Requested /).first().waitFor({ timeout: 30000 });
   const f = (await api(`/projects/${pid}/field`)).body;
   for (let i = 0; i < 9; i++) await api(`/field/${f.request.token}/records`, "POST", { kind: "interview", data: { uses_category: i % 3 === 0, max_price: 200 + 25 * i, visits_per_month: 4, travel_km: 1 + i * 0.3 } });
   await page.reload();
@@ -251,7 +251,7 @@ await step("live gym journey", async () => {
   await page.getByText("Live market simulation").waitFor({ timeout: 60000 });
   await page.waitForTimeout(6000);
   await shot("16c-live-gym-agents");
-  await page.getByLabel("Colour agents by").selectOption("segment");
+  await page.getByLabel("Color agents by").selectOption("segment");
   await page.waitForTimeout(2500);
   await shot("16d-live-gym-agents-segment");
   await page.mouse.click(700, 500);
