@@ -12,7 +12,9 @@ function Read-Key($label) {
 $fsq = Read-Key "Foursquare key"
 $ors = Read-Key "openrouteservice key"
 $speko = Read-Key "Speko key"
-if (-not $fsq -and -not $ors -and -not $speko) { Write-Host "Nothing to do."; exit 0 }
+$rzpId = Read-Key "Razorpay key id (rzp_live_...)"
+$rzpSecret = Read-Key "Razorpay key secret"
+if (-not $fsq -and -not $ors -and -not $speko -and -not $rzpId -and -not $rzpSecret) { Write-Host "Nothing to do."; exit 0 }
 
 $script = @"
 cd /home/azureuser/StrataIQ/deploy
@@ -20,10 +22,12 @@ set_key() { [ -z "`$2" ] && return; sed -i "/^`$1=/d" .env; echo "`$1=`$2" >> .e
 set_key FSQ_API_KEY '$fsq'
 set_key ORS_API_KEY '$ors'
 set_key SPEKO_API_KEY '$speko'
+set_key RAZORPAY_KEY_ID '$rzpId'
+set_key RAZORPAY_KEY_SECRET '$rzpSecret'
 if grep -q '^SPEKO_API_KEY=' .env; then set_key VOICE 1; fi
 chmod 600 .env
-docker compose up -d --build api web >/dev/null 2>&1
-grep -c -E '^(FSQ_API_KEY|ORS_API_KEY|SPEKO_API_KEY)=' .env
+docker compose up -d --build api web api_in >/dev/null 2>&1
+grep -c -E '^(FSQ_API_KEY|ORS_API_KEY|SPEKO_API_KEY|RAZORPAY_KEY_ID|RAZORPAY_KEY_SECRET)=' .env
 "@
 
 # A file keeps the script's quotes intact on the way to Azure; it is deleted straight after.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, FileDown, Link2, RefreshCw } from "lucide-react";
+import { Copy, FileDown, Link2, Lock, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useProject } from "@/components/ProjectContext";
 import { ReportView, type ReportContent } from "@/components/ReportView";
@@ -15,7 +15,10 @@ interface ReportMeta {
 }
 
 export default function ReportPage() {
-  const { project: p } = useProject();
+  const { project: p, reload } = useProject();
+  const locked = p.report_unlocked === false;
+  const [unpaid, setUnpaid] = useState(false);
+  useEffect(() => setUnpaid(new URLSearchParams(window.location.search).get("paid") === "0"), []);
   const [list, setList] = useState<ReportMeta[] | null>(null);
   const [cur, setCur] = useState<(ReportMeta & { content: ReportContent }) | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,6 +30,7 @@ export default function ReportPage() {
   }, []);
 
   const load = useCallback(async () => {
+    if (locked) return;
     try {
       const l = await api<ReportMeta[]>(`/projects/${p.id}/reports`);
       setList(l);
@@ -34,10 +38,24 @@ export default function ReportPage() {
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load reports");
     }
-  }, [p.id, open]);
+  }, [p.id, open, locked]);
   useEffect(() => {
     load();
   }, [load]);
+
+  async function payNow() {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<{ unlocked: boolean; url?: string }>(`/projects/${p.id}/pay`, { method: "POST" });
+      if (r.url) window.location.href = r.url; // the payment page; it sends the customer back here
+      else await reload();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not start the payment");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function generate(share: boolean) {
     setBusy(true);
@@ -57,13 +75,19 @@ export default function ReportPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
-      {process.env.NEXT_PUBLIC_PAYMENT_URL && (
-        <a href={process.env.NEXT_PUBLIC_PAYMENT_URL} target="_blank" rel="noreferrer" className="no-print flex flex-wrap items-center justify-between gap-3 bg-accent p-4 text-white">
-          <span className="text-[17px] font-medium">Get the full report for this location: {REPORT_PRICE}, one payment</span>
-          <span className="bg-white px-4 py-2 text-[16px] font-medium text-night">Pay securely</span>
-        </a>
+      {locked && (
+        <section className="no-print space-y-3 border border-accent/40 bg-accent/5 p-5">
+          <h2 className="flex items-center gap-2 text-[20px] font-medium"><Lock className="h-4 w-4" /> The full report for this location: {REPORT_PRICE}, one payment</h2>
+          <p className="text-[15px] leading-snug text-ink-300">
+            Everything you have seen so far stays free. The report puts it in one document you can print or share: the verdict, break-even, the profit range,
+            every scenario you tested, the sources, and what to check before you sign.
+          </p>
+          {unpaid && <p className="text-[15px] text-ink-100">That payment did not go through, so nothing was charged to this report. You can try again.</p>}
+          <Button variant="primary" onClick={payNow} loading={busy}>Pay {REPORT_PRICE} and open the report</Button>
+          <p className="text-xs text-ink-400">Paid already? Press the button: it checks your payment first and opens the report without charging again.</p>
+        </section>
       )}
-      <div className="no-print flex flex-wrap items-center gap-2">
+      <div className={locked ? "hidden" : "no-print flex flex-wrap items-center gap-2"}>
         <Button variant="primary" onClick={() => generate(false)} loading={busy}><RefreshCw className="h-3.5 w-3.5" /> Generate from latest results</Button>
         <Button onClick={() => generate(true)} loading={busy}><Link2 className="h-3.5 w-3.5" /> Generate shareable link</Button>
         {cur && <Button onClick={() => window.print()}><FileDown className="h-3.5 w-3.5" /> Save as PDF</Button>}
@@ -82,7 +106,7 @@ export default function ReportPage() {
         </div>
       )}
       {error && <ErrorState message={error} />}
-      {list === null && !error && <Skeleton className="h-96" />}
+      {list === null && !error && !locked && <Skeleton className="h-96" />}
       {list && list.length === 0 && <EmptyState title="No report yet" body="Generate a report to capture the current evidence, assumptions, scenarios and decision as a snapshot." />}
       {cur && <ReportView c={cur.content} />}
     </main>

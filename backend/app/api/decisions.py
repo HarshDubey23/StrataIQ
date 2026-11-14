@@ -14,6 +14,7 @@ from ..models import ActualOutcome, Competitor, Project, Report, User, utcnow
 from ..schemas import OutcomeIn
 from ..security import current_user, owned_project
 from ..services.runs import latest_runs, latest_snapshot
+from .payments import require_unlocked
 from .serialize import competitor_out, iso, location_out, scenario_out
 
 router = APIRouter(tags=["decisions"])
@@ -86,6 +87,7 @@ def _report_content(db: Session, p: Project) -> dict:
 @router.post("/projects/{project_id}/reports", status_code=201)
 def create_report(project_id: str, share: bool = Query(default=False), user: User = Depends(current_user), db: Session = Depends(get_db)):
     p = owned_project(project_id, user, db)
+    require_unlocked(p)
     rep = Report(project_id=p.id, content=_report_content(db, p), share_token=secrets.token_urlsafe(24) if share else None)
     db.add(rep)
     db.commit()
@@ -104,7 +106,7 @@ def get_report(report_id: str, user: User = Depends(current_user), db: Session =
     r = db.get(Report, report_id)
     if r is None:
         raise HTTPException(404, "Report not found")
-    owned_project(r.project_id, user, db)
+    require_unlocked(owned_project(r.project_id, user, db))
     return {"id": r.id, "created_at": iso(r.created_at), "share_token": r.share_token, "content": r.content}
 
 

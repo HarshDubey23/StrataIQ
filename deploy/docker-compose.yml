@@ -22,7 +22,6 @@ services:
         API_URL: http://api:8000
         NEXT_PUBLIC_MARKET: ${MARKET:-US}
         NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
-        NEXT_PUBLIC_PAYMENT_URL: ${PAYMENT_URL:-}
         NEXT_PUBLIC_VOICE: ${VOICE:-}
     environment:
       API_URL: http://api:8000
@@ -45,6 +44,8 @@ services:
       FSQ_API_KEY: ${FSQ_API_KEY:-}
       ORS_API_KEY: ${ORS_API_KEY:-}
       SPEKO_API_KEY: ${SPEKO_API_KEY:-}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -58,7 +59,6 @@ services:
         API_URL: http://api_in:8000
         NEXT_PUBLIC_MARKET: IN
         NEXT_PUBLIC_REPORT_PRICE: ${REPORT_PRICE_IN:-₹999}
-        NEXT_PUBLIC_PAYMENT_URL: ${PAYMENT_URL_IN:-}
         NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
         NEXT_PUBLIC_VOICE: ${VOICE:-}
     environment:
@@ -81,6 +81,8 @@ services:
       FSQ_API_KEY: ${FSQ_API_KEY:-}
       ORS_API_KEY: ${ORS_API_KEY:-}
       SPEKO_API_KEY: ${SPEKO_API_KEY:-}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
     depends_on:
       db:
         condition: service_healthy

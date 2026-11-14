@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..engine.model import MODEL_VERSION
+from .payments import report_unlocked
 from ..models import CandidateLocation, Competitor, MarketSnapshot, Project, Scenario, SimulationRun
 
 
@@ -25,7 +26,7 @@ def scenario_out(s: Scenario, run: SimulationRun | None = None) -> dict:
 
 def project_out(p: Project, summary: dict | None = None) -> dict:
     return {"id": p.id, "name": p.name, "objective": p.objective, "decision_goal": p.decision_goal, "category": p.category,
-            "profile": p.profile, "status": p.status, "is_demo": p.is_demo, "created_at": iso(p.created_at),
+            "profile": p.profile, "status": p.status, "is_demo": p.is_demo, "report_unlocked": report_unlocked(p), "created_at": iso(p.created_at),
             "updated_at": iso(p.updated_at), "locations": [location_out(l) for l in p.locations],
             "summary": summary}
 

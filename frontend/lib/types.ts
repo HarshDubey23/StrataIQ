@@ -109,6 +109,8 @@ export interface Project {
   profile: Record<string, unknown>;
   status: string;
   is_demo: boolean;
+  /** false while this location's report still has to be paid for */
+  report_unlocked?: boolean;
   created_at: string;
   updated_at: string;
   locations: Location[];

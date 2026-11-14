@@ -24,7 +24,6 @@ DB_PASSWORD=$(openssl rand -hex 24)
 JWT_SECRET=$(openssl rand -hex 32)
 PROXY_SECRET=$(openssl rand -hex 32)
 CONTACT_EMAIL=${CONTACT_EMAIL:-}
-PAYMENT_URL=${PAYMENT_URL:-}
 EOF
 fi
 

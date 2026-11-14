@@ -44,6 +44,8 @@ class Project(TimestampMixin, Base):
     profile: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)  # business description, positioning, existing-business metrics
     status: Mapped[str] = mapped_column(String(30), default="draft", nullable=False)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # the report was paid for (api/payments.py)
+    payment_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)  # "payment link id|reference id" of the latest link
 
     locations: Mapped[list["CandidateLocation"]] = relationship(back_populates="project", cascade="all, delete-orphan", order_by="CandidateLocation.created_at")
     scenarios: Mapped[list["Scenario"]] = relationship(back_populates="project", cascade="all, delete-orphan", order_by="Scenario.created_at")

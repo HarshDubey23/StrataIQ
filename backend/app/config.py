@@ -38,6 +38,11 @@ class Settings:
         "https://overpass.kumi.systems/api/interpreter",
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     ]))
+    # Report payments (api/payments.py). Both keys unset = every report stays open.
+    razorpay_key_id: str = field(default_factory=lambda: os.getenv("RAZORPAY_KEY_ID", ""))
+    razorpay_key_secret: str = field(default_factory=lambda: os.getenv("RAZORPAY_KEY_SECRET", ""))
+    # price in the currency's smallest unit (paise, cents): keep it equal to the frontend's NEXT_PUBLIC_REPORT_PRICE
+    report_price_minor: int = field(default_factory=lambda: int(os.getenv("REPORT_PRICE_MINOR") or (2900 if os.getenv("MARKET", "US").upper() == "US" else 99900)))
     worldpop_url: str = field(default_factory=lambda: os.getenv("WORLDPOP_URL", "https://api.worldpop.org/v3"))
     worldpop_api_key: str = field(default_factory=lambda: os.getenv("WORLDPOP_API_KEY", ""))
     # WorldPop Global2 covers 2015-2030: default to this year's estimate
@@ -66,6 +71,10 @@ class Settings:
     @property
     def currency(self) -> str:
         return "$" if self.market == "US" else "₹"
+
+    @property
+    def currency_code(self) -> str:
+        return "USD" if self.market == "US" else "INR"
 
     @property
     def search_countries(self) -> str | None:
