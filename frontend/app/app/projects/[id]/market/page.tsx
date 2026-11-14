@@ -16,7 +16,9 @@ import { ago, money, num, pct, when, CUR, distance } from "@/lib/format";
 import { refreshLocation, waitForSnapshot } from "@/lib/market";
 import type { CompetitorRec, MarketData, Run, SimResult } from "@/lib/types";
 
-type Tab = "evidence" | "competitors" | "locations" | "sites";
+type Tab = "evidence" | "around" | "competitors" | "locations" | "sites";
+// business types whose demand counts nearby places that bring people (demand_base "residents_and_activity")
+const PASSERS_BY = ["dine_in", "takeaway", "retail", "lodging"];
 
 export default function MarketPage() {
   const { project: p, reload } = useProject();
@@ -215,7 +217,7 @@ export default function MarketPage() {
               ["zones", "Population zones", "bg-stone"],
               ["competitors", "Competitors", "bg-observed"],
               ["agents", "Synthetic customers", "bg-agent"],
-              ["activity", "Activity points", "bg-assumption"],
+              ["activity", "Places around", "bg-assumption"],
               ["buildings3d", "3D buildings (OSM)", "bg-ink-500"],
             ] as [LayerKey, string, string][]
           ).map(([k, l, c]) => (
@@ -256,8 +258,8 @@ export default function MarketPage() {
 
       <aside className="flex w-full flex-col border-l border-black/[0.06] bg-ink-950/80 -xl lg:w-[400px]">
         <div className="flex gap-1 border-b border-black/[0.06] p-2">
-          {(["evidence", "competitors", "sites", "locations"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => setTab(t)} data-tour={t === "sites" ? "best-sites" : undefined}
+          {(["evidence", "around", "competitors", "sites", "locations"] as Tab[]).map((t) => (
+            <button key={t} onClick={() => { setTab(t); if (t === "around") setLayers((l) => ({ ...l, activity: true })); }} data-tour={t === "sites" ? "best-sites" : undefined}
               className={cn("flex-1 rounded px-2 py-1.5 text-xs capitalize", tab === t ? "bg-ink-800 text-ink-100" : t === "sites" ? "text-model hover:text-ink-100" : "text-ink-400 hover:text-ink-100")}>
               {t === "competitors" ? `Competitors (${comps.filter((c) => c.active).length})` : t === "sites" ? "Best sites" : t}
             </button>
@@ -419,6 +421,35 @@ export default function MarketPage() {
             </>
           )}
 
+          {tab === "around" && (data?.surroundings?.length ? (
+            <>
+              <p className="text-xs leading-snug text-ink-400">
+                Everything mapped in OpenStreetMap around this site, shown as dots on the map. Unmapped places are missing, so walk the street too.
+                {PASSERS_BY.includes(data.category?.archetype ?? "") ? " Places marked \"counted\" add customers to the estimate." : " For this kind of business the estimate uses residents only; these are for your own judgement."}
+              </p>
+              {Array.from(new Set(data.surroundings.map((s) => s.group))).map((g) => (
+                <section key={g}>
+                  <h3 className="mb-1 text-xs font-medium text-ink-200">{g}</h3>
+                  <ul className="divide-y divide-black/[0.06] rounded-md border border-black/[0.07]">
+                    {data.surroundings!.filter((s) => s.group === g).map((s) => (
+                      <li key={s.kind} className="px-2.5 py-1.5 text-xs">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-ink-100">
+                            {s.label}
+                            {s.effect === "footfall" && PASSERS_BY.includes(data.category?.archetype ?? "") && <Badge tone="ok" className="ml-1.5">counted</Badge>}
+                            {s.effect === "caution" && <Badge tone="warn" className="ml-1.5">check</Badge>}
+                          </span>
+                          <span className="num shrink-0 text-ink-300">{s.within_1km} within {distance(1, 1)}</span>
+                        </div>
+                        <div className="text-ink-400">Nearest {distance(s.nearest_km, 2)}{s.nearest_name ? `: ${s.nearest_name}` : ""} · {s.within_500m} within {distance(0.5, 1)} · {s.total} in the area</div>
+                        {s.note && <div className="mt-0.5 text-ink-300">{s.note}</div>}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </>
+          ) : <p className="text-xs text-ink-400">{snap ? "Nothing is mapped around this site yet. Refresh the market data, and walk the street." : "Load live data first to see what stands around this site."}</p>)}
           {tab === "sites" && (snap ? (
             <BestSites projectId={p.id} scenarioId={p.scenarios?.find((x) => x.is_baseline && x.location_id === locId)?.id || p.scenarios?.find((x) => x.location_id === locId)?.id}
               locationKey={`${locId}-${snap.id}-${baseResult ? "r" : "n"}`} onData={setSites} onFocus={(lat, lng) => setFocus({ lat, lng, key: `${lat},${lng},${Date.now()}` })} />

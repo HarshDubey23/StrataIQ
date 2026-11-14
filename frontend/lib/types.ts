@@ -251,9 +251,24 @@ export interface CompetitorRec {
   distance_km?: number;
 }
 
+/** One kind of place found around the site. `effect`: footfall = counted as demand by the model, caution = go and look. */
+export interface Surrounding {
+  kind: string;
+  label: string;
+  group: string;
+  note: string;
+  effect: "footfall" | "caution" | "info";
+  within_500m: number;
+  within_1km: number;
+  total: number;
+  nearest_km: number;
+  nearest_name: string;
+}
+
 export interface MarketData {
   location: Location;
   snapshot: Snapshot | null;
+  surroundings?: Surrounding[];
   loading_snapshot_id: string | null;
   competitors: CompetitorRec[];
   locations: Location[];

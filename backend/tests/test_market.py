@@ -164,3 +164,37 @@ def test_routing_groups_zones_into_one_request_per_profile():
     out = mk.expand_routes(tab, zones, origins, idx, dests)
     km = np.array(out["car"]["km"], float)
     assert km.shape == (300, 1) and (km > 0).all()
+
+
+def test_surroundings_classify_and_summarise():
+    from app.categories.taxonomy import ACTIVITY_KINDS, CHECK, SURROUND_GROUPS, SURROUNDINGS, _SURROUND_TAGS, classify_poi
+    from app.factors.registry import POI_TYPES
+    from app.services.market import surroundings
+
+    # every kind the classifier can return has a label and a known group, and every counted kind is reported
+    kinds = {k for k, _ in POI_TYPES} | {k for _, _, k in _SURROUND_TAGS}
+    assert kinds == set(SURROUNDINGS) and ACTIVITY_KINDS <= kinds
+    assert {g for _, g, _ in SURROUNDINGS.values()} == set(SURROUND_GROUPS)
+    # the first 30 kinds keep their rules; the new tags map to the new kinds
+    assert classify_poi({"shop": "mall"}) == "mall" and classify_poi({"office": "government"}) == "office"
+    assert classify_poi({"amenity": "prep_school"}) == "coaching" and classify_poi({"waterway": "drain"}) == "drain"
+    assert classify_poi({"natural": "water"}) == "lake" and classify_poi({"waterway": "river"}) == "river"
+    assert classify_poi({"landuse": "military"}) == "military" and classify_poi({"highway": "primary", "name": "MG Marg"}) == "main_road"
+    assert classify_poi({"highway": "residential"}) is None
+
+    lat, lng = 25.45, 81.83
+    step = 0.001  # about 111 m of latitude
+    pts = [{"lat": lat + step, "lng": lng, "name": "Near Mall", "kind": "mall"},          # ~0.11 km
+           {"lat": lat + 7 * step, "lng": lng, "name": "Far Mall", "kind": "mall"},       # ~0.78 km
+           {"lat": lat + 20 * step, "lng": lng, "name": "Other Mall", "kind": "mall"},    # ~2.2 km
+           {"lat": lat + 3 * step, "lng": lng, "name": "", "kind": "drain"},
+           {"lat": lat + 2 * step, "lng": lng, "name": "Yamuna", "kind": "river"},
+           {"lat": lat, "lng": lng, "name": "x", "kind": "not_a_kind"}]
+    rows = surroundings(pts, lat, lng)
+    assert [r["kind"] for r in rows] == ["mall", "river", "drain"]  # group order, unknown kinds dropped
+    mall, river, drain = rows
+    assert (mall["within_500m"], mall["within_1km"], mall["total"], mall["nearest_name"]) == (1, 2, 3, "Near Mall")
+    assert 0.10 < mall["nearest_km"] < 0.12 and mall["effect"] == "footfall" and mall["group"] == "Brings people"
+    assert river["effect"] == "info" and "far bank" in river["note"]
+    assert drain["effect"] == "caution" and drain["group"] == CHECK and drain["note"]
+    assert surroundings([], lat, lng) == [] and surroundings(None, lat, lng) == []

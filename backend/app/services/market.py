@@ -10,7 +10,7 @@ import numpy as np
 
 from ..categories.archetypes import get_archetype
 from ..config import get_settings
-from ..categories.taxonomy import ACTIVITY_KINDS, CONTEXT_FILTERS, classify_poi
+from ..categories.taxonomy import ACTIVITY_KINDS, CHECK, CONTEXT_FILTERS, SURROUND_GROUPS, SURROUNDINGS, classify_poi
 from ..engine.geo import circle_polygon, haversine_km, hex_grid, km_to_deg_lat, km_to_deg_lng, points_in_polygon
 from ..providers import osm, population, routing
 from ..providers.http import Cache, ProviderError
@@ -45,6 +45,26 @@ def assign_counts(zone_pts: list[tuple[float, float]], pts: list[tuple[float, fl
         ok = d[np.arange(len(chunk)), nearest] <= spacing_km
         np.add.at(counts, nearest[ok], 1)
     return counts
+
+
+def surroundings(points: list[dict], lat: float, lng: float) -> list[dict]:
+    """What stands around a site, one row per kind found: how many within 500 m and 1 km, the nearest one, and what it means.
+    ``effect`` is "footfall" for kinds the demand model counts, "caution" for things to go and look at, else "info"."""
+    by_kind: dict[str, list[dict]] = {}
+    for p in points or []:
+        if p.get("kind") in SURROUNDINGS:
+            by_kind.setdefault(p["kind"], []).append(p)
+    rows = []
+    for kind, pts in by_kind.items():
+        d = np.atleast_1d(haversine_km(lat, lng, np.array([p["lat"] for p in pts]), np.array([p["lng"] for p in pts])))
+        i = int(d.argmin())
+        label, group, note = SURROUNDINGS[kind]
+        rows.append({"kind": kind, "label": label, "group": group, "note": note,
+                     "effect": "footfall" if kind in ACTIVITY_KINDS else "caution" if group == CHECK else "info",
+                     "within_500m": int((d <= 0.5).sum()), "within_1km": int((d <= 1.0).sum()), "total": len(pts),
+                     "nearest_km": round(float(d[i]), 3), "nearest_name": pts[i].get("name") or ""})
+    rows.sort(key=lambda r: (SURROUND_GROUPS.index(r["group"]), r["nearest_km"]))
+    return rows
 
 
 def assemble_zones(lat: float, lng: float, polygon: list[list[list[float]]], radius_km: float,
@@ -207,7 +227,7 @@ async def build_snapshot(*, lat: float, lng: float, catchment: dict, category: d
 
     async def ctx_task():
         # Context POIs feed the factor engine (schools, transit, offices…) and the visitor-demand proxy.
-        return await osm.fetch_pois(lat, lng, radius_m, list(CONTEXT_FILTERS), cache, limit=6000, timeout_s=80)
+        return await osm.fetch_pois(lat, lng, radius_m, list(CONTEXT_FILTERS), cache, limit=9000, timeout_s=80)
 
     async def agesex_task():
         return await population.worldpop_age_sex(polygon, cache)
@@ -305,7 +325,7 @@ async def build_snapshot(*, lat: float, lng: float, catchment: dict, category: d
         "zones": zones,
         "population": pop_meta,
         "competitors": comps,
-        "activity_points": context[:6000],
+        "activity_points": context[:9000],
         "sources": sources,
         "coverage": coverage,
         "errors": errors,

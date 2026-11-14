@@ -14,6 +14,7 @@ from ..models import CandidateLocation, Competitor, MarketSnapshot, Project, Sce
 from ..providers.http import ProviderError
 from ..schemas import CompetitorIn, CompetitorPatch, LocationIn, LocationPatch, ProjectCreate, ProjectPatch
 from ..security import current_user, owned_project
+from ..services.market import surroundings
 from ..services.runs import competitors_for, latest_runs, latest_snapshot, loading_snapshot, point_wkt, refresh_snapshot, start_refresh
 from .serialize import competitor_out, location_out, project_out, scenario_out, snapshot_out
 
@@ -220,7 +221,8 @@ def market(project_id: str, location_id: str | None = Query(default=None), user:
             income = mi.behaviour.summary if mi.behaviour else None
         except Exception:  # pragma: no cover - enrichment must never break the market page
             log.exception("income layer failed for snapshot %s", snap.id)
-    return {"location": location_out(loc), "snapshot": snapshot_out(snap) if snap else None, "competitors": out_comps, "income": income,
+    return {"location": location_out(loc), "snapshot": snapshot_out(snap) if snap else None,
+            "surroundings": surroundings(snap.activity_points, loc.lat, loc.lng) if snap else [], "competitors": out_comps, "income": income,
             "loading_snapshot_id": loading.id if loading else None,
             "locations": [location_out(l) for l in p.locations], "category": p.category}
 

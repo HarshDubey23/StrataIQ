@@ -138,8 +138,87 @@ CONTEXT_FILTERS: tuple[str, ...] = (
     '["shop"~"^(mall|supermarket|convenience)$"]',
     '["office"]',
     '["tourism"="hotel"]',
+    # the rest of what stands around a site (SURROUNDINGS): more places that bring people, how they arrive, water, and things to go and look at
+    '["amenity"~"^(prep_school|training|language_school|student_accommodation|courthouse|townhall|events_venue|conference_centre|community_centre|theatre|arts_centre|bar|pub|nightclub|taxi|kindergarten|childcare|charging_station|grave_yard|crematorium|waste_transfer_station|drinking_water|fire_station|toilets)$"]',
+    '["tourism"~"^(hostel|attraction|museum|viewpoint|zoo|theme_park)$"]',
+    '["leisure"~"^(stadium|sports_centre|garden|nature_reserve)$"]',
+    '["shop"~"^(alcohol|clothes|shoes|jewelry|electronics|department_store)$"]',
+    '["building"~"^(dormitory|apartments)$"]["name"]',
+    '["landuse"~"^(industrial|commercial|retail|construction|landfill|cemetery|military)$"]',
+    '["highway"~"^(trunk|primary)$"]["name"]',
+    '["railway"="level_crossing"]',
+    '["aeroway"~"^(aerodrome|terminal)$"]',
+    '["waterway"~"^(river|canal|stream|drain|ditch)$"]',
+    '["natural"~"^(water|wetland)$"]',
+    '["man_made"~"^(wastewater_plant|water_tower|water_works)$"]',
 )
-ACTIVITY_KINDS = {"school", "college", "university", "hospital", "rail_station", "office", "mall", "marketplace", "cinema", "hotel", "place_of_worship"}
+# Kinds that count as extra demand (one point = `activity_equivalent` residents) for businesses that live on passers-by.
+ACTIVITY_KINDS = {"school", "college", "university", "hospital", "rail_station", "office", "mall", "marketplace", "cinema", "hotel", "place_of_worship",
+                  "coaching", "student_hostel", "courthouse", "government", "event_venue", "theatre", "attraction", "stadium"}
+
+# Tags of the kinds added after the first 30 (those keep their own rules in classify_poi). First match wins.
+_SURROUND_TAGS: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    ("amenity", ("prep_school", "training", "language_school"), "coaching"),
+    ("amenity", ("student_accommodation",), "student_hostel"), ("tourism", ("hostel",), "student_hostel"), ("building", ("dormitory",), "student_hostel"),
+    ("amenity", ("courthouse",), "courthouse"), ("amenity", ("townhall",), "government"),
+    ("amenity", ("events_venue", "conference_centre", "community_centre"), "event_venue"), ("amenity", ("theatre", "arts_centre"), "theatre"),
+    ("tourism", ("attraction", "museum", "viewpoint", "zoo", "theme_park"), "attraction"), ("leisure", ("stadium", "sports_centre"), "stadium"),
+    ("amenity", ("bar", "pub", "nightclub"), "nightlife"), ("shop", ("alcohol",), "liquor_store"),
+    ("shop", ("clothes", "shoes", "jewelry", "electronics", "department_store"), "shops"),
+    ("amenity", ("kindergarten", "childcare"), "childcare"), ("building", ("apartments",), "apartments"),
+    ("amenity", ("taxi",), "taxi_stand"), ("amenity", ("charging_station",), "ev_charging"), ("aeroway", ("aerodrome", "terminal"), "airport"),
+    ("highway", ("trunk", "primary"), "main_road"), ("railway", ("level_crossing",), "level_crossing"),
+    ("waterway", ("river", "canal"), "river"), ("waterway", ("stream", "drain", "ditch"), "drain"),
+    ("natural", ("water",), "lake"), ("natural", ("wetland",), "wetland"), ("leisure", ("garden", "nature_reserve"), "garden"),
+    ("amenity", ("drinking_water",), "drinking_water"), ("man_made", ("water_tower", "water_works"), "water_works"), ("amenity", ("toilets",), "toilets"),
+    ("amenity", ("fire_station",), "fire_station"),
+    ("landuse", ("industrial",), "industrial"), ("landuse", ("commercial", "retail"), "commercial_area"), ("landuse", ("construction",), "construction"),
+    ("landuse", ("landfill",), "waste"), ("amenity", ("waste_transfer_station",), "waste"), ("man_made", ("wastewater_plant",), "sewage_plant"),
+    ("landuse", ("cemetery",), "cemetery"), ("amenity", ("grave_yard", "crematorium"), "cemetery"), ("landuse", ("military",), "military"),
+)
+
+CHECK = "Look before you sign"
+# Everything reported around a site: kind -> (label, group, what it means for a shop). Groups are shown in this order.
+SURROUNDINGS: dict[str, tuple[str, str, str]] = {
+    "mall": ("Malls", "Brings people", ""), "marketplace": ("Markets", "Brings people", ""), "office": ("Offices", "Brings people", ""),
+    "school": ("Schools", "Brings people", ""), "college": ("Colleges", "Brings people", ""), "university": ("Universities", "Brings people", ""),
+    "coaching": ("Coaching and training centres", "Brings people", ""), "student_hostel": ("Hostels and student housing", "Brings people", ""),
+    "hospital": ("Hospitals", "Brings people", ""), "cinema": ("Cinemas", "Brings people", ""), "theatre": ("Theatres and arts centres", "Brings people", ""),
+    "hotel": ("Hotels", "Brings people", ""), "place_of_worship": ("Places of worship", "Brings people", ""),
+    "attraction": ("Tourist attractions and museums", "Brings people", ""),
+    "stadium": ("Stadiums and sports centres", "Brings people", ""), "event_venue": ("Event and community halls", "Brings people", ""),
+    "courthouse": ("Courts", "Brings people", ""), "government": ("Town halls", "Brings people", ""), "rail_station": ("Rail and metro stations", "Brings people", ""),
+    "coworking": ("Co-working spaces", "Brings people", ""), "apartments": ("Named apartment blocks", "Brings people", "Dense housing close by."),
+    "commercial_area": ("Commercial and retail areas", "Brings people", "Land mapped as a shopping or business area."),
+    "bus_stop": ("Bus stops and stations", "Getting there", ""),
+    "main_road": ("Main roads", "Getting there", "Passing traffic and visibility. Check that people can stop and park."),
+    "parking": ("Parking", "Getting there", ""), "taxi_stand": ("Taxi and auto stands", "Getting there", ""), "fuel": ("Fuel stations", "Getting there", ""),
+    "ev_charging": ("EV charging", "Getting there", ""), "airport": ("Airports", "Getting there", ""),
+    "restaurant": ("Restaurants", "Food and shops", ""), "cafe": ("Cafés", "Food and shops", ""), "fast_food": ("Fast-food outlets", "Food and shops", ""),
+    "supermarket": ("Supermarkets", "Food and shops", ""), "convenience": ("Convenience stores", "Food and shops", ""),
+    "shops": ("Clothing, jewellery and electronics shops", "Food and shops", "A cluster means people already come here to shop."),
+    "nightlife": ("Bars and pubs", "Food and shops", "Evening crowd."), "gym": ("Gyms", "Food and shops", ""),
+    "bank": ("Banks", "Daily needs", ""), "atm": ("ATMs", "Daily needs", ""), "pharmacy": ("Pharmacies", "Daily needs", ""),
+    "clinic": ("Clinics and doctors", "Daily needs", ""),
+    "childcare": ("Nurseries and childcare", "Daily needs", ""), "post_office": ("Post offices", "Daily needs", ""), "library": ("Libraries", "Daily needs", ""),
+    "police": ("Police stations", "Daily needs", ""), "fire_station": ("Fire stations", "Daily needs", ""), "toilets": ("Public toilets", "Daily needs", ""),
+    "drinking_water": ("Drinking-water points", "Water and green", ""), "water_works": ("Water towers and works", "Water and green", ""),
+    "river": ("Rivers and canals", "Water and green",
+              "People rarely cross a river to shop, so the far bank is not your catchment. Ask how high the water came in the last flood."),
+    "lake": ("Lakes and ponds", "Water and green", ""), "park": ("Parks", "Water and green", ""), "playground": ("Playgrounds", "Water and green", ""),
+    "garden": ("Gardens and reserves", "Water and green", ""),
+    "drain": ("Streams and open drains", CHECK, "Can smell and overflow in heavy rain. Visit after a downpour."),
+    "wetland": ("Wetland", CHECK, "Low, wet ground. Ask neighbours about waterlogging."),
+    "level_crossing": ("Railway level crossings", CHECK, "Closed gates cause jams and cut customers off from the far side."),
+    "construction": ("Construction sites", CHECK, "Dust and blocked access now; new customers or a new rival when it opens. Find out what is being built."),
+    "industrial": ("Industrial areas", CHECK, "Workers on weekdays, little evening or weekend trade."),
+    "liquor_store": ("Liquor shops", CHECK, "Busy in the evening; some family customers avoid the stretch."),
+    "waste": ("Landfill and waste yards", CHECK, "Smell and trucks. Visit at different hours."),
+    "sewage_plant": ("Sewage works", CHECK, "Smell depends on the wind. Visit more than once."),
+    "cemetery": ("Cemeteries and cremation grounds", CHECK, "Some customers avoid shops beside one."),
+    "military": ("Military and cantonment land", CHECK, "Building, signage and opening-hour rules can apply. Ask the local board."),
+}
+SURROUND_GROUPS = ("Brings people", "Getting there", "Food and shops", "Daily needs", "Water and green", CHECK)
 
 
 def classify_poi(tags: dict) -> str | None:
@@ -165,4 +244,7 @@ def classify_poi(tags: dict) -> str | None:
         return "office"
     if tags.get("tourism") == "hotel":
         return "hotel"
+    for key, values, kind in _SURROUND_TAGS:
+        if tags.get(key) in values:
+            return kind
     return None

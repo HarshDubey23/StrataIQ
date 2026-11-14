@@ -12,6 +12,12 @@ All sources are described once in `backend/app/providers/registry.py`; the UI re
 | User input | prices, costs, competitors, actual outcomes | — | owned by the user | labelled user-entered, never “verified” |
 | AI provider | optional category mapping and explanation text | optional (`AI_API_KEY`) | — | never produces numbers |
 
+**Surroundings.** The same OpenStreetMap request also returns 64 kinds of places around the site (`SURROUNDINGS` in
+`backend/app/categories/taxonomy.py`): what brings people, how they arrive, food and shops, daily needs, water and green, and things
+to look at before signing (open drains, level crossings, liquor shops, landfill, cantonment land). The Market screen lists them under
+**Around** with counts and the nearest one. For food, retail and lodging, the kinds in `ACTIVITY_KINDS` each add an assumed 120
+resident-equivalents of demand; that weight is an assumption, not a fitted value. Everything else is shown, not modelled.
+
 **Timestamps.** Each provenance record stores `retrieved_at` (when StrataIQ fetched it) and `source_updated_at` (OSM database
 timestamp / record edit time / WorldPop reference year). The UI always shows both.
 
