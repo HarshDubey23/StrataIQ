@@ -46,12 +46,12 @@ SOURCES: dict[str, dict] = {
         "coverage_note": "Survey estimates pooled over five years, not a live count.",
     },
     "worldpop": {
-        "name": "WorldPop Global population (100 m, unconstrained)",
+        "name": "WorldPop Global2 population (100 m)",
         "kind": "official_aggregate_estimate",
         "license": "CC BY 4.0",
         "attribution": "WorldPop (www.worldpop.org), University of Southampton",
         "url": "https://www.worldpop.org/",
-        "coverage_note": "Modelled gridded population estimate for a fixed reference year, not a live count.",
+        "coverage_note": "Modelled gridded population estimate for the stated year, not a live count.",
     },
     "openrouteservice": {
         "name": "openrouteservice isochrones",

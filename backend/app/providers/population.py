@@ -2,10 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
-import re
-import time
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -14,77 +11,41 @@ from .http import Cache, ProviderError, cache_key, client
 from .registry import provenance
 
 
-_JSON_START = re.compile(r'\{\s*"(status|error|taskid)"')
-
-
-def _json_tail(text: str) -> dict:
-    """WorldPop sometimes prefixes its JSON with PHP deprecation notices (HTML). Parse the JSON object at the end."""
-    try:
-        return json.loads(text)
-    except ValueError:
-        pass
-    dec = json.JSONDecoder()
-    for m in _JSON_START.finditer(text):
-        try:
-            obj, _ = dec.raw_decode(text, m.start())  # tolerate warnings before *and* after the JSON
-            return obj
-        except ValueError:
-            continue
-    raise ProviderError("worldpop", f"unparseable response ({len(text)} bytes): {text[:100]!r}")
-
-
 def _round_ring(ring: list[list[float]]) -> list[list[float]]:
     return [[round(x, 5), round(y, 5)] for x, y in ring]
 
 
-async def _worldpop_stats(dataset: str, polygon: list[list[list[float]]], cache: Cache | None, ttl_days: int = 60) -> tuple[dict, object, bool]:
+async def _worldpop(endpoint: str, polygon: list[list[list[float]]], cache: Cache | None, ttl_days: int = 60) -> tuple[dict, object, bool]:
+    """One WorldPop v3 request (`population` or `agesex`) for a polygon and the configured year. v1 was retired in 2026."""
     s = get_settings()
-    fc = {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {}, "geometry": {"type": "Polygon", "coordinates": [_round_ring(r) for r in polygon]}}]}
-    gj = json.dumps(fc, separators=(",", ":"))
-    params = {"dataset": dataset, "year": s.worldpop_year, "geojson": gj, "runasync": "true"}
-    key = cache_key(f"worldpop:{dataset}", {"year": s.worldpop_year, "g": gj})
+    body = {"year": s.worldpop_year, "geojson": {"type": "Polygon", "coordinates": [_round_ring(r) for r in polygon]}}
+    key = cache_key(f"worldpop3:{endpoint}", body)
     if cache and (hit := cache.get(key)):
         return hit[0], hit[1], True
+    headers = {"X-API-Key": s.worldpop_api_key} if s.worldpop_api_key else None  # optional: raises the anonymous daily limit
     try:
-        body = None
         for attempt in range(2):
             try:
-                r = await client().get(f"{s.worldpop_url}/services/stats", params=params, timeout=httpx.Timeout(40.0, connect=15.0))
-                r.raise_for_status()
-                body = _json_tail(r.text)
+                r = await client().post(f"{s.worldpop_url}/{endpoint}", json=body, headers=headers, timeout=httpx.Timeout(40.0, connect=15.0))
                 break
             except httpx.TimeoutException:
                 if attempt == 1:
                     raise
                 await asyncio.sleep(2)
-        deadline = time.monotonic() + 75
-        while time.monotonic() < deadline:  # asynchronous task: poll until finished
-            if body.get("error"):
-                raise ProviderError("worldpop", str(body.get("error_message")))
-            if body.get("status") == "finished" and body.get("data"):
-                break
-            tid = body.get("taskid")
-            if not tid:
-                raise ProviderError("worldpop", f"unexpected response: {str(body)[:200]}")
-            await asyncio.sleep(2)
-            r = await client().get(f"{s.worldpop_url}/tasks/{tid}", timeout=httpx.Timeout(20.0, connect=10.0))
-            r.raise_for_status()
-            body = _json_tail(r.text)
-        if body.get("status") != "finished":
-            raise ProviderError("worldpop", f"{dataset} task did not finish in time")
-        data = body["data"]
-    except (httpx.HTTPError, KeyError, ValueError, TypeError) as e:
-        raise ProviderError("worldpop", f"{dataset} query failed: {type(e).__name__} {e}".strip()) from e
+        if r.status_code >= 400:
+            raise ProviderError("worldpop", f"{endpoint} query failed: HTTP {r.status_code} {r.text[:160]}")
+        data = r.json()
+    except (httpx.HTTPError, ValueError) as e:
+        raise ProviderError("worldpop", f"{endpoint} query failed: {type(e).__name__} {e}".strip()) from e
     if cache:
-        cache.put(key, f"worldpop:{dataset}", data, timedelta(days=ttl_days))
-    from datetime import datetime, timezone
+        cache.put(key, f"worldpop:{endpoint}", data, timedelta(days=ttl_days))
     return data, datetime.now(timezone.utc), False
 
 
 async def worldpop_total(polygon: list[list[list[float]]], cache: Cache | None = None) -> tuple[float, dict]:
     """Total modelled population inside a GeoJSON polygon (WorldPop, fixed reference year)."""
     s = get_settings()
-    data, fetched, cached = await _worldpop_stats("wpgppop", polygon, cache)
+    data, fetched, cached = await _worldpop("population", polygon, cache)
     try:
         total = float(data["total_population"])
     except (KeyError, TypeError, ValueError) as e:
@@ -94,23 +55,21 @@ async def worldpop_total(polygon: list[list[list[float]]], cache: Cache | None =
 
 
 def parse_age_sex(data: dict) -> dict:
-    """WorldPop wpgpas -> 17 five-year bands (0-4 … 80+) with male/female counts."""
-    rows = data.get("agesexpyramid") or []
-    bands = []
-    for r in sorted(rows, key=lambda x: int(x.get("class", 0))):
-        bands.append({"age": str(r.get("age")), "male": float(r.get("male") or 0), "female": float(r.get("female") or 0)})
-    if len(bands) == 18:
-        # WorldPop splits the first five-year band into infants (0-1) and 1-4: merge them back into 0-4.
-        a, b = bands[0], bands[1]
-        bands = [{"age": "0 to 5", "male": a["male"] + b["male"], "female": a["female"] + b["female"]}] + bands[2:]
-    if len(bands) != 17:
-        raise ProviderError("worldpop", f"age-sex pyramid has {len(bands)} bands, expected 17")
-    return {"bands": bands}
+    """WorldPop v3 agesex -> 17 five-year bands (0-4 … 80+) with male/female counts."""
+    rows = sorted(data.get("agesex_pyramid") or [], key=lambda x: int(x.get("class", 0)))
+    if len(rows) != 20:
+        raise ProviderError("worldpop", f"age-sex pyramid has {len(rows)} classes, expected 20")
+
+    def band(label: str, part: list[dict]) -> dict:
+        return {"age": label, "male": sum(float(r.get("male") or 0) for r in part), "female": sum(float(r.get("female") or 0) for r in part)}
+
+    # WorldPop splits the first band into under 1 and 1-4, and the last into 80-84, 85-89 and 90+: merge both back.
+    return {"bands": [band("0 to 4", rows[:2])] + [band(str(r.get("age")), [r]) for r in rows[2:17]] + [band("80 and over", rows[17:])]}
 
 
 async def worldpop_age_sex(polygon: list[list[list[float]]], cache: Cache | None = None) -> tuple[dict, dict]:
     s = get_settings()
-    data, fetched, cached = await _worldpop_stats("wpgpas", polygon, cache)
+    data, fetched, cached = await _worldpop("agesex", polygon, cache)
     return parse_age_sex(data), provenance("worldpop", retrieved_at=fetched, cached=cached, source_updated_at=f"{s.worldpop_year} reference year",
                                            detail="Age and sex structure inside the catchment (17 five-year bands)")
 

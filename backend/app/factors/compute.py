@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from ..categories.archetypes import Archetype
+from ..config import get_settings
 from ..engine.abm import AGE_BANDS, DEFAULTS as ABM_DEFAULTS, MODES
 from ..engine.geo import haversine_km
 from .registry import BY_KEY, DOMAINS, FACTORS, POI_TYPES, counts
@@ -199,7 +200,7 @@ def compute(project, arch: Archetype, loc, snap, competitors: list, scenario_inp
         put("ext_data_retrieved_at", snap.retrieved_at.isoformat())
         osm_base = next((s.get("source_updated_at") for s in snap.sources if s.get("source") == "osm_overpass" and s.get("source_updated_at")), None)
         put("ext_osm_base_time", osm_base)
-        put("ext_worldpop_year", 2020 if psrc == "worldpop" else None)
+        put("ext_worldpop_year", get_settings().worldpop_year if psrc == "worldpop" else None)
         put("ext_snapshot_status", snap.status)
         put("ext_provider_errors", len(snap.errors or []))
         put("ext_cache_hits", sum(1 for s in snap.sources if s.get("from_cache")))

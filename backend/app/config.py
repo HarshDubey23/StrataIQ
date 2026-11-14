@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -37,8 +38,10 @@ class Settings:
         "https://overpass.kumi.systems/api/interpreter",
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     ]))
-    worldpop_url: str = field(default_factory=lambda: os.getenv("WORLDPOP_URL", "https://api.worldpop.org/v1"))
-    worldpop_year: int = field(default_factory=lambda: int(os.getenv("WORLDPOP_YEAR", "2020")))
+    worldpop_url: str = field(default_factory=lambda: os.getenv("WORLDPOP_URL", "https://api.worldpop.org/v3"))
+    worldpop_api_key: str = field(default_factory=lambda: os.getenv("WORLDPOP_API_KEY", ""))
+    # WorldPop Global2 covers 2015-2030: default to this year's estimate
+    worldpop_year: int = field(default_factory=lambda: int(os.getenv("WORLDPOP_YEAR") or min(datetime.now().year, 2030)))
     fsq_api_key: str = field(default_factory=lambda: os.getenv("FSQ_API_KEY", ""))
     ors_api_key: str = field(default_factory=lambda: os.getenv("ORS_API_KEY", ""))
     ors_url: str = field(default_factory=lambda: os.getenv("ORS_URL", "https://api.openrouteservice.org"))

@@ -1,6 +1,9 @@
 """Assistant intent routing, money formatting, and OSM fallback filter parsing (offline)."""
+import pytest
+
 from app.api.assistant import answer_from_facts, detect, inr, parse_price
 from app.providers.osm import filter_terms
+from app.providers.http import ProviderError
 from app.providers.population import parse_age_sex
 
 
@@ -39,10 +42,17 @@ def test_filter_terms_for_fallbacks():
     assert tags == ["shop:convenience", "shop:supermarket"]
 
 
-def test_age_sex_accepts_18_bands():
-    rows = [{"class": i, "age": str(i), "male": 10, "female": 10} for i in range(18)]
-    out = parse_age_sex({"agesexpyramid": rows})
-    assert len(out["bands"]) == 17 and out["bands"][0]["male"] == 20 and out["bands"][-1]["male"] == 10
+def test_age_sex_folds_20_classes_into_17_bands():
+    # WorldPop v3 classes: 00 (under 1), 01 (1-4), 05 … 85, 90 (90 and over); given out of order on purpose
+    rows = [{"class": f"{c:02d}", "age": f"age {c}", "male": 10 + c, "female": 5} for c in [90, 85, 0, 1, *range(5, 85, 5)]]
+    out = parse_age_sex({"agesex_pyramid": rows})["bands"]
+    assert len(out) == 17
+    assert out[0] == {"age": "0 to 4", "male": 10 + 11, "female": 10}  # under 1 + 1-4
+    assert out[1] == {"age": "age 5", "male": 15, "female": 5} and out[15]["age"] == "age 75"
+    assert out[-1] == {"age": "80 and over", "male": 90 + 95 + 100, "female": 15}  # 80-84 + 85-89 + 90+
+    assert sum(b["male"] + b["female"] for b in out) == sum(r["male"] + r["female"] for r in rows)  # nobody lost
+    with pytest.raises(ProviderError):
+        parse_age_sex({"agesex_pyramid": rows[:18]})
 
 
 def test_strategy_intents_and_parsing():

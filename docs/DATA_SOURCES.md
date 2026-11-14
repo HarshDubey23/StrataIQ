@@ -6,7 +6,7 @@ All sources are described once in `backend/app/providers/registry.py`; the UI re
 |---|---|---|---|---|
 | OpenStreetMap via Overpass API | competitors, buildings, activity points | live, cached 12 h (buildings 3 d) | ODbL, “© OpenStreetMap contributors” | one request at a time, retries across public endpoints; contributor usernames/uids discarded; record last-edit time kept |
 | Nominatim | place search, reverse geocode | live, throttled to 1 req/s, cached 14–30 d | ODbL | `User-Agent` includes `CONTACT_EMAIL` as the usage policy asks |
-| WorldPop Global (wpgppop, 100 m) | total catchment population | live async task API, cached 60 d | CC BY 4.0 | fixed reference year (default 2020); not a live count |
+| WorldPop Global2 R2025A (100 m, API v3) | catchment population, age and sex | live, cached 60 d | CC BY 4.0 | modelled estimate for the current year (2015-2030 available, `WORLDPOP_YEAR` overrides); not a live count. Anonymous use is 1,000 requests a day; `WORLDPOP_API_KEY` raises it |
 | openrouteservice | travel-time catchments | optional (`ORS_API_KEY`) | ORS terms; OSM ODbL | falls back to radius, recorded as a snapshot error |
 | OpenFreeMap tiles | base map, 3D buildings where heights exist | browser | © OpenMapTiles, OSM | falls back to the positron style |
 | User input | prices, costs, competitors, actual outcomes | — | owned by the user | labelled user-entered, never “verified” |
