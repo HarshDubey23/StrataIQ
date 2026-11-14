@@ -11,7 +11,8 @@ const CLASS_COLOR = ["#fb7185", "#fbbf24", "#1d4f91"];
 const AREA = US_MARKET ? "US" : "India";
 const METHOD_LABEL: Record<IncomeEvidence["method"], string> = {
   us_tract: "Household income of the census tract each zone sits in",
-  rwi_rank: "Local wealth tiles (Meta RWI, 2.4 km) ranked on India's official consumption curve",
+  rwi_state_rank: "Night-light brightness of each 2.4 km tile (a proxy for how well-off it is) ranked on the state's official consumption curve",
+  rwi_rank: "Night-light brightness of each 2.4 km tile (a proxy for how well-off it is) ranked on India's official consumption curve",
   state_curve: "State consumption curve",
   national_sector_curve: "All-India rural/urban curve (no state curve available)",
 };

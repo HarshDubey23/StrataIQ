@@ -55,3 +55,31 @@ Two findings to carry forward:
 Limits of this test: receipts cover alcohol only, permit holders mix bars, restaurants, hotels and venues, every forecast used the same price and quality, and it says nothing direct about other business types. A founder's own costs and plan are also not part of it.
 
 What this means for the product: treat a single-store sales figure as a planning estimate, not a prediction. The next test needs revenue from real owners, or SBA loan results by location.
+
+## India: night lights as the neighbourhood wealth rank
+
+HCES gives one spending curve per state and rural/urban, so without a local signal every neighbourhood of a city gets the same
+income mix. `backend/scripts/build_wealth_grid.py` ranks 634,944 tiles of about 2.4 km by mean night-time radiance (VIIRS-like
+2025 composite, CC0) within their state and sector. Meta's Relative Wealth Index would be the better signal, but it is CC BY-NC
+and cannot ship in a paid product. It was used once, as a benchmark only, to see what the night-light rank is worth:
+
+| Rank correlation with Meta's index | Radiance | Radiance per person | Population density |
+|---|---:|---:|---:|
+| Urban tiles, all India (24,899) | 0.70 | 0.53 | 0.47 |
+| Rural tiles, all India | 0.51 | 0.46 | 0.43 |
+| Inside one city, median of 15 | 0.40 | -0.09 | 0.45 |
+
+Inside one city (urban tiles within 12 km of the centre) radiance scored 0.74 in Prayagraj, 0.78 in Kanpur, 0.72 in Varanasi,
+0.73 in Patna, 0.81 in Indore, 0.62 in Mumbai and 0.53 in Lucknow, but 0.33 in Delhi, 0.23 in Hyderabad and Chennai, 0.19 in
+Pune, 0.13 in Jaipur and 0.11 in Bengaluru.
+
+What this means:
+
+- Plain radiance is used. Radiance per person is worse than nothing inside a city.
+- Inside a city, radiance is no better than population density at matching Meta's index. Both mostly say "the lit, built-up
+  core". It separates a city centre from its edge, not a rich colony from a poor one next door.
+- It is weak in the large metros, so the income mix there should be read with care.
+- A tile's rank therefore carries less weight than it did with Meta's index: the loading is 0.42 (0.28 to 0.56), which is the
+  0.6 assumed before times the 0.70 agreement.
+- Meta's index is itself a model, not measured income. No test here uses real household spending by neighbourhood, and none
+  shows that this layer makes a sales forecast more accurate.

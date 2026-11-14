@@ -9,6 +9,7 @@ All sources are described once in `backend/app/providers/registry.py`; the UI re
 | WorldPop Global2 R2025A (100 m, API v3) | catchment population, age and sex | live, cached 60 d | CC BY 4.0 | modelled estimate for the current year (2015-2030 available, `WORLDPOP_YEAR` overrides); not a live count. Anonymous use is 1,000 requests a day; `WORLDPOP_API_KEY` raises it |
 | openrouteservice | travel-time catchments | optional (`ORS_API_KEY`) | ORS terms; OSM ODbL | falls back to radius, recorded as a snapshot error |
 | OpenFreeMap tiles | base map, 3D buildings where heights exist | browser | © OpenMapTiles, OSM | falls back to the positron style |
+| Night lights (NPP-VIIRS-like V2, Harvard Dataverse) | which neighbourhoods are better off (India) | built into `app/data/wealth_grid_ind.npz` by `scripts/build_wealth_grid.py` | CC0 1.0 | a proxy, not a measurement; see docs/VALIDATION.md. Replaces Meta's Relative Wealth Index (CC BY-NC) |
 | User input | prices, costs, competitors, actual outcomes | — | owned by the user | labelled user-entered, never “verified” |
 | AI provider | optional category mapping and explanation text | optional (`AI_API_KEY`) | — | never produces numbers |
 

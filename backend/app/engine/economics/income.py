@@ -5,15 +5,19 @@ Every synthetic person gets a monthly per-capita consumption (MPCE, Rs) drawn fr
 1. Official rupee anchor - HCES 2023-24 (MoSPI): all-India rural and urban fractile tables (Table 3.1) and P10..P90
    deciles for 18 states x rural/urban (Tables 3.4R/U). Each curve is fitted with a Singh-Maddala distribution
    (Singh & Maddala 1976; McDonald 1984), F(x) = 1 - (1 + (x/b)^a)^(-q), by least squares on log quantiles and class means.
-2. Local wealth ranking - Meta Relative Wealth Index (Chi et al. 2022, PNAS) on ~2.4 km tiles. The data pipeline
-   (scripts/build_wealth_grid.py) gives each tile its WorldPop population, its state (geoBoundaries ADM1) and an
-   urban/rural class (one national density threshold that makes 35% of people urban, UN WUP 2018), and ranks tiles by
-   RWI *within their state x sector*, population-weighted: p_t = "richer than p_t of this state's rural/urban people".
+2. Local wealth ranking - night-time radiance (VIIRS-like annual composite, CC0) on ~2.4 km tiles, a proxy for how
+   well-off a neighbourhood is. It replaced Meta's Relative Wealth Index, whose CC BY-NC licence rules out a paid product;
+   against that index it ranks tiles at 0.70 across urban India and a median of 0.40 inside one city (docs/VALIDATION.md).
+   The data pipeline (scripts/build_wealth_grid.py) gives each tile its WorldPop population, its state (geoBoundaries ADM1)
+   and an urban/rural class (one national density threshold that makes 35% of people urban, UN WUP 2018), and ranks tiles
+   *within their state x sector*, population-weighted: p_t = "brighter than p_t of this state's rural/urban people".
+   Method names keep the "rwi_" prefix of the index they were written for.
 3. Rank matching (Hruschka, Gerkey & Hadley 2015; Chi et al. 2022 SM): a person in tile t gets a rank
        z = a * Phi^-1(p_t) + sqrt(1 - a^2) * e,   e ~ N(0,1),   u = Phi(z)
    and MPCE = Q_{state,sector}(u), the official curve of the same geography the rank was taken in. Because p_t is
    uniform over that state x sector's population, z is standard normal there, so the official distribution is
-   reproduced exactly; a^2 is the share of wealth variance between tiles (assumption, varied in Monte Carlo).
+   reproduced exactly; a^2 is the share of wealth variance between tiles (assumption, varied in Monte Carlo). The grid's
+   meta file sets a for its index: 0.42 for night lights (the 0.6 assumed for Meta's index x the 0.70 agreement).
    States outside HCES Table 3.4 use the all-India sector curve.
 
 Fallbacks, recorded in provenance: no tile -> the state x sector HCES curve (state from reverse geocoding) -> the
@@ -141,7 +145,7 @@ class NationalCurve:
         return fu / np.maximum(fr + fu, 1e-300)
 
 
-# ---------------------------------------------------------------- wealth grid (Meta RWI x WorldPop)
+# ---------------------------------------------------------------- wealth grid (night lights x WorldPop)
 # shortcut: the CC BY-NC grid file was removed for commercial use, so the RWI paths never run; delete them or supply a licensed grid.
 @lru_cache(maxsize=1)
 def _grid():
@@ -154,8 +158,8 @@ def _grid():
     order = np.argsort(key)
     meta_path = DATA / "wealth_grid_ind_meta.json"
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-    out = {"zoom": zoom, "key": key[order], "pct": g["pct"][order].astype(float), "rwi": g["rwi"][order].astype(float),
-           "err": g["err"][order].astype(float), "pop": g["pop"][order].astype(float), "meta": meta}
+    out = {"zoom": zoom, "key": key[order], "pct": g["pct"][order].astype(float), "rwi": g["light"][order].astype(float),  # the tile's index value
+           "pop": g["pop"][order].astype(float), "meta": meta}
     if "pct_ss" in g.files:  # tiles tagged with state and urban/rural, ranked within state x sector
         out.update(state=g["state"][order], urban=g["urban"][order], pct_ss=g["pct_ss"][order].astype(float))
     return out
@@ -170,7 +174,7 @@ def _tile_xy(lat, lng, zoom):
 
 
 def tile_lookup(lats, lngs) -> dict | None:
-    """Per point: national and state x sector RWI percentile, state name and sector of its wealth tile (None if no grid)."""
+    """Per point: national and state x sector wealth-index percentile, state name and sector of its wealth tile (None if no grid)."""
     g = _grid()
     if g is None:
         return None
@@ -189,7 +193,7 @@ def tile_lookup(lats, lngs) -> dict | None:
 
 
 def tile_percentiles(lats, lngs) -> tuple[np.ndarray, np.ndarray, dict | None]:
-    """National population-weighted RWI percentile for each point (NaN where no tile). Returns (pct, rwi, grid meta)."""
+    """National population-weighted wealth-index percentile for each point (NaN where no tile). Returns (pct, index value, grid meta)."""
     g = _grid()
     lats, lngs = np.atleast_1d(lats), np.atleast_1d(lngs)
     if g is None:
@@ -280,7 +284,10 @@ def build_context(zone_lats, zone_lngs, *, state: str | None, sector: str | None
                  "url": h["url"], "license": "Government of India publication", "source_updated_at": "2023-24 survey, published Dec 2024",
                  "detail": "Rupee level of monthly per-person consumption (fractiles, state deciles, budget shares)"}
     provs = [hces_prov]
-    a = BETWEEN_TILE_LOADING[0]
+    a = ((meta or {}).get("loading") or BETWEEN_TILE_LOADING)[0]
+    ix = (meta or {}).get("index", {})
+    index_prov = {"source": ix.get("source", "wealth_index"), "name": ix.get("name", "Local wealth index (2.4 km tiles)"), "kind": "derived",
+                  "url": ix.get("url"), "license": ix.get("licence"), "source_updated_at": ix.get("source_updated")}
     if tl and "pct_ss" in tl and tl["hit"].mean() >= 0.5:
         hit = tl["hit"]
         # zones off any tile take the catchment's most common state/sector and the middle rank
@@ -295,24 +302,18 @@ def build_context(zone_lats, zone_lngs, *, state: str | None, sector: str | None
             c = curve(se_i, st_i if st_i in h["state_deciles"][se_i] else None)
             zcurves.append(c)
             keys.add(c.key)
-        rm = (meta or {}).get("rwi", {})
         um = (meta or {}).get("urban_rule", {})
-        provs.append({"source": "meta_rwi", "name": "Meta Relative Wealth Index (2.4 km tiles) x WorldPop 2020", "kind": "derived",
-                      "url": rm.get("url") or "https://data.humdata.org/dataset/relative-wealth-index", "license": "CC BY-NC 4.0 (HDX dataset page)",
-                      "source_updated_at": rm.get("source_updated"),
+        provs.append({**index_prov,
                       "detail": f"{int(hit.sum())}/{pct.size} zones on a wealth tile; tiles ranked within their state x rural/urban by population. "
-                                f"Urban = WorldPop density >= {um.get('density_threshold_per_km2', '?')}/km2 (35% of India urban, UN WUP)"})
+                                f"Urban = WorldPop density >= {um.get('density_threshold_per_km2', '?')}/km2 (35% of India urban, UN WUP). {ix.get('what', '')}"})
         provs.append({"source": "geoboundaries", "name": "geoBoundaries India ADM1 (state boundaries)", "kind": "observed",
                       "url": "https://www.geoboundaries.org/", "license": "CC BY 4.0", "detail": "Which state each wealth tile is in"})
         zone_p = np.where(np.isnan(tl["pct_ss"]), 0.5, tl["pct_ss"])
         return IncomeContext("rwi_state_rank", zone_p, st0, sec0, a, provs, ", ".join(sorted(keys)),
                              max(c.fit_error for c in zcurves), zcurves)
     if np.isfinite(pct).mean() >= 0.5:
-        rm = (meta or {}).get("rwi", {})
-        provs.append({"source": "meta_rwi", "name": "Meta Relative Wealth Index (2.4 km tiles) x WorldPop 2020", "kind": "derived",
-                      "url": rm.get("url") or "https://data.humdata.org/dataset/relative-wealth-index", "license": "CC BY-NC 4.0 (HDX dataset page)",
-                      "source_updated_at": rm.get("source_updated"), "detail": f"{int(np.isfinite(pct).sum())}/{pct.size} zones on a wealth tile; "
-                      "tile ranks are population-weighted national percentiles"})
+        provs.append({**index_prov, "detail": f"{int(np.isfinite(pct).sum())}/{pct.size} zones on a wealth tile; "
+                      f"tile ranks are population-weighted national percentiles. {ix.get('what', '')}"})
         c = curve("urban")
         return IncomeContext("rwi_rank", pct, state, sector, a, provs, "India/rural+urban", max(c.fit_error, curve("rural").fit_error))
     method = "state_curve" if state and state in h["state_deciles"][sector] else "national_sector_curve"

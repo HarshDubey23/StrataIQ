@@ -1,0 +1,75 @@
+{
+  "built_at": "2026-11-14T11:57:19.009400+00:00",
+  "index": {
+    "source": "night_lights",
+    "name": "Night lights (nppviirs_like_V2_2025, ~500 m) on 2.4 km tiles x WorldPop 2020",
+    "dataset": "The global NPP-VIIRS-like nighttime light data (Version 2), Chen, Yu et al., Harvard Dataverse",
+    "url": "https://doi.org/10.7910/DVN/YGIVCD",
+    "licence": "CC0 1.0",
+    "source_updated": "2025",
+    "what": "Mean night-time radiance of the tile. A proxy for how well-off a neighbourhood is, not a measurement: it agrees with Meta's Relative Wealth Index at a rank correlation of 0.70 across urban India and a median of 0.40 inside one city"
+  },
+  "loading": [
+    0.42,
+    0.28,
+    0.56
+  ],
+  "population": {
+    "dataset": "WorldPop Global 1km UN-adjusted 2020, India",
+    "url": "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/IND/ind_ppp_2020_1km_Aggregated_UNadj.tif",
+    "licence": "CC BY 4.0"
+  },
+  "states": [
+    "Puducherry",
+    "Mah\u0101r\u0101shtra",
+    "N\u0101g\u0101land",
+    "Lakshadweep",
+    "Uttar Pradesh",
+    "Tamil N\u0101du",
+    "Chhatt\u012bsgarh",
+    "Gujar\u0101t",
+    "Delhi",
+    "Sikkim",
+    "Tripura",
+    "West Bengal",
+    "Odisha",
+    "Bih\u0101r",
+    "Lad\u0101kh",
+    "R\u0101jasth\u0101n",
+    "Telang\u0101na",
+    "Andhra Pradesh",
+    "Mizoram",
+    "Arun\u0101chal Pradesh",
+    "Megh\u0101laya",
+    "Jh\u0101rkhand",
+    "Assam",
+    "Manipur",
+    "Karn\u0101taka",
+    "Uttar\u0101khand",
+    "D\u0101dra and Nagar Haveli and Dam\u0101n and Diu",
+    "Madhya Pradesh",
+    "Goa",
+    "Kerala",
+    "Chand\u012bgarh",
+    "Andaman and Nicobar Islands",
+    "Him\u0101chal Pradesh",
+    "Jammu and Kashm\u012br",
+    "Punjab",
+    "Hary\u0101na"
+  ],
+  "states_source": {
+    "dataset": "geoBoundaries IND ADM1 (gbOpen)",
+    "url": "https://www.geoboundaries.org/api/current/gbOpen/IND/ADM1/",
+    "licence": "CC BY 4.0"
+  },
+  "urban_rule": {
+    "density_threshold_per_km2": 1541,
+    "urban_population_share": 0.35,
+    "note": "Tiles at or above this WorldPop density are urban; threshold set so 35% of India's population is urban (UN WUP 2018, 2020)"
+  },
+  "zoom": 14,
+  "tiles": 634944,
+  "tiles_lit": 339516,
+  "population_total": 1380004385.0094864,
+  "tile_km_at_equator": 2.446
+}

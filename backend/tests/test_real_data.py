@@ -97,3 +97,24 @@ def test_market_inputs_use_income_layer_without_admin_lookup():
         pytest.skip("wealth grid not built")
     assert mi.income is not None and mi.income.method.startswith("rwi")
     assert mi.arch.segments[0].label.startswith("Bottom 40%")
+
+
+def test_night_lights_grid_separates_a_city_centre_from_its_edge():
+    """The shipped grid: licence-clean source, the damped loading, and a lit centre ranked above the same city's edge."""
+    if ei._grid() is None:
+        pytest.skip("wealth grid not built")
+    centre = ei.build_context([25.4522], [81.8343], state="Uttar Pradesh", sector="urban")  # Civil Lines, Prayagraj
+    edge = ei.build_context([25.5300], [81.8650], state="Uttar Pradesh", sector="urban")    # Phaphamau, across the Ganga
+    for ctx in (centre, edge):
+        assert ctx.method == "rwi_state_rank" and ctx.loading == 0.42
+        names = " ".join(p["name"] + str(p.get("license")) for p in ctx.provenance)
+        assert "Night lights" in names and "CC0" in names and "Meta" not in names and "NC" not in names
+    assert 0 < edge.zone_pct[0] < centre.zone_pct[0] <= 1
+    rng = np.random.default_rng(0)
+    xc, _ = centre.draw(rng, np.zeros(20000, int))
+    xe, _ = edge.draw(rng, np.zeros(20000, int))
+    assert np.median(xc) > np.median(xe) * 1.15  # the centre spends clearly more
+    # the tile only shifts people along the state's own curve: both stay inside its range, and most of the spread is within a tile
+    state = ei.curve("urban", "Uttar Pradesh")
+    assert state.ppf(0.5) < np.median(xe) < np.median(xc) < state.ppf(0.9)
+    assert np.quantile(xc, 0.1) < state.ppf(0.5) < np.quantile(xe, 0.9)
