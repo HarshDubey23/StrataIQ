@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import numpy as np
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import ai
@@ -151,14 +153,17 @@ async def _peek_india(entry, q: str | None, lat: float | None, lng: float | None
     except ProviderError as e:
         raise HTTPException(502, f"Population data is busy right now ({e.message[:100]})") from e
     sector = "rural" if adm.get("settlement") == "rural" else "urban"
-    state = income.normalise_state(adm.get("state"))
-    spend = income.curve(sector, state).median
+    # the same income layer the simulation uses: the state's curve, shifted by the neighbourhood's night-light rank where a tile exists
+    ctx = income.build_context([lat], [lng], state=adm.get("state"), sector=sector)
+    spend = float(np.median(ctx.draw(np.random.default_rng(0), np.zeros(4000, int))[0]))
+    local = ctx.method.startswith("rwi")
     arch = ARCHETYPES[entry.archetype]
     return {
         "place": {"label": label or q or "", "lat": lat, "lng": lng},
         "category": {"key": entry.key, "label": entry.label},
         "area": {"people": round(people), "median_household_income": round(spend), "jobs": None, "tracts": [], "radius_km": 2,
-                 "source": f"People: WorldPop. Spending per person: MoSPI HCES 2023-24, {adm.get('state') or 'India'}, {sector}"},
+                 "source": f"People: WorldPop. Spending per person: MoSPI HCES 2023-24, {ctx.state or adm.get('state') or 'India'}, {ctx.sector}"
+                           + (", placed by this neighbourhood's night-light rank" if local else "")},
         "typical": {"price": float(TYPICAL_PRICE.get(entry.key, ARCH_PRICE[entry.archetype])), "unit": arch.unit_label, "per_day": entry.archetype != "membership",
                     "variable_cost_ratio": arch.params["variable_cost_ratio"].value, **ARCH_COSTS[entry.archetype]},
     }
